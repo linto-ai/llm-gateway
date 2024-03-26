@@ -1,6 +1,6 @@
 from flask import Flask, request
 import requests
-from chunker import get_chunks, get_prompts
+from chunker import get_chunks, get_inputs, get_results
 
 app = Flask(__name__)
 
@@ -31,10 +31,9 @@ def summarize_file():
     if file:
         text = file.read().decode('utf-8')
         chunks = get_chunks(text)
-        intermediate_prompts = get_prompts(chunks)
-        return 'File content: ' + str(intermediate_prompts), 200
-
-
+        prompts = get_inputs(chunks)
+        chat_responses = get_results(prompts)
+        return str(chat_responses), 200
 
 if __name__ == '__main__':
     app.run(port=5000)

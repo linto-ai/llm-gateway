@@ -2,24 +2,44 @@ import nltk
 nltk.download('punkt')
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from vllm import LLM, SamplingParams
+from openai import OpenAI
 
+# Modify OpenAI's API key and API base to use vLLM's API server.
+openai_api_key = "EMPTY"
+openai_api_base = "http://localhost:8000/v1"
+temp = 0.8
+top_p = 0.95
+sampling_params = SamplingParams(temperature=temp, top_p=top_p)
+
+client = OpenAI(
+    api_key=openai_api_key,
+    base_url=openai_api_base,
+)
 
 model_name = "TheBloke/Vigostral-7B-Chat-AWQ"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-llm = LLM(model=model_name, quantization="awq", dtype="auto")
+#llm = LLM(model=model_name, quantization="awq", dtype="auto")
 
 #model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
+prompt_template=f'''<s>[INST] <<SYS>>
+    Vous êtes Vigogne, un assistant IA créé par Zaion Lab. Vous suivez extrêmement bien les instructions. Aidez autant que vous le pouvez.
+    <</SYS>>
 
+    {{}} [/INST] 
+'''
 
 
 def get_chunks(content: str):
     sentences = nltk.tokenize.sent_tokenize(content)
-    print(max([len(tokenizer.tokenize(sentence)) for sentence in sentences]))
+    #print(max([len(tokenizer.tokenize(sentence)) for sentence in sentences]))
 
     # TODO: vigostral have wrong max_len params, so hardcoded value here 
     #tokenizer_context_len = tokenizer.max_len_single_sentence
-    tokenizer_context_len = 10
+    tokenizer_context_len = 4096
 
+    # The prompt should be less lengthy then model's max context windows
+    tokenizer_context_len = tokenizer_context_len // 2
+     
     length = 0
     chunk = ""
     chunks = []
@@ -48,40 +68,23 @@ def get_chunks(content: str):
     return chunks
 
 
-
-def get_prompts(chunks):
-    prompts = [
-        "Tell me about AI",
-        "Write a story about llamas",
-        "What is 291 - 150?",
-        "How much wood would a woodchuck chuck if a woodchuck could chuck wood?",
-    ]
-    prompt_template=f'''<s>[INST] <<SYS>>
-    Vous êtes Vigogne, un assistant IA créé par Zaion Lab. Vous suivez extrêmement bien les instructions. Aidez autant que vous le pouvez.
-    <</SYS>>
-
-    {prompt} [/INST] 
-    '''
-
-    prompts = [prompt_template.format(prompt=prompt) for prompt in prompts]
-
-    sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
-
-
-    outputs = llm.generate(prompts, sampling_params)
-
-    # Print the outputs.
-    for output in outputs:
-        prompt = output.prompt
-        generated_text = output.outputs[0].text
-        print(f"Prompt: {prompt!r}, Generated text: {generated_text!r}")
-'''
-def get_prompts(chunks):
-    inputs = [tokenizer(chunk, return_tensors="pt") for chunk in chunks]
-    prompts = []
-    for input in inputs:
-        output = model.generate(**input)
-        prompt = tokenizer.decode(*output, skip_special_tokens=True)
-        prompts += prompt
+def get_inputs(chunks):
+    prompts = [prompt_template.format(chunk) for chunk in chunks]
     return prompts
-'''
+    
+
+def get_results(prompts):
+    chat_responses = [prompt_template]
+    for prompt in prompts:
+        chat_response = client.chat.completions.create(
+            model=model_name,
+
+            messages=[
+                #{"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=sampling_params.temperature,
+            top_p=sampling_params.top_p
+        )
+        chat_responses.append(chat_response)
+    return str(chat_responses)

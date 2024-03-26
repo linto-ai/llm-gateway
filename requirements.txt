@@ -1,0 +1,7 @@
+vllm>=0.2.7
+ray>=2.9.0
+Flask>=3.0.2
+transformers>=4.36.2
+sentencepiece>=0.1.99
+openai>=1.14.3
+nltk>=3.8.1
