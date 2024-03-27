@@ -55,7 +55,7 @@ match service_type:
         app = Flask("__llm_gateway__")
         from summarization import logger
         # Logic
-        from summarization.utils import get_chunks, get_inputs, get_results
+        from summarization.utils import get_generation
     case _:
         from celery_app import logger
 
@@ -191,17 +191,19 @@ match service_type:
                 return "Missing request parameter: {}".format(e)
     case "llm_gateway":
         @app.route("/services/<model_name>/generate", methods=["POST"])
-        def summarization_route():
+        def summarization_route(model_name: str):
             """Process a batch of articles and return the extractive summaries predicted by the
             given model. Each record in the data should have a key "text".
             """
             try:
-                logger.info("Summzarization request received")
+                logger.info("Summarization request received")
                 results = []
                 request_body = json.loads(request.data)
+                #print(request_body)
                 documents = request_body.get("content", "")
                 config = request_body.get("format", {})
 
+                results = get_generation(documents, config)
                 return results, 200
             except Exception as e:
                 logger.error(request.data)

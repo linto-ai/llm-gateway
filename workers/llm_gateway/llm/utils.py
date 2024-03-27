@@ -89,3 +89,8 @@ def get_results(prompts):
         )
         chat_responses.append(chat_response)
     return str(chat_responses)
+
+
+def get_generation(documents, config):
+    a = []
+    return a

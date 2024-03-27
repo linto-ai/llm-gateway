@@ -26,7 +26,7 @@ COPY workers/llm_gateway/docker-entrypoint.sh ./
 # Modules
 #COPY celery_app /usr/src/app/celery_app
 COPY http_server /usr/src/app/http_server
-COPY document/swagger_extsumm.yml /usr/src/app/document/swagger.yml
+COPY document/swagger_llm_gateway.yml /usr/src/app/document/swagger.yml
 
 COPY scripts/wait-for-it.sh ./
 COPY scripts/healthcheck.sh ./
