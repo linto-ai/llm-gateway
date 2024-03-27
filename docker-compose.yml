@@ -1,18 +1,17 @@
 version: '3.7'
 
 services:
-  keyword-extraction:
-    restart: always
-    env_file: workers/keyword_extraction/.env
-    container_name: keyword-extraction
-    image: linto-nlp/keyword-extraction
+  llm-gateway:
+    container_name: llm-gateway
+    image: linto-nlp/llm-gateway
     build:
-      context: .
-      dockerfile: workers/keyword_extraction/Dockerfile
+      context: . 
+      dockerfile: workers/llm_gateway/Dockerfile
+    env_file: workers/llm_gateway/.env
+    ports:
+      - "8000:80"
     deploy:
       replicas: 1
-    ports:
-      - "8001:80"
     networks:
       - task_broker_services
 

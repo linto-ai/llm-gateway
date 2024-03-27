@@ -3,7 +3,9 @@ Summarization using rolling prompt and vLLM
 
 
 ## Start working with the module:
-1. Choose the the model from [”TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ”, “TheBloke/Vigostral-7B-Chat-AWQ”]
+1. Choose the the model from:
+* TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ
+* TheBloke/Vigostral-7B-Chat-AWQ
 2. Start vLLM server:
 ```console
 docker run --runtime nvidia  

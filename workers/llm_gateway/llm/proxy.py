@@ -1,7 +1,9 @@
+import os
 from flask import Flask, request
 from chunker import get_chunks, get_inputs, get_results
 
 app = Flask("__rolling_summarization__")
+port = int(os.getenv("PORT"))
 
 
 # Tokenizer instance of polymorphic class to select appropriate tokenizer ?
@@ -35,6 +37,6 @@ def summarize_file():
         return str(chat_responses), 200
 
 if __name__ == '__main__':
-    app.run(port=5000)
+    app.run(port=port)
 
 

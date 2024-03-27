@@ -1,0 +1,97 @@
+openapi: 3.0.1
+info:
+  version: 0.2.0
+  title: Extractive Summarization API
+  description: API to detect extractive summary in text.
+  contact:
+    email: support@linto.ai
+  license:
+    name: AGPLv3
+    url: https://www.gnu.org/licenses/agpl-3.0.en.html
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /extractive_summarization/{lang}:
+    post:
+      tags:
+      - Extractive Summarization API
+      summary: Perform Extractive Summarization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/request'
+      responses:
+        200:
+          description: "Job successfully finished"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responsemodel'
+        400:
+          description: "Bad request"
+        500:
+          description: "Server error"
+  /healthcheck:
+    get:
+      tags:
+        - Health
+      summary: Check server health
+      responses:
+        "200":
+          description: Healthcheck passes
+        "400":
+          description: Healthcheck fails
+        "500":
+          description: Healthcheck fails
+        
+components:
+  schemas:
+    document:
+      type: string
+      default: This is a document.
+    extractiveSummarizationConfig:
+      type: object
+      default: Configuration dictionary.
+    request:
+      type: object
+      properties:
+        documents:
+          type: array
+          required: true
+          items:
+            $ref: "#/components/schemas/document"
+        config:
+          type: object
+          required: true
+          properties:
+            extractiveSummarizationConfig:
+              type: object
+              required: true
+              items:
+                $ref: "#/components/schemas/extractiveSummarizationConfig"
+
+    batch:
+      type: object
+      properties:
+        text:
+          type: string
+        extractive_summary:
+          type: array
+          items:
+            type: string
+    
+    responsemodel:
+      type: object
+      properties:
+        extractive_summarization:
+          type: array
+          items:
+            $ref: '#/components/schemas/batch'
+        
