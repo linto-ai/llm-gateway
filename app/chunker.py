@@ -3,12 +3,14 @@ nltk.download('punkt')
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from vllm import LLM, SamplingParams
 from openai import OpenAI
+import os
 
-# Modify OpenAI's API key and API base to use vLLM's API server.
-openai_api_key = "EMPTY"
-openai_api_base = "http://localhost:8000/v1"
-temp = 0.8
-top_p = 0.95
+openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_api_base = os.getenv("OPENAI_API_BASE")
+model_name = os.getenv("MODEL_NAME")
+temp = os.getenv("TEMPERATURE")
+top_p = os.getenv("TOP_P")
+
 sampling_params = SamplingParams(temperature=temp, top_p=top_p)
 
 client = OpenAI(
@@ -16,7 +18,6 @@ client = OpenAI(
     base_url=openai_api_base,
 )
 
-model_name = "TheBloke/Vigostral-7B-Chat-AWQ"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 #llm = LLM(model=model_name, quantization="awq", dtype="auto")
 
@@ -38,7 +39,7 @@ def get_chunks(content: str):
     tokenizer_context_len = 4096
 
     # The prompt should be less lengthy then model's max context windows
-    tokenizer_context_len = tokenizer_context_len // 2
+    tokenizer_context_len //= 2
      
     length = 0
     chunk = ""

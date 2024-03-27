@@ -1,8 +1,7 @@
 from flask import Flask, request
-import requests
 from chunker import get_chunks, get_inputs, get_results
 
-app = Flask(__name__)
+app = Flask("__rolling_summarization__")
 
 
 # Tokenizer instance of polymorphic class to select appropriate tokenizer ?

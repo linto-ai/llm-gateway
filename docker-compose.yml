@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  keyword-extraction:
+    restart: always
+    env_file: workers/keyword_extraction/.env
+    container_name: keyword-extraction
+    image: linto-nlp/keyword-extraction
+    build:
+      context: .
+      dockerfile: workers/keyword_extraction/Dockerfile
+    deploy:
+      replicas: 1
+    ports:
+      - "8001:80"
+    networks:
+      - task_broker_services
+
+networks:
+  task_broker_services:
+    external: true
