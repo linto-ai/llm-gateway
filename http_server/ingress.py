@@ -6,6 +6,8 @@
 import json
 import os
 import logging
+import asyncio
+
 
 from confparser import createParser
 from flask import Flask, json, request
@@ -55,7 +57,8 @@ match service_type:
         app = Flask("__llm_gateway__")
         from summarization import logger
         # Logic
-        from summarization.utils import get_generation
+        from summarization.utils import get_generation, get_models_dict
+        MODELS = get_models_dict()
     case _:
         from celery_app import logger
 
@@ -199,12 +202,11 @@ match service_type:
                 logger.info("Summarization request received")
                 results = []
                 request_body = json.loads(request.data)
-                #print(request_body)
-                documents = request_body.get("content", "")
-                config = request_body.get("format", {})
 
-                results = get_generation(documents, config)
-                return str(results), 200
+                documents = request_body.get("content", "")
+                format = request_body.get("format", "")
+                results = asyncio.run(get_generation(documents, format, MODELS[model_name]))
+                return results, 200
             except Exception as e:
                 logger.error(request.data)
                 return "Missing request parameter: {}".format(e)

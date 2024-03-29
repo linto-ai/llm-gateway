@@ -17,7 +17,7 @@ openai_api_key = "EMPTY"
 #openai_api_key = os.getenv("OPENAI_API_KEY")
 openai_api_base = "http://188.165.70.251/v1"
 #openai_api_base = os.getenv("OPENAI_API_BASE")
-model_name = "TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ"
+#model_name = "TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ"
 #model_name = os.getenv("MODEL_NAME")
 temp = 0.8
 #temp = float(os.getenv("TEMPERATURE"))
@@ -47,10 +47,15 @@ client = OpenAI(
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 prompt_template=''
 
+def get_models_dict():
+    return {
+        "mixtral" : "TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ", 
+        "vigostral" : "TheBloke/Vigostral-7B-Chat-AWQ",
+    }
 
 def get_template(type):
-    if type == "CRA":
-        file_name = "prompt_templates/cra.txt"
+    if type == "cra":
+        file_name = "summarization/prompt_templates/cra.txt"
     with open(file_name, 'r') as file:
         prompt_template = file.read()
     return prompt_template
@@ -97,7 +102,7 @@ def get_chunks(content: str):
 
     
 
-async def get_result(prompt):
+async def get_result(prompt, model_name):
     chat_response = client.chat.completions.create(
         model=model_name,
 
@@ -114,14 +119,14 @@ async def get_result(prompt):
 
 
 
-async def get_generation(documents, config):
+async def get_generation(documents, format, model_name):
     documents = str(documents)
-    prompt_template = get_template("CRA")
-    
+    prompt_template = get_template(format)
+    print(prompt_template)
     chunks = get_chunks(documents)
     summary = ""
     for chunk in chunks:
-         # If the summary is bigger than 2000 words, use the biggest chunk at the end of the summary after the last new line
+        # If the summary is bigger than 2000 words, use the biggest chunk at the end of the summary after the last new line
         if len(summary.split(' ')) > 2000:
             summary_lines = summary.split('\n')
             summary_chunk = ''
@@ -133,12 +138,12 @@ async def get_generation(documents, config):
             summary = summary_chunk
 
         prompt = prompt_template.format(summary, chunk)
-        partial = await get_result(prompt)
-        summary += partial.choices[0].message.content + "\n"
+        #partial = await get_result(prompt, model_name)
+        #summary += partial.choices[0].message.content + "\n"
     return summary
 
-with open('request.txt', 'r') as file:
-    documents = file.read()#.decode('utf-8')
-#print(get_generation(documents, None))
-print(asyncio.run(get_generation(documents, None)))
-#print(get_generation(documents, None)[1].choices[0].message.content)
+
+if __name__ == '__main__':
+    with open('request.txt', 'r') as file:
+        documents = file.read()
+    print(asyncio.run(get_generation(documents, "cra", "mixtral")))

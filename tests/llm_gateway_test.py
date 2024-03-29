@@ -11,5 +11,5 @@ headers = {"accept": "application/json"}
 with open("tests/summarization.json", "r") as file:
     data = json.load(file)
 
-jobid = requests.post(url+"/services/name/generate", json=data, headers=headers)
+jobid = requests.post(url+"/services/mixtral/generate", json=data, headers=headers)
 print(jobid.text)
