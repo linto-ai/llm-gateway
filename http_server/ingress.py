@@ -42,9 +42,10 @@ match service_type:
                 results = []
                 request_body = json.loads(request.data)
 
-                documents = request_body.get("content", "")
+                content = request_body.get("content", "")
                 format = request_body.get("format", "")
-                results = asyncio.run(get_generation(documents, format, MODELS[model_name]))
+                logger.info("Processing started")
+                results = asyncio.run(get_generation(content, format, MODELS[model_name]))
                 return results, 200
             except Exception as e:
                 logger.error(request.data)
