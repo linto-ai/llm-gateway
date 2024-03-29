@@ -1,17 +1,43 @@
 import nltk
-nltk.download('punkt')
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from vllm import LLM, SamplingParams
+from transformers import AutoTokenizer
+from vllm import SamplingParams
 from openai import OpenAI
 import os
+import requests
+import json
+import asyncio
 
-openai_api_key = os.getenv("OPENAI_API_KEY")
-openai_api_base = os.getenv("OPENAI_API_BASE")
-model_name = os.getenv("MODEL_NAME")
-temp = float(os.getenv("TEMPERATURE"))
-top_p = float(os.getenv("TOP_P"))
 
-sampling_params = SamplingParams(temperature=temp, top_p=top_p)
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
+
+openai_api_key = "EMPTY"
+#openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_api_base = "http://188.165.70.251/v1"
+#openai_api_base = os.getenv("OPENAI_API_BASE")
+model_name = "TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ"
+#model_name = os.getenv("MODEL_NAME")
+temp = 0.8
+#temp = float(os.getenv("TEMPERATURE"))
+top_p = 0.95
+#top_p = float(os.getenv("TOP_P"))
+max_tokens = 2500
+#max_tokens = int(os.getenv("MAX_TOKENS"))
+frequency_penalty = 0
+#frequency_penalty = int(os.getenv("FREQUENCY_PENALTY"))
+presence_penalty = 0
+#presence_penalty = int(os.getenv("PRESENCE_PENALTY"))
+tokenizer_context_len = 1024
+#tokenizer_context_len = int(os.getenv("TOKENIZER_CONTEXT_LEN"))
+
+
+sampling_params = SamplingParams(temperature=temp, 
+                                 top_p=top_p, 
+                                 max_tokens=max_tokens, 
+                                 frequency_penalty=frequency_penalty,
+                                 presence_penalty=presence_penalty)
 
 client = OpenAI(
     api_key=openai_api_key,
@@ -19,15 +45,15 @@ client = OpenAI(
 )
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-#llm = LLM(model=model_name, quantization="awq", dtype="auto")
+prompt_template=''
 
-#model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
-prompt_template=f'''<s>[INST] <<SYS>>
-    Vous êtes Vigogne, un assistant IA créé par Zaion Lab. Vous suivez extrêmement bien les instructions. Aidez autant que vous le pouvez.
-    <</SYS>>
 
-    {{}} [/INST] 
-'''
+def get_template(type):
+    if type == "CRA":
+        file_name = "prompt_templates/cra.txt"
+    with open(file_name, 'r') as file:
+        prompt_template = file.read()
+    return prompt_template
 
 
 def get_chunks(content: str):
@@ -36,10 +62,10 @@ def get_chunks(content: str):
 
     # TODO: vigostral have wrong max_len params, so hardcoded value here 
     #tokenizer_context_len = tokenizer.max_len_single_sentence
-    tokenizer_context_len = 4096
+    chunker_context_len = tokenizer_context_len
 
     # The prompt should be less lengthy then model's max context windows
-    tokenizer_context_len //= 2
+    chunker_context_len //= 2
      
     length = 0
     chunk = ""
@@ -49,7 +75,7 @@ def get_chunks(content: str):
         count += 1
         combined_length = len(tokenizer.tokenize(sentence)) + length # add the no. of sentence tokens to the length counter
 
-        if combined_length  <= tokenizer_context_len: # if it doesn't exceed
+        if combined_length  <= chunker_context_len: # if it doesn't exceed
             chunk += sentence + " " # add the sentence to the chunk
             length = combined_length # update the length counter
 
@@ -66,31 +92,53 @@ def get_chunks(content: str):
             # take care of the overflow sentence
             chunk += sentence + " "
             length = len(tokenizer.tokenize(sentence))
+    #print(len(chunks), chunks)
     return chunks
 
-
-def get_inputs(chunks):
-    prompts = [prompt_template.format(chunk) for chunk in chunks]
-    return prompts
     
 
-def get_results(prompts):
-    chat_responses = [prompt_template]
-    for prompt in prompts:
-        chat_response = client.chat.completions.create(
-            model=model_name,
+async def get_result(prompt):
+    chat_response = client.chat.completions.create(
+        model=model_name,
 
-            messages=[
-                #{"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=sampling_params.temperature,
-            top_p=sampling_params.top_p
-        )
-        chat_responses.append(chat_response)
-    return str(chat_responses)
+        messages=[
+            {"role": "user", "content": prompt},
+        ],
+        temperature=sampling_params.temperature,
+        top_p=sampling_params.top_p, 
+        max_tokens=sampling_params.max_tokens,
+        frequency_penalty=sampling_params.frequency_penalty,
+        presence_penalty=sampling_params.presence_penalty,
+    )
+    return chat_response
 
 
-def get_generation(documents, config):
-    a = []
-    return a
+
+async def get_generation(documents, config):
+    documents = str(documents)
+    prompt_template = get_template("CRA")
+    
+    chunks = get_chunks(documents)
+    summary = ""
+    for chunk in chunks:
+         # If the summary is bigger than 2000 words, use the biggest chunk at the end of the summary after the last new line
+        if len(summary.split(' ')) > 2000:
+            summary_lines = summary.split('\n')
+            summary_chunk = ''
+            for i in range(len(summary_lines) - 1, -1, -1):
+                temp_chunk = summary_chunk + ' ' + summary_lines[i]
+                if len(temp_chunk.split(' ')) > 2000:
+                    break
+                summary_chunk = temp_chunk
+            summary = summary_chunk
+
+        prompt = prompt_template.format(summary, chunk)
+        partial = await get_result(prompt)
+        summary += partial.choices[0].message.content + "\n"
+    return summary
+
+with open('request.txt', 'r') as file:
+    documents = file.read()#.decode('utf-8')
+#print(get_generation(documents, None))
+print(asyncio.run(get_generation(documents, None)))
+#print(get_generation(documents, None)[1].choices[0].message.content)

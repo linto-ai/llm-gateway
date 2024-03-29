@@ -204,7 +204,7 @@ match service_type:
                 config = request_body.get("format", {})
 
                 results = get_generation(documents, config)
-                return results, 200
+                return str(results), 200
             except Exception as e:
                 logger.error(request.data)
                 return "Missing request parameter: {}".format(e)

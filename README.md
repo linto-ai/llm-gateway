@@ -11,7 +11,7 @@ Summarization using rolling prompt and vLLM
 docker run --runtime nvidia  
 -v ~/.cache/huggingface:/root/.cache/huggingface     
 --env "HUGGING_FACE_HUB_TOKEN=<secret>"     
--p 5000:8000     --ipc=host     vllm/vllm-openai:latest     
+-p 80:8000     --ipc=host     vllm/vllm-openai:latest     
 --model TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ  
 --quantization awq
 ```
