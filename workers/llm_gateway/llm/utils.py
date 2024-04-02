@@ -68,7 +68,7 @@ def get_template(type):
 
 
 
-def get_chunks(prompt_template: str, content: str):
+def get_chunks(prompt_template: str, content: str, granularity: int):
     # Read the file
     lines = content.splitlines()
 
@@ -95,9 +95,10 @@ def get_chunks(prompt_template: str, content: str):
 
             # If the current speech is too long, split it
             sentences = nltk.tokenize.sent_tokenize(current_speech)
-            tokenized_prompt_template = tokenizer.tokenize(prompt_template)        
-            summarization_context_len = (TOKENIZER_CONTEXT_LEN - len(tokenized_prompt_template)) * PROMPT_GENERATION_RATIO
-            max_chunk_len = math.floor(summarization_context_len * CHUNKER_GRANULARITY_RATIO)  # The prompt should be less lengthy then model's max context windows
+            tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
+
+            
+            max_chunk_len = granularity  # The prompt should be less lengthy then model's max context windows
             chunk = ""
             length = 0
 
@@ -146,16 +147,21 @@ async def get_generation(content, format, params, template_has_two_fields=True):
     prompt_template = get_template(format)
     tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
     logger.info(f'Template {format} has two fields') if template_has_two_fields else logger.info(f'Template {format} has one field')
-    chunks = get_chunks(prompt_template, content)
+    granularity = params["granularity_tokens"]
+    max_new_speeches = params["max_new_speeches"]
+    chunks = get_chunks(prompt_template, content, granularity)
     summary = ""
     tokenized_summary = []
+    speech_count = 0
     for speaker, speech in chunks:
         chunk = speaker + ": " + speech
         tokenized_chunk = tokenizer.tokenize(chunk) 
         # Maximum summary len + Maximum generation len + chunk size + template = tokenizer context len
+        PREVIOUS_NEW_SUMMARY_LEN_RATIO = params["previous_new_summary_ratio"]
         MAX_GENERATION_SIZE = TOKENIZER_CONTEXT_LEN - len(tokenized_chunk) - len(tokenized_prompt_template)
         max_summary_len = math.floor(MAX_GENERATION_SIZE * PREVIOUS_NEW_SUMMARY_LEN_RATIO)
-        if len(tokenized_summary) >  max_summary_len:
+        if len(tokenized_summary) >  max_summary_len or speech_count > max_new_speeches:
+            speech_count = 0
             summary_lines = summary.split('\n')
             summary = ' '.join(line for line in reversed(summary_lines) if len(line.split(' ')) <= max_summary_len)
 
@@ -172,6 +178,7 @@ async def get_generation(content, format, params, template_has_two_fields=True):
         partial = await get_result(prompt, MODEL_NAME, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
         logger.info(f'{partial.choices[0].message.content}')
         summary += partial.choices[0].message.content + "\n"
+        speech_count += 1
     return summary
 
 
