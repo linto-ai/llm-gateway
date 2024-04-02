@@ -7,6 +7,8 @@ import requests
 import json
 import asyncio
 import math
+import re
+
 
 from __init__ import logger
 
@@ -25,15 +27,14 @@ TEMPERATURE = 0.8
 #temp = float(os.getenv("TEMPERATURE"))
 TOP_P = 0.95
 #top_p = float(os.getenv("TOP_P"))
-MAX_TOKENS = 2500
-#max_tokens = int(os.getenv("MAX_TOKENS"))
 FREQUENCY_PENALTY = 0
 #frequency_penalty = int(os.getenv("FREQUENCY_PENALTY"))
 PRESENCE_PENALTY = 0
 #presence_penalty = int(os.getenv("PRESENCE_PENALTY"))
 TOKENIZER_CONTEXT_LEN = 4096
 #tokenizer_context_len = int(os.getenv("TOKENIZER_CONTEXT_LEN"))
-CHUNKER_SPLIT_RATIO = 0.1
+CHUNKER_GRANULARITY_RATIO = 0.1
+PROMPT_GENERATION_RATIO = 0.5
 PREVIOUS_NEW_SUMMARY_LEN_RATIO = 0.3
 
 
@@ -66,41 +67,85 @@ def get_template(type):
     return prompt_template
 
 
-def get_chunks(content: str):
-    sentences = nltk.tokenize.sent_tokenize(content)
-    chunker_context_len = math.floor(TOKENIZER_CONTEXT_LEN * CHUNKER_SPLIT_RATIO)  # The prompt should be less lengthy then model's max context windows
 
-    chunks = []
-    chunk = ""
-    length = 0
+def get_chunks(prompt_template: str, content: str):
+    # Read the file
+    lines = content.splitlines()
 
-    for i, sentence in enumerate(sentences):
-        tokenized_sentence = tokenizer.tokenize(sentence)        
-        combined_length = len(tokenized_sentence) + length
+    # Initialize variables
+    current_speaker = None
+    current_speech = ""
+    speeches = []
 
-        if combined_length <= chunker_context_len or i == len(sentences) - 1:
-            chunk += sentence + " "
-            length = combined_length
+    # Process each line
+    for line in lines:
+        # Check if the line starts with "speaker X:"
+        pattern = r"\b[A-Za-z\-éèêëàâäôöùûüçïîÿæœñ]+\s[A-Za-z\-éèêëàâäôöùûüçïîÿæœñ]+\s:\s.*"
+        match = re.match(pattern, line, re.I)
+        if match:
+            matched_string = match.group()
+            #print(matched_string)
+                # Split the matched string into two parts along ":"
+            speaker, speech = matched_string.split(":", 1)
+            
+            #print(speaker, speech)
+            #print(speaker)
+            # If this is a new speaker, save the current speech and start a new one
+            if speaker != current_speaker:
+                #if current_speech:
+                #    speeches.append((current_speaker, current_speech))
+                current_speaker = speaker
+                current_speech = speech
+            else:
+                # Add to the current speech
+                current_speech += " " + speech
+
+            # If the current speech is too long, split it
+            sentences = nltk.tokenize.sent_tokenize(current_speech)
+            tokenized_prompt_template = tokenizer.tokenize(prompt_template)        
+            summarization_context_len = (TOKENIZER_CONTEXT_LEN - len(tokenized_prompt_template)) * PROMPT_GENERATION_RATIO
+            max_chunk_len = math.floor(summarization_context_len * CHUNKER_GRANULARITY_RATIO)  # The prompt should be less lengthy then model's max context windows
+            chunk = ""
+            length = 0
+
+            for i, sentence in enumerate(sentences):
+                tokenized_sentence = tokenizer.tokenize(sentence)        
+                current_token_count = len(tokenized_sentence) + length
+
+                
+                if current_token_count <= max_chunk_len or i == len(sentences) - 1:
+                    chunk += sentence + "\n"
+                    length = current_token_count
+                else:
+                    speeches.append((current_speaker, chunk.strip()))
+                    chunk = sentence + "\n"
+                    length = len(tokenized_sentence)
+                    current_speech = current_speech[len(chunk):] 
+                
+                # If it is the last sentence, save the chunk
+                if i == len(sentences) - 1:
+                    speeches.append((current_speaker, chunk.strip()))
+                    current_speech = current_speech[len(chunk):]
         else:
-            chunks.append(chunk.strip())
-            chunk = sentence + " "
-            length = len(tokenized_sentence)
+            # If the line doesn't start with "speaker X:", add it to the current speech
+            current_speech += " " + line
 
-        # If it is the last sentence, save the chunk
-        if i == len(sentences) - 1:
-            chunks.append(chunk.strip())
+    # Save the last speech
+    #if current_speech:
+    #    speeches.append((current_speaker, current_speech))
 
-    return chunks 
+    return speeches
 
-async def get_result(prompt, model_name, generation_max_tokens):
+
+async def get_result(prompt, model_name, temperature, top_p, generation_max_tokens):
     chat_response = client.chat.completions.create(
         model=model_name,
 
         messages=[
             {"role": "user", "content": prompt},
         ],
-        temperature=sampling_params.temperature,
-        top_p=sampling_params.top_p, 
+        temperature=temperature,
+        top_p=top_p, 
         max_tokens=generation_max_tokens,
         frequency_penalty=sampling_params.frequency_penalty,
         presence_penalty=sampling_params.presence_penalty,
@@ -108,16 +153,18 @@ async def get_result(prompt, model_name, generation_max_tokens):
     return chat_response
 
 
-async def get_generation(content, format, template_has_two_fields=True):
+async def get_generation(content, format, temperature=0, top_p=0.95, template_has_two_fields=True):
     prompt_template = get_template(format)
+    tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
     logger.info(f'Template {format} has two fields') if template_has_two_fields else logger.info(f'Template {format} has one field')
-    chunks = get_chunks(content)
-    print(prompt_template)
+    chunks = get_chunks(prompt_template, content)
     summary = ""
     tokenized_summary = []
-    for chunk in chunks:
+    for speaker, speech in chunks:
+        chunk = speaker + ": " + speech
+        tokenized_chunk = tokenizer.tokenize(chunk) 
         # Maximum summary len + Maximum generation len + chunk size + template = tokenizer context len
-        MAX_GENERATION_SIZE = TOKENIZER_CONTEXT_LEN - len(chunk) - len(prompt_template)
+        MAX_GENERATION_SIZE = TOKENIZER_CONTEXT_LEN - len(tokenized_chunk) - len(tokenized_prompt_template)
         max_summary_len = math.floor(MAX_GENERATION_SIZE * PREVIOUS_NEW_SUMMARY_LEN_RATIO)
         if len(tokenized_summary) >  max_summary_len:
             summary_lines = summary.split('\n')
@@ -131,8 +178,9 @@ async def get_generation(content, format, template_has_two_fields=True):
         
         # Tokenizer context len - (chunk size + template) * PREVIOUS_NEW_SUMMARY_LEN_RATIO = Maximum generation len
         generation_max_tokens = math.floor(MAX_GENERATION_SIZE * (1 - PREVIOUS_NEW_SUMMARY_LEN_RATIO))
+    
         generation_max_tokens = max(generation_max_tokens, 1)
-        partial = await get_result(prompt, MODEL_NAME, generation_max_tokens)
+        partial = await get_result(prompt, MODEL_NAME, temperature, top_p, generation_max_tokens)
         logger.info(f'{partial.choices[0].message.content}')
         summary += partial.choices[0].message.content + "\n"
     return summary
@@ -143,4 +191,8 @@ if __name__ == '__main__':
     with open('request.txt', 'r') as file:
         documents = file.read()
     MODELS = get_models_dict()
-    print(asyncio.run(get_generation(documents, "cra", MODELS["mixtral"])))
+    temperature = 0
+    top_p = 0.95 
+    print(asyncio.run(get_generation(documents, "cra", temperature, top_p, MODELS["mixtral"])))
+
+
