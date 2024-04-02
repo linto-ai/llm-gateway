@@ -1,8 +1,8 @@
 openapi: 3.0.1
 info:
   version: 0.2.0
-  title: Extractive Summarization API
-  description: API to detect extractive summary in text.
+  title: Summarization API
+  description: API to make summary of text using LLMs.
   contact:
     email: support@linto.ai
   license:
@@ -17,16 +17,40 @@ components:
       bearerFormat: JWT
 
 paths:
-  /extractive_summarization/{lang}:
+  /services/<model_name>/generate:
     post:
       tags:
-      - Extractive Summarization API
-      summary: Perform Extractive Summarization
+      - Summarization API
+      summary: Perform Summarization
       requestBody:
+        required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/request'
+              type: object
+              properties:
+                content:
+                  type: string
+                  format: binary
+                format:
+                  type: string
+                  format: json
+      responses:
+        200:
+          description: "Job successfully finished"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/responsemodel'
+        400:
+          description: "Bad request"
+        500:
+          description: "Server error"
+  /services:
+    get:
+      tags:
+      - Summarization API
+      summary: Get info on summarization params 
       responses:
         200:
           description: "Job successfully finished"
@@ -53,45 +77,7 @@ paths:
         
 components:
   schemas:
-    document:
-      type: string
-      default: This is a document.
-    extractiveSummarizationConfig:
-      type: object
-      default: Configuration dictionary.
-    request:
-      type: object
-      properties:
-        documents:
-          type: array
-          required: true
-          items:
-            $ref: "#/components/schemas/document"
-        config:
-          type: object
-          required: true
-          properties:
-            extractiveSummarizationConfig:
-              type: object
-              required: true
-              items:
-                $ref: "#/components/schemas/extractiveSummarizationConfig"
-
-    batch:
-      type: object
-      properties:
-        text:
-          type: string
-        extractive_summary:
-          type: array
-          items:
-            type: string
-    
     responsemodel:
-      type: object
-      properties:
-        extractive_summarization:
-          type: array
-          items:
-            $ref: '#/components/schemas/batch'
+      type: string
+      
         

@@ -33,7 +33,7 @@ match service_type:
 # Main logic
 match service_type:
     case "llm_gateway":
-        semaphore = Semaphore(10) 
+        semaphore = Semaphore(1) 
 
         @app.route("/services/<model_name>/generate", methods=["POST"])
         async def summarization_route(model_name: str):
@@ -88,7 +88,7 @@ match service_type:
                     "lang": ["fr"]
                 }
             ]
-            return jsonify(services_info)
+            return jsonify(services_info), 200
     case _:
         logger.error(
             "Please, provide the correct SERVICE_TYPE system variable")
