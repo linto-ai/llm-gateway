@@ -7,10 +7,11 @@ import json
 import os
 import logging
 import asyncio
+from asyncio import Semaphore
 
 
 from confparser import createParser
-from flask import Flask, json, request
+from flask import Flask, json, request, jsonify
 from serving import GunicornServing
 from swagger import setupSwaggerUI
 import pkgutil
@@ -32,8 +33,10 @@ match service_type:
 # Main logic
 match service_type:
     case "llm_gateway":
+        semaphore = Semaphore(10) 
+
         @app.route("/services/<model_name>/generate", methods=["POST"])
-        def summarization_route(model_name: str):
+        async def summarization_route(model_name: str):
             """Process a batch of articles and return the extractive summaries predicted by the
             given model. Each record in the data should have a key "text".
             """
@@ -45,11 +48,47 @@ match service_type:
                 content = request_body.get("content", "")
                 format = request_body.get("format", "")
                 logger.info("Processing started")
-                results = asyncio.run(get_generation(content, format, MODELS[model_name]))
+                async with semaphore:
+                    results = await get_generation(content, format, MODELS[model_name])
                 return results, 200
             except Exception as e:
                 logger.error(request.data)
                 return "Missing request parameter: {}".format(e)
+            
+        @app.route("/services", methods=["GET"])
+        def summarization_info_route():
+            services_info = [
+                {
+                    "serviceName": "mixtral",
+                    "type": "mixtral",
+                    "capabilities": ["summarize"],
+                    "metadata": {
+                        "maxToken": [8192],
+                        "defaults": {"temperature": 1}
+                    },
+                    "formats": ["cra"],
+                    "lang": ["fr"]
+                },
+                {
+                    "serviceName": "vigostral",
+                    "type": "vigostral",
+                    "capabilities": ["summarize"],
+                    "metadata": {
+                        "maxToken": [4096],
+                        "defaults": {"temperature": 1}
+                    },
+                    "formats": ["cra"],
+                    "lang": ["fr"]
+                },
+                {
+                    "serviceName": "openai",
+                    "type":"gptv4",
+                    "metadata": {},
+                    "formats": ["cri","cra", "cred"],
+                    "lang": ["fr"]
+                }
+            ]
+            return jsonify(services_info)
     case _:
         logger.error(
             "Please, provide the correct SERVICE_TYPE system variable")
