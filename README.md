@@ -30,5 +30,8 @@ linto-nlp/rolling-summarization:latest
 
 ## Request example:
 ```console
-curl -X POST -F "file=@./test.txt" http://localhost:5000/summarize
+curl -X POST -H "Content-Type: multipart/form-data"  -F "format=@tests/form.json;type=application/json" -F "content=@tests/request.txt"      http://localhost:8000
 ```
+File tests/form.json contains example config file read by the server.
+
+File requests.txt contains the example of actual transcript.

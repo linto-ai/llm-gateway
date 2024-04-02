@@ -43,13 +43,13 @@ match service_type:
             try:
                 logger.info("Summarization request received")
                 results = []
-                request_body = json.loads(request.data)
-
-                content = request_body.get("content", "")
-                format = request_body.get("format", "")
+                file = request.files['content']
+                form = json.loads(request.files['format'])
+                content = file.read().decode('utf-8') if file else ""
+                params = form["params"]
                 logger.info("Processing started")
                 async with semaphore:
-                    results = await get_generation(content, format, MODELS[model_name])
+                    results = await get_generation(content, form, params, MODELS[model_name])
                 return results, 200
             except Exception as e:
                 logger.error(request.data)
