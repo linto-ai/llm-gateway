@@ -27,6 +27,7 @@ match service_type:
         # Logic
         from summarization.utils import get_generation, get_models_dict
         MODELS = get_models_dict()
+        #from summarization.utils import tokenizer
     case _:
         from celery_app import logger
 
@@ -43,52 +44,24 @@ match service_type:
             try:
                 logger.info("Summarization request received")
                 results = []
-                file = request.files['content']
-                form = json.loads(request.files['format'])
+                file = request.files.get('file')
+                form = request.files.get('format')
+                params = json.loads(request.form['format'])
                 content = file.read().decode('utf-8') if file else ""
-                params = form["params"]
                 logger.info("Processing started")
+                resume_format = params["format"]
                 async with semaphore:
-                    results = await get_generation(content, form, params, MODELS[model_name])
+                    results = await get_generation(content, resume_format, params, MODELS[model_name])
                 return results, 200
             except Exception as e:
-                logger.error(request.data)
+                #logger.error(request.data)
                 return "Missing request parameter: {}".format(e)
             
         @app.route("/services", methods=["GET"])
         def summarization_info_route():
-            services_info = [
-                {
-                    "serviceName": "mixtral",
-                    "type": "mixtral",
-                    "capabilities": ["summarize"],
-                    "metadata": {
-                        "maxToken": [8192],
-                        "defaults": {"temperature": 1}
-                    },
-                    "formats": ["cra"],
-                    "lang": ["fr"]
-                },
-                {
-                    "serviceName": "vigostral",
-                    "type": "vigostral",
-                    "capabilities": ["summarize"],
-                    "metadata": {
-                        "maxToken": [4096],
-                        "defaults": {"temperature": 1}
-                    },
-                    "formats": ["cra"],
-                    "lang": ["fr"]
-                },
-                {
-                    "serviceName": "openai",
-                    "type":"gptv4",
-                    "metadata": {},
-                    "formats": ["cri","cra", "cred"],
-                    "lang": ["fr"]
-                }
-            ]
-            return jsonify(services_info), 200
+            with open('summarization_info.json', 'r') as f:
+                system_info = json.load(f)
+            return jsonify(system_info), 200
     case _:
         logger.error(
             "Please, provide the correct SERVICE_TYPE system variable")

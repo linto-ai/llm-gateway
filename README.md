@@ -26,12 +26,29 @@ docker run --gpus all \
 --env-file .env \
 linto-nlp/rolling-summarization:latest
 ```
-
-
-## Request example:
+or 
 ```console
-curl -X POST -H "Content-Type: multipart/form-data"  -F "format=@tests/form.json;type=application/json" -F "content=@tests/request.txt"      http://localhost:8000
+docker compose up
+```
+
+## Request examples:
+## POST request:
+```console
+curl --request POST --url 'http://localhost/services/mixtral/generate' --header 'Accept: application/json' --form 'format={
+        "maxGeneratedTokens": 1024,
+        "temperature": 1,
+        "top_p": 0.95,
+        "granularity_tokens": 200,
+        "max_new_speeches": 4,
+        "previous_new_summary_ratio": 0.5,
+        "format": "cra"
+    }' --form file=@tests/request.txt
 ```
 File tests/form.json contains example config file read by the server.
 
 File requests.txt contains the example of actual transcript.
+
+## GET request:
+```console
+curl --request GET --url 'http://localhost/services'
+```

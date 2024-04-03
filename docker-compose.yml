@@ -9,7 +9,7 @@ services:
       dockerfile: workers/llm_gateway/Dockerfile
     env_file: workers/llm_gateway/.env
     ports:
-      - "8000:80"
+      - "80:80"
     deploy:
       replicas: 1
     networks:
