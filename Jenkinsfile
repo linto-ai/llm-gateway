@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        DOCKER_HUB_REPO = "saas/linto-platform-llm-gateway"
+        DOCKER_HUB_REPO = "saas/llm-gateway"
         DOCKER_HUB_CRED = 'harbor-jenkins-robot'
         
         VERSION = ''
