@@ -62,6 +62,9 @@ def get_template(type):
     if type == "cra":
         #file_name = "summarization/prompt_templates/cra.txt"
         file_name = "prompt_templates/cra.txt"
+    elif type == "cred":
+        #file_name = "summarization/prompt_templates/cra.txt"
+        file_name = "prompt_templates/cred.txt"    
     with open(file_name, 'r') as file:
         prompt_template = file.read()
     return prompt_template

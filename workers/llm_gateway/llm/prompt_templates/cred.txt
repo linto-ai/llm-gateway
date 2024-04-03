@@ -1,4 +1,4 @@
-Vous devez réduire de 40% la taille de tours de parole issus d'une transcription en suivant les directives suivantes :
+Vous devez réduire de 80% la taille de tours de parole issus d'une transcription en suivant les directives suivantes :
 Toujours utiliser les conventions orthographiques standard du français. Adopter un style formel identique à celui du locuteur
 S'appuyer strictement sur le texte sans inclure d'informations externes ou issues des tours précédents
 Conserver toutes les mentions d'individus, de lieux, d'événements ou de textes
