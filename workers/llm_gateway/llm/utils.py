@@ -9,6 +9,8 @@ import json
 import asyncio
 import math
 import re
+from asyncio import Semaphore
+
 
 
 #from __init__ import logger
@@ -18,9 +20,10 @@ try:
 except LookupError:
     nltk.download('punkt')
 
+semaphore = Semaphore(1)
 OPENAI_API_KEY = "EMPTY"
 #openai_api_key = os.getenv("OPENAI_API_KEY")
-OPENAI_API_BASE = "http://188.165.70.251/v1"
+OPENAI_API_BASE = "http://188.165.70.251:443/v1"
 #openai_api_base = os.getenv("OPENAI_API_BASE")
 MODEL_NAME = "TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ"
 #model_name = os.getenv("MODEL_NAME")
@@ -198,7 +201,8 @@ async def get_generation(content, params, model_name):
         tokenized_summary = tokenizer.tokenize(summary)        
         
         #generation_max_tokens = max(generation_max_tokens, 1)
-        partial = await get_result(prompt, model_name, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
+        async with semaphore:
+            partial = await get_result(prompt, model_name, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
         #logger.info(f'{partial.choices[0].message.content}')
         summary += partial.choices[0].message.content + "\n"
 

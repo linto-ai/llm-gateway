@@ -42,10 +42,14 @@ match service_type:
             try:
                 logger.info("Summarization request received")
                 results = []
+                print(request.data)
                 file = request.files.get('file')
-                form = request.files.get('format')
+                
+                
                 params = json.loads(request.form['format'])
                 content = file.read().decode('utf-8') if file else ""
+                print(content)
+                print(params)
                 logger.info("Processing started")
                 async with semaphore:
                     results = await get_generation(content, params, MODELS[model_name])
