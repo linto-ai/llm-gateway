@@ -10,7 +10,7 @@ import math
 import re
 
 
-from __init__ import logger
+#from __init__ import logger
 
 try:
     nltk.data.find('tokenizers/punkt')
@@ -71,9 +71,13 @@ def get_template(type):
 
 
 
-def get_chunks(prompt_template: str, content: str, granularity: int):
-    # Read the file
+def get_splits(content, granularity: int = -1):
+    # Split the lines
     lines = content.splitlines()
+
+    # If granularity is == -1, then 
+    if granularity == -1:
+        granularity = TOKENIZER_CONTEXT_LEN
 
     # Initialize variables
     current_speaker = None
@@ -82,12 +86,14 @@ def get_chunks(prompt_template: str, content: str, granularity: int):
 
     # Process each line
     for line in lines:
-        # Check if the line starts with "speaker X:"
+        # Check if the line starts with "Jon Doe : "
         pattern = r"\b[A-Za-z\-éèêëàâäôöùûüçïîÿæœñ]+\s[A-Za-z\-éèêëàâäôöùûüçïîÿæœñ]+\s:\s.*"
         match = re.match(pattern, line, re.I)
         if match:
             matched_string = match.group()
+            # Split the matched string into two parts along ":"
             speaker, speech = matched_string.split(":", 1)
+            
             # If this is a new speaker, save the current speech and start a new one
             if speaker != current_speaker:
                 current_speaker = speaker
@@ -98,34 +104,35 @@ def get_chunks(prompt_template: str, content: str, granularity: int):
 
             # If the current speech is too long, split it
             sentences = nltk.tokenize.sent_tokenize(current_speech)
-            tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
-
-            
-            max_chunk_len = granularity  # The prompt should be less lengthy then model's max context windows
             chunk = ""
             length = 0
-
             for i, sentence in enumerate(sentences):
                 tokenized_sentence = tokenizer.tokenize(sentence)        
                 current_token_count = len(tokenized_sentence) + length
 
-                
-                if current_token_count <= max_chunk_len or i == len(sentences) - 1:
-                    chunk += sentence + "\n"
+                if current_token_count <= granularity:
+                    chunk += sentence + " "
                     length = current_token_count
                 else:
-                    speeches.append((current_speaker, chunk.strip()))
-                    chunk = sentence + "\n"
-                    length = len(tokenized_sentence)
-                    current_speech = current_speech[len(chunk):] 
+                    if chunk:
+                        speeches.append((current_speaker, chunk.strip()))
+                        chunk = sentence + "\n"
+                        length = len(tokenized_sentence)
+                        current_speech = current_speech[len(chunk)-1:] 
                 
                 # If it is the last sentence, save the chunk
                 if i == len(sentences) - 1:
-                    speeches.append((current_speaker, chunk.strip()))
-                    current_speech = current_speech[len(chunk):]
+                    for line in chunk.split("\n"):
+                        if line:
+                            speeches.append((current_speaker, line.strip()))
+                            current_speech = current_speech[len(chunk)-1:]
         else:
-            # If the line doesn't start with "speaker X:", add it to the current speech
+            # If the line doesn't start with "Jon Doe : ", add it to the current speech
             current_speech += " " + line
+
+    # Save the last speech
+    if current_speech:
+        speeches.append((current_speaker, current_speech))
 
     return speeches
 
@@ -190,8 +197,9 @@ if __name__ == '__main__':
     with open('request.txt', 'r') as file:
         documents = file.read()
     MODELS = get_models_dict()
-    temperature = 1
-    top_p = 0.95 
-    print(asyncio.run(get_generation(documents, "cra", temperature, top_p, MODELS["mixtral"])))
+    params = {
+        
+    }
+    print(asyncio.run(get_generation(documents, "cra", params, MODELS["mixtral"])))
 
 
