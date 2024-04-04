@@ -14,7 +14,6 @@ from confparser import createParser
 from flask import Flask, json, request, jsonify
 from serving import GunicornServing
 from swagger import setupSwaggerUI
-import pkgutil
 
 
 service_type = os.getenv("SERVICE_TYPE")
@@ -27,7 +26,6 @@ match service_type:
         # Logic
         from summarization.utils import get_generation, get_models_dict
         MODELS = get_models_dict()
-        #from summarization.utils import tokenizer
     case _:
         from celery_app import logger
 
@@ -49,9 +47,8 @@ match service_type:
                 params = json.loads(request.form['format'])
                 content = file.read().decode('utf-8') if file else ""
                 logger.info("Processing started")
-                resume_format = params["format"]
                 async with semaphore:
-                    results = await get_generation(content, resume_format, params, MODELS[model_name])
+                    results = await get_generation(content, params, MODELS[model_name])
                 return results, 200
             except Exception as e:
                 #logger.error(request.data)

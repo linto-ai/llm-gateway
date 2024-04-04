@@ -2,6 +2,7 @@ import nltk
 from transformers import AutoTokenizer
 from vllm import SamplingParams
 from openai import OpenAI
+from typing import List, Tuple
 import os
 import requests
 import json
@@ -58,26 +59,27 @@ def get_models_dict():
         "vigostral" : "TheBloke/Vigostral-7B-Chat-AWQ",
     }
 
-def get_template(type):
+def get_template(type, template_has_two_fields):
     if type == "cra":
         #file_name = "summarization/prompt_templates/cra.txt"
-        file_name = "prompt_templates/cra.txt"
+        
+        file_name = "prompt_templates/cra.txt" if template_has_two_fields else "prompt_templates/cra_reduced.txt"
     elif type == "cred":
         #file_name = "summarization/prompt_templates/cra.txt"
-        file_name = "prompt_templates/cred.txt"    
+        file_name = "prompt_templates/cred.txt" if template_has_two_fields else "prompt_templates/cred_reduced.txt"
     with open(file_name, 'r') as file:
         prompt_template = file.read()
     return prompt_template
 
 
-
-def get_splits(content, granularity: int = -1):
-    # Split the lines
-    lines = content.splitlines()
-
+def get_splits(content: str, granularity: int = -1) -> List[Tuple[str, str]]:
     # If granularity is == -1, then 
     if granularity == -1:
         granularity = TOKENIZER_CONTEXT_LEN
+
+    # Split the lines
+    lines = content.splitlines()
+
 
     # Initialize variables
     current_speaker = None
@@ -137,6 +139,16 @@ def get_splits(content, granularity: int = -1):
     return speeches
 
 
+def get_dialogs(chunks: List[Tuple[str, str]], max_new_speeches: int = -1) -> List[str]:
+    if max_new_speeches == -1:
+        max_new_speeches = len(chunks)
+    
+    dialogs = [''.join(f'{speaker} : {speech}\n' for speaker, speech in chunks[i:i+max_new_speeches]) 
+               for i in range(0, len(chunks), max_new_speeches)]
+    
+    return dialogs
+
+
 async def get_result(prompt, model_name, temperature=1, top_p=0.95, generation_max_tokens=1028):
     chat_response = client.chat.completions.create(
         model=model_name,
@@ -153,42 +165,43 @@ async def get_result(prompt, model_name, temperature=1, top_p=0.95, generation_m
     return chat_response
 
 
-async def get_generation(content, format, params, template_has_two_fields=True):
-    prompt_template = get_template(format)
-    tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
-    logger.info(f'Template {format} has two fields') if template_has_two_fields else logger.info(f'Template {format} has one field')
+async def get_generation(content, params, model_name):
+    
+    #logger.info(f'Template {format} has two fields') if template_has_two_fields else logger.info(f'Template {format} has one field')
     granularity = params["granularity_tokens"]
     max_new_speeches = params["max_new_speeches"]
-    chunks = get_chunks(prompt_template, content, granularity)
+    prev_new_summary_ratio = params["previous_new_summary_ratio"]
+    resume_format = params["format"]
+    template_has_two_fields = False if prev_new_summary_ratio == 0 else True
+
+    prompt_template = get_template(resume_format, template_has_two_fields)
+    tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
+
+    chunks = get_splits(content, granularity)
+    dialogs = get_dialogs(chunks, max_new_speeches)
     summary = ""
     tokenized_summary = []
     speech_count = 0
-    for speaker, speech in chunks:
-        chunk = speaker + ": " + speech
-        tokenized_chunk = tokenizer.tokenize(chunk) 
-        # Maximum summary len + Maximum generation len + chunk size + template = tokenizer context len
-        PREVIOUS_NEW_SUMMARY_LEN_RATIO = params["previous_new_summary_ratio"]
-        MAX_GENERATION_SIZE = TOKENIZER_CONTEXT_LEN - len(tokenized_chunk) - len(tokenized_prompt_template)
-        max_summary_len = math.floor(MAX_GENERATION_SIZE * PREVIOUS_NEW_SUMMARY_LEN_RATIO)
-        if len(tokenized_summary) >  max_summary_len or speech_count > max_new_speeches:
+    for dialog in dialogs:
+        tokenized_dialog = tokenizer.tokenize(dialog) 
+        
+        MAX_GENERATION_SIZE = TOKENIZER_CONTEXT_LEN - len(tokenized_dialog) - len(tokenized_prompt_template) - len(tokenized_summary)
+        max_summary_len = math.floor(MAX_GENERATION_SIZE * prev_new_summary_ratio)
+        max_prev_len = max_summary_len * PREVIOUS_NEW_SUMMARY_LEN_RATIO
+        if len(tokenized_summary) >  max_summary_len:
             speech_count = 0
             summary_lines = summary.split('\n')
-            summary = ' '.join(line for line in reversed(summary_lines) if len(line.split(' ')) <= max_summary_len)
-
-        prompt = prompt_template.format(summary, chunk) if template_has_two_fields else prompt_template.format(chunk)
-        
-        logger.info(f'Execuiting the prompt:\n{prompt}')
+            summary = ' '.join(line for line in reversed(summary_lines) if len(line.split(' ')) <= max_prev_len)
+        prompt = prompt_template.format(summary, dialog) if template_has_two_fields else prompt_template.format(dialog)
+        #logger.info(f'Execuiting the prompt:\n{prompt}')
         
         tokenized_summary = tokenizer.tokenize(summary)        
         
-        # Tokenizer context len - (chunk size + template) * PREVIOUS_NEW_SUMMARY_LEN_RATIO = Maximum generation len
-        generation_max_tokens = math.floor(MAX_GENERATION_SIZE * (1 - PREVIOUS_NEW_SUMMARY_LEN_RATIO))
-    
-        generation_max_tokens = max(generation_max_tokens, 1)
-        partial = await get_result(prompt, MODEL_NAME, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
-        logger.info(f'{partial.choices[0].message.content}')
+        #generation_max_tokens = max(generation_max_tokens, 1)
+        partial = await get_result(prompt, model_name, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
+        #logger.info(f'{partial.choices[0].message.content}')
         summary += partial.choices[0].message.content + "\n"
-        speech_count += 1
+
     return summary
 
 
