@@ -64,12 +64,12 @@ def get_models_dict():
 
 def get_template(type, template_has_two_fields):
     if type == "cra":
-        #file_name = "summarization/prompt_templates/cra.txt"
+        file_name = "summarization/prompt_templates/cra.txt"
         
-        file_name = "prompt_templates/cra.txt" if template_has_two_fields else "prompt_templates/cra_reduced.txt"
+        #file_name = "prompt_templates/cra.txt" if template_has_two_fields else "prompt_templates/cra_reduced.txt"
     elif type == "cred":
-        #file_name = "summarization/prompt_templates/cra.txt"
-        file_name = "prompt_templates/cred.txt" if template_has_two_fields else "prompt_templates/cred_reduced.txt"
+        file_name = "summarization/prompt_templates/cra.txt"
+        #file_name = "prompt_templates/cred.txt" if template_has_two_fields else "prompt_templates/cred_reduced.txt"
     with open(file_name, 'r') as file:
         prompt_template = file.read()
     return prompt_template
@@ -192,20 +192,22 @@ async def get_generation(content, params, model_name):
         max_summary_len = math.floor(MAX_GENERATION_SIZE * prev_new_summary_ratio)
         max_prev_len = max_summary_len * PREVIOUS_NEW_SUMMARY_LEN_RATIO
         if len(tokenized_summary) >  max_summary_len:
-            speech_count = 0
             summary_lines = summary.split('\n')
-            summary = ' '.join(line for line in reversed(summary_lines) if len(line.split(' ')) <= max_prev_len)
+            summary = " ".join(line for line in reversed(summary_lines) if len(line.split(' ')) <= max_prev_len)
         prompt = prompt_template.format(summary, dialog) if template_has_two_fields else prompt_template.format(dialog)
         #logger.info(f'Execuiting the prompt:\n{prompt}')
-        
+        print(prompt)
         tokenized_summary = tokenizer.tokenize(summary)        
-        
+        try:
+            async with semaphore:
+                partial = await get_result(prompt, model_name, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            # Handle the error (e.g., by retrying the API call, logging the error, or stopping the application)
+        else:
+            summary += partial.choices[0].message.content + "\n"
         #generation_max_tokens = max(generation_max_tokens, 1)
-        async with semaphore:
-            partial = await get_result(prompt, model_name, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
-        #logger.info(f'{partial.choices[0].message.content}')
-        summary += partial.choices[0].message.content + "\n"
-
+        print(summary)
     return summary
 
 

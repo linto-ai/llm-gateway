@@ -48,19 +48,21 @@ match service_type:
                 
                 params = json.loads(request.form['format'])
                 content = file.read().decode('utf-8') if file else ""
-                print(content)
-                print(params)
+                #print(content)
+                #print(params)
                 logger.info("Processing started")
                 async with semaphore:
                     results = await get_generation(content, params, MODELS[model_name])
-                return results, 200
+                logger.info("Processing finished")
+                ret_val = {"summarization": results}
+                return jsonify(ret_val), 200
             except Exception as e:
                 #logger.error(request.data)
                 return "Missing request parameter: {}".format(e)
             
         @app.route("/services", methods=["GET"])
         def summarization_info_route():
-            with open('summarization_info.json', 'r') as f:
+            with open('http_server/summarization_info.json', 'r') as f:
                 system_info = json.load(f)
             return jsonify(system_info), 200
     case _:

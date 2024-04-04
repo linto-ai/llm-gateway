@@ -14,7 +14,7 @@ else
         echo "Running http server"
         # HTTP API
         
-        python http_server/ingress.py --debug
+        python http_server/ingress.py --debug --timeout 60000 --workers 8
     elif [ "$SERVICE_MODE" == "task" ]
     then
         echo "Running celery worker" 

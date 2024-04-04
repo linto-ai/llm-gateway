@@ -40,6 +40,7 @@ HEALTHCHECK CMD ./healthcheck.sh
 ENV SERVICE_TYPE llm_gateway
 ENV TEMP=/usr/src/app/tmp
 ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app/summarization"
+RUN chmod +x ./docker-entrypoint.sh
 ENTRYPOINT ["./docker-entrypoint.sh"]
 #CMD ["python", "-u", "summarization/proxy.py"]
 
