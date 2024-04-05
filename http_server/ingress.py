@@ -52,10 +52,8 @@ match service_type:
                     db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
                     db.put(str(task_id).encode('utf-8'), str(result).encode('utf-8'))
                     db.close()
-                    #results[str(task_id)] = result
-                with task_lock:
-                    task_queue.remove(str(task_id))
                     logger.info(f"Task {task_id} finished")
+                    #results[str(task_id)] = result
             except Exception as e:
                 logger.info(e)
             #else:
@@ -85,9 +83,12 @@ match service_type:
                 task_id = str(uuid.uuid4())
                 #Thread(target=work, args=(content, params, model_name, task_id)).start()
                 # Submit the task to the thread pool
-                with task_lock:
+                with lock:
                     logger.info("Processing started")
-                    task_queue.add(str(task_id))
+                    db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
+                    db.put(str(task_id).encode('utf-8'), "processing".encode('utf-8'))
+                    db.close()
+
                 executor.submit(worker, content, params, model_name, task_id)
 
                 # Return the resultId to the client
@@ -100,21 +101,18 @@ match service_type:
             """Return the result of a task, if it's ready."""
             try:
                 logger.info("Got get_result request: " + str(resultId))
-                if not str(resultId) in task_queue:
-                    with lock:
-                        db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
-                        result = db.get(str(resultId).encode('utf-8'))
-                        db.close()
-                        #logger.info("Dict: " + str(results))
-                        logger.info("Result:" + str(result))
-                        if result is not None:
-                            logger.info("Result" + str(result))
-                            return jsonify({"status":"complete", "message":"success", 
-                                            "summarization":result.decode('utf-8')}), 200
-                        else:
-                            return jsonify({"status":"nojob", "message":f"{resultId} does not exist"}), 404      
-                else:        
-                    return jsonify({"status":"processing", "message":"still processing"}), 202
+
+                with lock:
+                    db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
+                    result = db.get(str(resultId).encode('utf-8'))
+                    db.close()
+                    if result is None:
+                        return jsonify({"status":"nojob", "message":f"{resultId} does not exist"}), 404  
+                    elif result.decode('utf-8') == "processing":
+                        return jsonify({"status":"processing", "message":"still processing"}), 202
+                    else:
+                        return jsonify({"status":"complete", "message":"success", 
+                                        "summarization":result.decode('utf-8')}), 200
             except Exception as e:
                 logger.error("An error occurred: " + str(e))
                 return jsonify({"status":"error", "message":str(e)}), 400 
