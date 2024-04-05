@@ -104,6 +104,10 @@ match service_type:
                         else:
                             result = None
                         #logger.info("Dict: " + str(results))
+<<<<<<< HEAD
+=======
+                        logger.info("Result" + str(result))
+>>>>>>> 160eaf860aa10f8f203805397b6453af5e308259
                         if result is not None:
                             logger.info("Result" + str(result))
                             return jsonify({"status":"complete", "message":"success", 
