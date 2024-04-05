@@ -10,7 +10,7 @@ import asyncio
 from queue import Queue
 from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor
-
+import sys
 import time
 
 
@@ -43,8 +43,8 @@ match service_type:
 # Main logic
 match service_type:
     case "llm_gateway":
-        def worker(content, params, model_name):
-            task_id = params['resultId']
+        def worker(content, params, model_name, task_id):
+            #task_id = params['resultId']
             logger.info(f"Task {task_id} started")
             result = get_generation(content, params, MODELS[model_name])
             logger.info(f"Results for {task_id} recieved")
@@ -77,16 +77,18 @@ match service_type:
                 params = json.loads(request.form['format'])
                 content = file.read().decode('utf-8') if file else ""
                 logger.info("Processing started")
-                task_id =  params['resultId']
 
+                # Magic hash function
+                task_id = hash(content) % ((sys.maxsize + 1) * 2)
                 #Thread(target=work, args=(content, params, model_name, task_id)).start()
                 # Submit the task to the thread pool
                 with task_lock:
+                    logger.info("Processing started")
                     task_queue.add(str(task_id))
-                executor.submit(worker, content, params, model_name)
+                executor.submit(worker, content, params, model_name, task_id)
 
                 # Return the resultId to the client
-                return jsonify({"message":"request successfulty queued", "jobId":params['resultId']}), 200
+                return jsonify({"message":"request successfulty queued", "jobId":task_id}), 200
             except Exception as e:
                 return  jsonify({"message": "Missing request parameter: {}".format(e)}), 400
 
