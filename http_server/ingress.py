@@ -12,7 +12,7 @@ from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor
 import uuid
 import time
-
+import plyvel
 
 from confparser import createParser
 from flask import Flask, json, request, jsonify
@@ -21,7 +21,6 @@ from swagger import setupSwaggerUI
 
 
 service_type = os.getenv("SERVICE_TYPE")
-
 # Dependencies for each service type
 match service_type:
     case "llm_gateway":
@@ -50,20 +49,24 @@ match service_type:
             logger.info(f"Results for {task_id} recieved")
             try:
                 with lock:
-                    results[str(task_id)] = result
+                    db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
+                    db.put(str(task_id).encode('utf-8'), str(result).encode('utf-8'))
+                    db.close()
+                    #results[str(task_id)] = result
                 with task_lock:
                     task_queue.remove(str(task_id))
                     logger.info(f"Task {task_id} finished")
             except Exception as e:
                 logger.info(e)
-            else:
-                logger.info("Dict: " + str(results))
+            #else:
+                #logger.info("Dict: " + str(results))
                 
 
         @app.route("/ping", methods=["GET"])
         def ping_route():
-            logger.info("Ping_Task_queue: " + str(task_queue))
-            logger.info("Ping_Dict: " + str(results))
+            logger.info("Ping request received")
+            #logger.info("Ping_Task_queue: " + str(task_queue))
+            #logger.info("Ping_Dict: " + str(results))
             return [], 200
 
         @app.route("/services/<model_name>/generate", methods=["POST"])
@@ -99,16 +102,15 @@ match service_type:
                 logger.info("Got get_result request: " + str(resultId))
                 if not str(resultId) in task_queue:
                     with lock:
-                        if str(resultId) in results:
-                            result = results[str(resultId)]
-                        else:
-                            result = None
+                        db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
+                        result = db.get(str(resultId).encode('utf-8'))
+                        db.close()
                         #logger.info("Dict: " + str(results))
-                        logger.info("Result" + str(result))
+                        logger.info("Result:" + str(result))
                         if result is not None:
                             logger.info("Result" + str(result))
                             return jsonify({"status":"complete", "message":"success", 
-                                            "summarization":str(result)}), 200
+                                            "summarization":result.decode('utf-8')}), 200
                         else:
                             return jsonify({"status":"nojob", "message":f"{resultId} does not exist"}), 404      
                 else:        
@@ -172,7 +174,7 @@ if __name__ == "__main__":
         app,
         {
             "bind": f"0.0.0.0:{args.service_port}",
-            "workers": 1,
+            "workers": args.workers,
             "timeout": args.timeout,
         },
     )
