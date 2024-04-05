@@ -20,9 +20,13 @@ except LookupError:
     nltk.download('punkt')
 
 semaphore = Semaphore(1)
-OPENAI_API_KEY = "EMPTY"
+#OPENAI_API_KEY = "EMPTY"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
+
+
 #openai_api_key = os.getenv("OPENAI_API_KEY")
-OPENAI_API_BASE = "http://188.165.70.251:443/v1"
+#iPENAI_API_BASE = "http://188.165.70.251:443/v1"
 #openai_api_base = os.getenv("OPENAI_API_BASE")
 MODEL_NAME = "TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ"
 #model_name = os.getenv("MODEL_NAME")
