@@ -171,6 +171,7 @@ if __name__ == "__main__":
     serving = GunicornServing(
         app,
         {
+            "preload_app": True,
             "bind": f"0.0.0.0:{args.service_port}",
             "workers": args.workers,
             "timeout": args.timeout,
