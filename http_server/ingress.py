@@ -100,7 +100,7 @@ match service_type:
                     with lock:
                         result = results.get(str(resultId))
                         #logger.info("Dict: " + str(results))
-                        logger.info("Result" + result)
+                        logger.info("Result" + str(result))
                         if result is not None:
                             return jsonify({"status":"complete", "message":"success", 
                                             "summarization":str(result)}), 200
