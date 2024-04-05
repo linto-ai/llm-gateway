@@ -10,7 +10,7 @@ import asyncio
 from queue import Queue
 from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor
-import sys
+import uuid
 import time
 import plyvel
 
@@ -81,7 +81,8 @@ match service_type:
                 content = file.read().decode('utf-8') if file else ""
                 logger.info("Processing started")
 
-                task_id = int(time.time())
+                # Magic hash function
+                task_id = str(uuid.uuid4())
                 #Thread(target=work, args=(content, params, model_name, task_id)).start()
                 # Submit the task to the thread pool
                 with task_lock:
@@ -98,6 +99,7 @@ match service_type:
         def get_result(resultId):
             """Return the result of a task, if it's ready."""
             try:
+                logger.info("Got get_result request: " + str(resultId))
                 if not str(resultId) in task_queue:
                     with lock:
                         db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
@@ -106,6 +108,7 @@ match service_type:
                         #logger.info("Dict: " + str(results))
                         logger.info("Result:" + str(result))
                         if result is not None:
+                            logger.info("Result" + str(result))
                             return jsonify({"status":"complete", "message":"success", 
                                             "summarization":result.decode('utf-8')}), 200
                         else:
