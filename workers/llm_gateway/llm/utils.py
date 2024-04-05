@@ -1,6 +1,5 @@
 import nltk
 from transformers import AutoTokenizer
-from vllm import SamplingParams
 from openai import OpenAI
 from typing import List, Tuple
 import os
@@ -42,10 +41,6 @@ PROMPT_GENERATION_RATIO = 0.5
 PREVIOUS_NEW_SUMMARY_LEN_RATIO = 0.3
 
 
-sampling_params = SamplingParams(temperature=TEMPERATURE, 
-                                 top_p=TOP_P,  
-                                 frequency_penalty=FREQUENCY_PENALTY,
-                                 presence_penalty=PRESENCE_PENALTY)
 
 client = OpenAI(
     api_key=OPENAI_API_KEY,
@@ -152,7 +147,7 @@ def get_dialogs(chunks: List[Tuple[str, str]], max_new_speeches: int = -1) -> Li
     return dialogs
 
 
-async def get_result(prompt, model_name, temperature=1, top_p=0.95, generation_max_tokens=1028):
+def get_result(prompt, model_name, temperature=1, top_p=0.95, generation_max_tokens=1028):
     chat_response = client.chat.completions.create(
         model=model_name,
 
@@ -161,16 +156,15 @@ async def get_result(prompt, model_name, temperature=1, top_p=0.95, generation_m
         ],
         temperature=temperature,
         top_p=top_p, 
-        max_tokens=generation_max_tokens,
-        frequency_penalty=sampling_params.frequency_penalty,
-        presence_penalty=sampling_params.presence_penalty,
+        max_tokens=generation_max_tokens
     )
     return chat_response
 
 
-async def get_generation(content, params, model_name):
+def get_generation(content, params, model_name):
     
     #logger.info(f'Template {format} has two fields') if template_has_two_fields else logger.info(f'Template {format} has one field')
+    
     granularity = params["granularity_tokens"]
     max_new_speeches = params["max_new_speeches"]
     prev_new_summary_ratio = params["previous_new_summary_ratio"]
@@ -179,12 +173,11 @@ async def get_generation(content, params, model_name):
 
     prompt_template = get_template(resume_format, template_has_two_fields)
     tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
-
     chunks = get_splits(content, granularity)
     dialogs = get_dialogs(chunks, max_new_speeches)
+    intermediate_summary = ""
     summary = ""
     tokenized_summary = []
-    speech_count = 0
     for dialog in dialogs:
         tokenized_dialog = tokenizer.tokenize(dialog) 
         
@@ -192,22 +185,22 @@ async def get_generation(content, params, model_name):
         max_summary_len = math.floor(MAX_GENERATION_SIZE * prev_new_summary_ratio)
         max_prev_len = max_summary_len * PREVIOUS_NEW_SUMMARY_LEN_RATIO
         if len(tokenized_summary) >  max_summary_len:
-            summary_lines = summary.split('\n')
-            summary = " ".join(line for line in reversed(summary_lines) if len(line.split(' ')) <= max_prev_len)
-        prompt = prompt_template.format(summary, dialog) if template_has_two_fields else prompt_template.format(dialog)
+            summary_lines = intermediate_summary.split('\n')
+            intermediate_summary = " ".join(line for line in reversed(summary_lines) if len(line.split(' ')) <= max_prev_len)
+        prompt = prompt_template.format(intermediate_summary, dialog) if template_has_two_fields else prompt_template.format(dialog)
+        #print(f'Execuiting the prompt:\n{prompt}')
         #logger.info(f'Execuiting the prompt:\n{prompt}')
-        print(prompt)
-        tokenized_summary = tokenizer.tokenize(summary)        
+        #print(prompt)
+        tokenized_summary = tokenizer.tokenize(intermediate_summary)        
         try:
-            async with semaphore:
-                partial = await get_result(prompt, model_name, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
+                partial = get_result(prompt, model_name, params["temperature"], params["top_p"], params["maxGeneratedTokens"])
         except Exception as e:
             print(f"An error occurred: {e}")
             # Handle the error (e.g., by retrying the API call, logging the error, or stopping the application)
         else:
+            intermediate_summary += partial.choices[0].message.content + "\n"
             summary += partial.choices[0].message.content + "\n"
         #generation_max_tokens = max(generation_max_tokens, 1)
-        print(summary)
     return summary
 
 

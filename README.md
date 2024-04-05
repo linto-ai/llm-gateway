@@ -34,15 +34,16 @@ docker compose up
 ## Request examples:
 ## POST request:
 ```console
-curl --request POST --url 'http://localhost/services/mixtral/generate' --header 'Accept: application/json' --form 'format={
-        "maxGeneratedTokens": 1024,
-        "temperature": 1,
+curl --request POST --url 'http://localhost/services/mixtral/generate' --header 'Accept: application/json' --form 'format={ 
+        "maxGeneratedTokens": 1024,                           
+        "temperature": 1,   
         "top_p": 0.95,
-        "granularity_tokens": 200,
+        "granularity_tokens": 200,       
         "max_new_speeches": 4,
-        "previous_new_summary_ratio": 0.5,
-        "format": "cra"
-    }' --form file=@tests/request.txt
+        "resultId": 29, 
+        "previous_new_summary_ratio": 0.5, 
+        "format": "cra"        
+}' --form file=@tests/req1.txt 
 ```
 File tests/form.json contains example config file read by the server.
 
@@ -51,4 +52,8 @@ File requests.txt contains the example of actual transcript.
 ## GET request:
 ```console
 curl --request GET --url 'http://localhost/services'
+```
+
+```console
+curl --request GET --url 'http://localhost/results/29'
 ```
