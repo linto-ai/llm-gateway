@@ -12,7 +12,7 @@ from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor
 import sys
 import time
-
+import plyvel
 
 from confparser import createParser
 from flask import Flask, json, request, jsonify
@@ -21,7 +21,6 @@ from swagger import setupSwaggerUI
 
 
 service_type = os.getenv("SERVICE_TYPE")
-
 # Dependencies for each service type
 match service_type:
     case "llm_gateway":
@@ -50,20 +49,24 @@ match service_type:
             logger.info(f"Results for {task_id} recieved")
             try:
                 with lock:
-                    results[str(task_id)] = result
+                    db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
+                    db.put(str(task_id).encode('utf-8'), str(result).encode('utf-8'))
+                    db.close()
+                    #results[str(task_id)] = result
                 with task_lock:
                     task_queue.remove(str(task_id))
                     logger.info(f"Task {task_id} finished")
             except Exception as e:
                 logger.info(e)
-            else:
-                logger.info("Dict: " + str(results))
+            #else:
+                #logger.info("Dict: " + str(results))
                 
 
         @app.route("/ping", methods=["GET"])
         def ping_route():
-            logger.info("Ping_Task_queue: " + str(task_queue))
-            logger.info("Ping_Dict: " + str(results))
+            logger.info("Ping request received")
+            #logger.info("Ping_Task_queue: " + str(task_queue))
+            #logger.info("Ping_Dict: " + str(results))
             return [], 200
 
         @app.route("/services/<model_name>/generate", methods=["POST"])
@@ -78,8 +81,7 @@ match service_type:
                 content = file.read().decode('utf-8') if file else ""
                 logger.info("Processing started")
 
-                # Magic hash function
-                task_id = hash(content) % ((sys.maxsize + 1) * 2)
+                task_id = int(time.time())
                 #Thread(target=work, args=(content, params, model_name, task_id)).start()
                 # Submit the task to the thread pool
                 with task_lock:
@@ -98,12 +100,14 @@ match service_type:
             try:
                 if not str(resultId) in task_queue:
                     with lock:
-                        result = results.get(str(resultId))
+                        db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
+                        result = db.get(str(resultId).encode('utf-8'))
+                        db.close()
                         #logger.info("Dict: " + str(results))
-                        logger.info("Result" + str(result))
+                        logger.info("Result:" + str(result))
                         if result is not None:
                             return jsonify({"status":"complete", "message":"success", 
-                                            "summarization":str(result)}), 200
+                                            "summarization":result.decode('utf-8')}), 200
                         else:
                             return jsonify({"status":"nojob", "message":f"{resultId} does not exist"}), 404      
                 else:        
