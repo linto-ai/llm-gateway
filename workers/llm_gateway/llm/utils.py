@@ -87,7 +87,7 @@ def get_splits(content: str, granularity: int = -1) -> List[Tuple[str, str]]:
     # Process each line
     for line in lines:
         # Check if the line starts with "Jon Doe : "
-        pattern = r"\b[A-Za-z\-éèêëàâäôöùûüçïîÿæœñ]+\s[A-Za-z\-éèêëàâäôöùûüçïîÿæœñ]+\s:\s.*"
+        pattern = r"\b[A-Za-z\-éèêëàâäôöùûüçïîÿæœñ\s]+\s:\s.*"
         match = re.match(pattern, line, re.I)
         if match:
             matched_string = match.group()
@@ -172,6 +172,7 @@ def get_generation(content, params, model_name):
     template_has_two_fields = False if prev_new_summary_ratio == 0 else True
 
     prompt_template = get_template(resume_format, template_has_two_fields)
+    print(prompt_template)
     tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
     chunks = get_splits(content, granularity)
     dialogs = get_dialogs(chunks, max_new_speeches)
@@ -201,6 +202,7 @@ def get_generation(content, params, model_name):
             intermediate_summary += partial.choices[0].message.content + "\n"
             summary += partial.choices[0].message.content + "\n"
         #generation_max_tokens = max(generation_max_tokens, 1)
+    print(summary)
     return summary
 
 
