@@ -67,7 +67,7 @@ def get_template(type, template_has_two_fields):
         
         #file_name = "prompt_templates/cra.txt" if template_has_two_fields else "prompt_templates/cra_reduced.txt"
     elif type == "cred":
-        file_name = "summarization/prompt_templates/cra.txt"
+        file_name = "summarization/prompt_templates/cred.txt"
         #file_name = "prompt_templates/cred.txt" if template_has_two_fields else "prompt_templates/cred_reduced.txt"
     with open(file_name, 'r') as file:
         prompt_template = file.read()
@@ -176,10 +176,10 @@ def get_generation(content, params, model_name):
     template_has_two_fields = False if prev_new_summary_ratio == 0 else True
 
     prompt_template = get_template(resume_format, template_has_two_fields)
-    print(prompt_template)
     tokenized_prompt_template = tokenizer.tokenize(prompt_template) 
     chunks = get_splits(content, granularity)
     dialogs = get_dialogs(chunks, max_new_speeches)
+
     intermediate_summary = ""
     summary = ""
     tokenized_summary = []
@@ -193,7 +193,7 @@ def get_generation(content, params, model_name):
             summary_lines = intermediate_summary.split('\n')
             intermediate_summary = " ".join(line for line in reversed(summary_lines) if len(line.split(' ')) <= max_prev_len)
         prompt = prompt_template.format(intermediate_summary, dialog) if template_has_two_fields else prompt_template.format(dialog)
-        #print(f'Execuiting the prompt:\n{prompt}')
+        print(f'Execuiting the prompt:\n{prompt}')
         #logger.info(f'Execuiting the prompt:\n{prompt}')
         #print(prompt)
         tokenized_summary = tokenizer.tokenize(intermediate_summary)        
