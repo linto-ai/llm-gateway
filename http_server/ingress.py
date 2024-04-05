@@ -35,7 +35,7 @@ match service_type:
         results = {}
         lock = Lock()
         
-        executor = ThreadPoolExecutor(max_workers=10)
+        executor = ThreadPoolExecutor(max_workers=1)
 
     case _:
         from celery_app import logger
