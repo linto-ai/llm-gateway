@@ -10,7 +10,7 @@ import asyncio
 from queue import Queue
 from threading import Thread, Lock
 from concurrent.futures import ThreadPoolExecutor
-import sys
+import uuid
 import time
 
 
@@ -79,7 +79,7 @@ match service_type:
                 logger.info("Processing started")
 
                 # Magic hash function
-                task_id = hash(content) % ((sys.maxsize + 1) * 2)
+                task_id = str(uuid.uuid4())
                 #Thread(target=work, args=(content, params, model_name, task_id)).start()
                 # Submit the task to the thread pool
                 with task_lock:
@@ -96,12 +96,16 @@ match service_type:
         def get_result(resultId):
             """Return the result of a task, if it's ready."""
             try:
+                logger.info("Got get_result request: " + str(resultId))
                 if not str(resultId) in task_queue:
                     with lock:
-                        result = results.get(str(resultId))
+                        if str(resultId) in results:
+                            result = results[str(resultId)]
+                        else:
+                            result = None
                         #logger.info("Dict: " + str(results))
-                        logger.info("Result" + result)
                         if result is not None:
+                            logger.info("Result" + str(result))
                             return jsonify({"status":"complete", "message":"success", 
                                             "summarization":str(result)}), 200
                         else:
@@ -167,7 +171,7 @@ if __name__ == "__main__":
         app,
         {
             "bind": f"0.0.0.0:{args.service_port}",
-            "workers": args.workers,
+            "workers": 1,
             "timeout": args.timeout,
         },
     )

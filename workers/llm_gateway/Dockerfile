@@ -31,6 +31,11 @@ COPY document/swagger_llm_gateway.yml /usr/src/app/document/swagger.yml
 COPY scripts/wait-for-it.sh ./
 COPY scripts/healthcheck.sh ./
 
+
+RUN chmod +x ./docker-entrypoint.sh
+RUN chmod +x ./healthcheck.sh
+RUN chmod +x ./wait-for-it.sh
+
 # Grep CURRENT VERSION
 RUN export VERSION=$(awk -v RS='' '/#/ {print; exit}' RELEASE.md | head -1 | sed 's/#//' | sed 's/ //')
 
@@ -40,7 +45,7 @@ HEALTHCHECK CMD ./healthcheck.sh
 ENV SERVICE_TYPE llm_gateway
 ENV TEMP=/usr/src/app/tmp
 ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app/summarization"
-RUN chmod +x ./docker-entrypoint.sh
+#RUN chmod +x ./docker-entrypoint.sh
 ENTRYPOINT ["./docker-entrypoint.sh"]
 #CMD ["python", "-u", "summarization/proxy.py"]
 
