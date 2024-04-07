@@ -17,11 +17,18 @@ components:
       bearerFormat: JWT
 
 paths:
-  /services/<model_name>/generate:
+  /services/{serviceName}/generate:
     post:
       tags:
       - Summarization API
       summary: Perform Summarization
+      parameters:
+        - name: serviceName
+          in: path
+          required: true
+          description: The name of the service to use
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -29,12 +36,15 @@ paths:
             schema:
               type: object
               properties:
-                content:
+                file:
+                  type: file
+                  format: text
+                  description: File to summarize
+                flavor:
                   type: string
-                  format: binary
-                format:
-                  type: string
-                  format: json
+                  default: "mixtral"
+                  description: Flavor of the service
+
       responses:
         200:
           description: "Job successfully finished"

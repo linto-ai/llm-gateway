@@ -1,0 +1,31 @@
+{
+    "type": "summary",
+    "fields": 2,
+    "name": "cra",
+    "description": {
+        "fr": "Compte Rendu Analytique"
+    },
+    "backend": "vLLM",
+    "flavor": [
+        {
+            "name":"mixtral",
+            "modelName": "TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ",
+            "totalContextLength": 32768,
+            "maxGenerationLength": 2048,
+            "tokenizerClass": "LlamaTokenizer",
+            "createNewTurnAfter": 50,
+            "summaryTurns": 2,
+            "maxNewTurns": 2
+        },
+        {
+            "name":"vigostral",
+            "modelName": "TheBloke/Vigostral-7B-Chat-AWQ",
+            "totalContextLength": 32768,
+            "maxGenerationLength": 2048,
+            "tokenizerClass": "LlamaTokenizer",
+            "createNewTurnAfter": 50,
+            "summaryTurns": 2,
+            "maxNewTurns": 2
+        }
+    ]
+}
