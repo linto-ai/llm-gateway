@@ -27,7 +27,7 @@ class VLLM(LLMBackend):
             turn_token_count = len(self.tokenizer(turn))
             # Add a *0.15 buffer to the token count to ensure we don't go over the limit. Due to token count being an approximation (local token count vs. API token count)
             # @TODO : again, we shall use relevant tokenizer from the model name. But auto-tokenizer is not available for some models
-            if (total_token_count + turn_token_count)*0.15 > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
+            if (total_token_count + turn_token_count)*1.15 > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
                 if self.promptFields == 2:
                     filled_prompt = self.prompt.format('\n'.join(summarized_turns), '\n'.join(new_turns_to_summarize))
                 else:
