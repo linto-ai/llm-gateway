@@ -13,9 +13,11 @@
             "totalContextLength": 32768,
             "maxGenerationLength": 2048,
             "tokenizerClass": "LlamaTokenizer",
-            "createNewturnAfter": 200,
-            "summaryTurns": 2,
-            "maxNewTurns": 2
+            "createNewTurnAfter": 250,
+            "summaryTurns": 3,
+            "maxNewTurns": 9,
+            "temperature": 0.2,
+            "top_p": 0.7
         },
         {
             "name":"vigostral",
@@ -23,9 +25,11 @@
             "totalContextLength": 32768,
             "maxGenerationLength": 2048,
             "tokenizerClass": "LlamaTokenizer",
-            "createNewturnAfter": 200,
-            "summaryTurns": 2,
-            "maxNewTurns": 2
+            "createNewTurnAfter": 250,
+            "summaryTurns": 3,
+            "maxNewTurns": 9,
+            "temperature": 0.2,
+            "top_p": 0.7
         }
     ]
 }

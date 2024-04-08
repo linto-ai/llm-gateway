@@ -14,6 +14,21 @@ def createParser() -> argparse.ArgumentParser:
         help="Service Name",
         default=os.environ.get("SERVICE_NAME", "LLM_Gateway"),
     )
+    
+    
+    parser.add_argument(
+        "--api_base",
+        type=str,
+        help="OpenAI API Base URL",
+        default=os.environ.get("OPENAI_API_BASE", "http://localhost:9000/v1"),
+    )
+    
+    parser.add_argument(
+        "--api_key",
+        type=str,
+        help="OpenAI API Token",
+        default=os.environ.get("OPENAI_API_TOKEN", "EMPTY"),
+    )
 
     # GUNICORN
     parser.add_argument("--service_port", type=int,
@@ -30,7 +45,7 @@ def createParser() -> argparse.ArgumentParser:
         "--timeout",
         type=int,
         help="Request timeout",
-        default=int(os.environ.get("TIMEOUT", 30)),
+        default=int(os.environ.get("TIMEOUT", 60)),
     )
 
     # SWAGGER
@@ -54,5 +69,8 @@ def createParser() -> argparse.ArgumentParser:
     # MISC
     parser.add_argument("--debug", action="store_true",
                         help="Display debug logs")
+    
+    parser.add_argument("--db_path", type=str, help="Path to the result database", default=os.environ.get("RESULT_DB_PATH","./results.sqlite"))
+    
 
     return parser

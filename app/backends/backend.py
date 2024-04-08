@@ -3,44 +3,42 @@ import os
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 from transformers import AutoTokenizer
 from transformers import LlamaTokenizerFast
-from openai import OpenAI
 from typing import List, Tuple
-import requests
 import json
-import asyncio
-import math
 import re
 import logging
+from app.http_server.ingress import db, lock
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
 )
-logger = logging.getLogger("backend")
-logger.setLevel(logging.DEBUG)
 
 class LLMBackend:
-    def __init__(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        self.logger = logging.getLogger("backend")
+        self.logger.setLevel(logging.DEBUG)
 
-    def loadPrompt(self, service_name: str):
-        logger.info(f"Loading prompt for service: {service_name}")
+    def loadPrompt(self, service_name: str, fieldCount: int = 0):
+        self.logger.info(f"Loading prompt for service: {service_name}")
+        self.promptFields = fieldCount
+        self.logger.info(f"Prompt fields: {self.promptFields}")
         txt_filepath = f'services/{service_name}.txt'
         with open(txt_filepath, 'r') as f:
             self.prompt = f.read()
             
-    def setup(self, params: json):
-        logger.info(f"Setting up backend with params: {params}")
+    def setup(self, params: json, task_id: str):
+        self.logger.info(f"Setting up backend with params: {params} for task: {task_id}")
+        self.task_id = task_id
         try:
-            for attr in ['totalContextLength', 'maxGenerationLength', 'createNewTurnAfter', 'modelName', 'summaryTurns', 'maxNewTurns']:
+            for attr in ['totalContextLength', 'maxGenerationLength', 'createNewTurnAfter', 'modelName', 'summaryTurns', 'maxNewTurns', 'top_p', 'temperature']:
                 setattr(self, attr, params[attr])
             # @TODO: Shall use the tokenizer from the model name / tokenizerclass
             # seems fine so far as it yields the same token count as the tokenizer from the mixed model
             self.tokenizer =  LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
             self.promptTokenCount = len(self.tokenizer(self.prompt)['input_ids'])
-            logger.info(f"Prompt token count: {self.promptTokenCount}")
             return True
         except Exception as e:
-            logger.error(f"Error setting up backend: {e}")
+            self.logger.error(f"Error setting up backend: {e}")
             raise e
 
     def get_splits(self, content: str):
@@ -83,6 +81,10 @@ class LLMBackend:
                 if line.strip() != "":
                     newTurns.append(line)
         return newTurns
+    
+    def updateTask(self, task_id: str, progress: int):
+        self.logger.info(f"Task {task_id} progress : {progress}%")
+        db.put(task_id, f"Processing {progress}%")
 
     def get_dialogs(self, chunks: List[Tuple[str, str]], max_new_speeches: int = -1) -> List[str]:
         # implementation here
@@ -92,6 +94,5 @@ class LLMBackend:
         # implementation here
         pass
 
-    def get_generation(self, content, params):
-        # implementation here
+    def get_generation(self, turns: List[str]):
         pass

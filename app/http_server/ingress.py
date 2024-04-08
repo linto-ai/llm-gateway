@@ -13,8 +13,6 @@ from .confparser import createParser
 from .serving import GunicornServing
 from .swagger import setupSwaggerUI
 from app.model import Database
-from app.backends.vLLM import VLLM
-
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
@@ -26,13 +24,16 @@ logger.setLevel(logging.DEBUG)
 flaskApp = Flask(__name__)
 tasks = Queue()
 lock = Lock()
-db = Database()
+parser = createParser()
+args = parser.parse_args()
+db = Database(args.db_path)
+# uses db and lock from ingress.py
+from app.backends.vLLM import VLLM
 
 # Instantiate backend threadSafe singletons for every supported backends
-vLLM = VLLM()
-backends = {"vLLM": vLLM}
 services = []
-
+vLLM = VLLM(api_key=args.api_key, api_base=args.api_base)
+backends = {"vLLM": vLLM}
 # Loads defined services from JSON manifests and creates a flask route for each service
 def handleGeneration(service_name):
     def flaskHandler():
@@ -40,6 +41,8 @@ def handleGeneration(service_name):
             file = request.files.get('file')
             content = file.read().decode('utf-8') if file else ""
             flavor = request.form.get('flavor')
+            temperature = request.form.get('temperature')
+            top_p = request.form.get('top_p')
             # check parameters
             if not content:
                 raise Exception("content")
@@ -49,14 +52,21 @@ def handleGeneration(service_name):
             if service is None:
                 return jsonify({"message":"Service not found"}), 404
             backendParams = next((f for f in service['flavor'] if f['name'] == flavor), None)
+            # default temperature and top_p in flavor
+            if temperature:
+                backendParams['temperature'] = float(temperature)
+            if top_p:
+                # must be between 0 and 1 or failsback to default
+                if 0 < float(top_p) <= 1:
+                    backendParams['top_p'] = float(top_p)
             if backendParams is None:
                 return jsonify({"message":"Flavor not found"}), 404
             task_id = str(uuid.uuid4())
             # create task
             with lock:
-                tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id, "backendParams":backendParams, "content": content})
+                tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id, "backendParams":backendParams, "fields":service['fields'], "content": content})
                 logger.info(f"Task {task_id} queued")
-                db.put(task_id, "Processing 0%")
+            db.put(task_id, "Processing 0%")
             return jsonify({"message":"request successfulty queued", "jobId":task_id}), 200
         except Exception as e:
             return  jsonify({"message": "Missing request parameter: {}".format(e)}), 400
@@ -72,11 +82,14 @@ def worker():
             # @TODO: Implement other backends
             if task["backend"] == "vLLM":
                 backend = backends["vLLM"]
-            backend.loadPrompt(task["type"])
-            backend.setup(task["backendParams"])
+            backend.loadPrompt(task["type"], task["fields"])
+            backend.setup(task["backendParams"], task["task_id"])
             chunked_content = backend.get_splits(task["content"])
-            logger.info(chunked_content)
-            #@TODO: Implement final step : calling the LLM ... but nice engough for now.. it's week end and i'm on vacation... hard life of mine
+            summary = backend.get_generation(chunked_content)
+            #@TODO Might compare those
+            chunked_content_string = "\n".join(chunked_content)
+            summary_string = "\n".join(summary)
+            db.put(task["task_id"], summary_string)
             logger.info(f"Task {task['task_id']} processing END")
             if task is None:
                 break
@@ -111,17 +124,22 @@ def summarization_info_route():
 def get_result(resultId):
     try:
         logger.info("Got get_result request: " + str(resultId))
-        with lock:
-            db = plyvel.DB('/tmp/testdb/', create_if_missing=True)
-            result = db.get(str(resultId).encode('utf-8'))
-            db.close()
-            if result is None:
-                return jsonify({"status":"nojob", "message":f"{resultId} does not exist"}), 404  
-            elif re.match(r'^Processing \d+%', result.decode('utf-8')):
-                return jsonify({"status":"processing", "message":result.decode('utf-8')}), 202
+        result = db.get(resultId)
+        if result is None:
+            return jsonify({"status":"nojob", "message":f"{resultId} does not exist"}), 404  
+        else:
+            match = re.match(r'^Processing ([0-9]*\.[0-9]*)%$', result)
+            if match:
+                processing_percentage = float(match.group(1))
+                if processing_percentage == 0:
+                    return jsonify({"status":"queued", "message":result}), 202
+                else:
+                    return jsonify({"status":"processing", "message":processing_percentage}), 202
+            elif result == "Processing 0%":
+                return jsonify({"status":"queued", "message":result}), 202
             else:
                 return jsonify({"status":"complete", "message":"success", 
-                                "summarization":result.decode('utf-8')}), 200
+                                "summarization":result.strip()}), 200
     except Exception as e:
         logger.error("An error occurred: " + str(e))
         return jsonify({"status":"error", "message":str(e)}), 400 
@@ -150,8 +168,6 @@ def server_error(error):
 
 
 def start():
-    parser = createParser()
-    args = parser.parse_args()
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
     try:
         # Setup SwaggerUI
@@ -161,13 +177,15 @@ def start():
     except Exception as e:
         logger.warning("Could not setup swagger: {}".format(str(e)))
 
+
+    logger.info(args)
     serving = GunicornServing(
         flaskApp,
         {
             "preload_app": True,
             "bind": f"0.0.0.0:{args.service_port}",
             "workers": args.workers,
-            "timeout": args.timeout,
+            "timeout": args.timeout
         },
     )
     
