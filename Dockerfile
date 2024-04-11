@@ -4,10 +4,10 @@ LABEL maintainer="dlaine@linagora.com"
 ENV PYTHONUNBUFFERED TRUE
 ENV SERVICE_TYPE=llm_gateway \
     TEMP=/tmp \
-    PYTHONPATH=/usr/src/app
+    PYTHONPATH=/usr/src
 
 # Set the working directory in the container
-WORKDIR /usr/src/app
+WORKDIR /usr/src/
 
 # Install dependencies
 # Copy the requirements file first to leverage Docker cache
@@ -15,7 +15,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the code of your application
-COPY . /usr/src/app
+COPY . /usr/src
 
 # Make sure scripts are executable
 RUN chmod +x ./scripts/healthcheck.sh \

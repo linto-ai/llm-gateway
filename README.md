@@ -32,6 +32,10 @@ next head to host:port/docs for swagger and profit
 
 docker compose up shall start vLLM with vigostral and llm-gateway in the same network
 
+__note__ : any modification to any servicename.json triggers a hot-reload of /services route. Prompt template (servicename.txt) is reloaded uppon any usage request
+
+__note__: mount your service manifests folder (./services here) as __/usr/src/services__
+
 __note__: Always use a string val for OPENAI_API_TOKEN.
 
 ## Available Envs
