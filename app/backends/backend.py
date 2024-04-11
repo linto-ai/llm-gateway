@@ -22,8 +22,10 @@ class LLMBackend:
         self.logger.info(f"Loading prompt for service: {service_name}")
         self.promptFields = fieldCount
         self.logger.info(f"Prompt fields: {self.promptFields}")
-        txt_filepath = f'services/{service_name}.txt'
+        txt_filepath = f'../services/{service_name}.txt'
         with open(txt_filepath, 'r') as f:
+            # prevent caching
+            os.fsync(f.fileno())
             self.prompt = f.read()
             
     def setup(self, params: json, task_id: str):

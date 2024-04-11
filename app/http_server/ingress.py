@@ -2,17 +2,21 @@
 import json
 import threading
 import os
+import signal
 import re
-import time
 import logging
-from multiprocessing import Queue
+from multiprocessing import Queue, Manager
 from threading import Lock
 import uuid
 from flask import Flask, json, request, jsonify
-from .confparser import createParser
+from ..confparser import createParser
 from .serving import GunicornServing
 from .swagger import setupSwaggerUI
 from app.model import Database
+from . import FileChangeHandler
+from watchdog.observers import Observer
+
+
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
@@ -30,8 +34,7 @@ db = Database(args.db_path)
 # uses db and lock from ingress.py
 from app.backends.vLLM import VLLM
 
-# Instantiate backend threadSafe singletons for every supported backends
-services = []
+# Instantiate backend threadSafe singletons for every supported backends inside guicorn workers
 vLLM = VLLM(api_key=args.api_key, api_base=args.api_base)
 backends = {"vLLM": vLLM}
 # Loads defined services from JSON manifests and creates a flask route for each service
@@ -71,53 +74,13 @@ def handleGeneration(service_name):
         except Exception as e:
             return  jsonify({"message": "Missing request parameter: {}".format(e)}), 400
     return flaskHandler
-
-# Single threaded fifo task queue, fed by Guicorn workers
-def worker():
-    while True:
-        try:
-            task = tasks.get()
-            logger.info(f"Task {task['task_id']} processing started")
-            # setup backend to process task
-            # @TODO: Implement other backends
-            if task["backend"] == "vLLM":
-                backend = backends["vLLM"]
-            backend.loadPrompt(task["type"], task["fields"])
-            backend.setup(task["backendParams"], task["task_id"])
-            chunked_content = backend.get_splits(task["content"])
-            summary = backend.get_generation(chunked_content)
-            #@TODO Might compare those
-            chunked_content_string = "\n".join(chunked_content)
-            summary_string = "\n".join(summary)
-            db.put(task["task_id"], summary_string)
-            logger.info(f"Task {task['task_id']} processing END")
-            if task is None:
-                break
-            # check task parameters
-        except Exception as e:
-            logger.error("An error occurred in processing tasks : " + str(e))
-            break
                 
 # Routes
-# Load services from JSON manifests
-for service in os.listdir("services"):
-    if service.endswith(".json"):
-        try:
-            with open(f"services/{service}", "r") as f:
-                service_info = json.load(f)
-                services.append(service_info)
-                # create a flask route for each service
-                flaskApp.add_url_rule(f"/services/{service_info['name']}/generate",
-                                    endpoint=service_info['name'], 
-                                    view_func=handleGeneration(service_info['name']), 
-                                    methods=["POST"])
-        except Exception as e:
-            logger.error(f"Service not loaded: {e}")
-            continue
 
 @flaskApp.route("/services", methods=["GET"])
 def summarization_info_route():
-    return jsonify(services), 200
+    services_list = list(services)
+    return jsonify(services_list), 200
 
 
 @flaskApp.route("/results/<resultId>", methods=["GET"])
@@ -167,6 +130,58 @@ def server_error(error):
     return "Server Error\n", 500
 
 
+# Single threaded fifo task queue, fed by Guicorn workers
+def worker():
+    logger.info("Starting task queue worker thread")
+    while True:
+        try:
+            task = tasks.get()
+            logger.info(f"Task {task['task_id']} processing started")
+            # setup backend to process task
+            # @TODO: Implement other backends
+            if task["backend"] == "vLLM":
+                backend = backends["vLLM"]
+            backend.loadPrompt(task["type"], task["fields"])
+            backend.setup(task["backendParams"], task["task_id"])
+            chunked_content = backend.get_splits(task["content"])
+            summary = backend.get_generation(chunked_content)
+            #@TODO Might compare those
+            chunked_content_string = "\n".join(chunked_content)
+            summary_string = "\n".join(summary)
+            db.put(task["task_id"], summary_string)
+            logger.info(f"Task {task['task_id']} processing END")
+            if task is None:
+                break
+            # check task parameters
+        except Exception as e:
+            logger.error("An error occurred in processing tasks : " + str(e))
+            break
+
+def reload_services(fileName=None):
+    services[:] = []
+    if fileName is None:
+        logger.info("Loading service manifests")
+    else:
+        logger.info(f"Reloading service routes: {fileName} has been modified")
+    for rule in list(flaskApp.url_map.iter_rules()):
+        if str(rule).startswith('/services/'):
+            flaskApp.url_map._rules.remove(rule)
+            flaskApp.view_functions.pop(rule.endpoint, None)
+
+    for service in os.listdir("../services"):
+        if service.endswith(".json"):
+            try:
+                with open(f"../services/{service}", "r") as f:
+                    service_info = json.load(f)
+                    services.append(service_info)
+                    flaskApp.add_url_rule(f"/services/{service_info['name']}/generate",
+                                        endpoint=service_info['name'], 
+                                        view_func=handleGeneration(service_info['name']), 
+                                        methods=["POST"])
+            except Exception as e:
+                logger.error(f"Service not loaded: {e}")
+        
+
 def start():
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
     try:
@@ -190,20 +205,29 @@ def start():
     )
     
     try:
-        logger.info("Starting task queue worker thread")
+        global manager, services
+        # Services list in shared memory
+        manager = Manager()
+        services = manager.list()
+        event_handler = FileChangeHandler('.json', reload_services)
+        observer = Observer()
+        observer.schedule(event_handler, path='../services', recursive=False)
+        observer.start()
+        reload_services()
+        # Queue startup
         worker_thread = threading.Thread(target=worker)
+        # Daemonize worker thread to allow for clean shutdown with SIGINT
         worker_thread.daemon = True
         worker_thread.start()
+        # Start serving, blocking app here
         serving.run()
-        
     except KeyboardInterrupt:
         logger.info("Process interrupted by user")
+        # observer.stop()
     except Exception as e:
         logger.error(str(e))
         logger.critical("Service is shut down (Error)")
         exit(e)
 
-
 if __name__ == "__main__":
     start()
-    
