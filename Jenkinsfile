@@ -21,7 +21,7 @@ pipeline {
                         script: "awk -v RS='' '/#/ {print; exit}' RELEASE.md | head -1 | sed 's/#//' | sed 's/ //'"
                     ).trim()
 
-                    docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CRED) {
+                    docker.withRegistry('https://registry.linto.ai', env.DOCKER_HUB_CRED) {
                         image.push("${VERSION}")
                         image.push('latest')
                     }
@@ -41,7 +41,7 @@ pipeline {
                         returnStdout: true, 
                         script: "awk -v RS='' '/#/ {print; exit}' RELEASE.md | head -1 | sed 's/#//' | sed 's/ //'"
                     ).trim()
-                    docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CRED) {
+                    docker.withRegistry('https://registry.linto.ai', env.DOCKER_HUB_CRED) {
                         image.push('latest-unstable')
                     }
                 }
