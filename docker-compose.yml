@@ -1,20 +1,41 @@
-version: '3.7'
-
+version: '3.8'
 services:
-  llm-gateway:
-    container_name: llm-gateway
-    image: linto-nlp/llm-gateway
-    build:
-      context: . 
-      dockerfile: workers/llm_gateway/Dockerfile
-    env_file: workers/llm_gateway/.env
-    ports:
-      - "80:80"
-    deploy:
-      replicas: 1
+  vllm-backend:
+    image: vllm/vllm-openai:latest
+    command: --model TheBloke/Vigostral-7B-Chat-AWQ --quantization awq
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
     networks:
-      - task_broker_services
+      - llm-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  llm-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SERVICE_NAME=LLM_Gateway
+      - OPENAI_API_BASE=http://vllm-backend:8000/v1
+      - OPENAI_API_TOKEN=EMPTY
+      - HTTP_PORT=8000
+      - CONCURRENCY=2
+      - TIMEOUT=60
+      - SWAGGER_PREFIX=
+      - SWAGGER_PATH=../document/swagger_llm_gateway.yml
+      - RESULT_DB_PATH=./results.sqlite
+    networks:
+      - llm-network
+    depends_on:
+      - vllm-backend
+    ports:
+      - 8000:8000
 
 networks:
-  task_broker_services:
-    external: true
+  llm-network:
