@@ -59,7 +59,7 @@ def handleGeneration(service_name):
             if temperature:
                 backendParams['temperature'] = float(temperature)
             if top_p:
-                # must be between 0 and 1 or failsback to default
+                # must be between 0 and 1 or failsback to defaultupdate_2
                 if 0 < float(top_p) <= 1:
                     backendParams['top_p'] = float(top_p)
             if backendParams is None:
@@ -69,13 +69,24 @@ def handleGeneration(service_name):
             with lock:
                 tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id, "backendParams":backendParams, "fields":service['fields'], "content": content})
                 logger.info(f"Task {task_id} queued")
-            db.put(task_id, "Processing 0%")
+            #{db.put(task_id, "Processing 0%")
+                db.put(task_id, content)
+            
             return jsonify({"message":"request successfulty queued", "jobId":task_id}), 200
         except Exception as e:
             return  jsonify({"message": "Missing request parameter: {}".format(e)}), 400
     return flaskHandler
                 
 # Routes
+
+
+# Ensure correct Content-Type header for all responses
+@flaskApp.after_request
+def set_content_type(response):
+    response.headers["Content-Type"] = "application/json; charset=utf-8"
+    return response
+
+
 
 @flaskApp.route("/services", methods=["GET"])
 def summarization_info_route():
@@ -88,24 +99,34 @@ def get_result(resultId):
     try:
         logger.info("Got get_result request: " + str(resultId))
         result = db.get(resultId)
-        if result is None:
-            return jsonify({"status":"nojob", "message":f"{resultId} does not exist"}), 404  
-        else:
+        logger.info("Got get_result request: " + result)
+        
+
+        # Check if result is already a string
+        #if isinstance(result, bytes):
+            #result = result.decode('utf-8')  # Decode bytes to string
+
+        if result:
+            print(f"This is the result content: {result}")
+
+            # Fix possible Unicode escape issues
+            #result = result.encode().decode('unicode-escape')
             match = re.match(r'^Processing ([0-9]*\.[0-9]*)%$', result)
+            print(f"Ici!!!!!!!!!!!: {match}")
             if match:
                 processing_percentage = float(match.group(1))
                 if processing_percentage == 0:
-                    return jsonify({"status":"queued", "message":result}), 202
-                else:
-                    return jsonify({"status":"processing", "message":processing_percentage}), 202
-            elif result == "Processing 0%":
-                return jsonify({"status":"queued", "message":result}), 202
-            else:
-                return jsonify({"status":"complete", "message":"success", 
-                                "summarization":result.strip()}), 200
+                    return jsonify({"status": "queued", "message": result}), 202
+                return jsonify({"status": "processing", "message": processing_percentage}), 202
+
+            if result == "Processing 0%":
+                return jsonify({"status": "queued", "message": result}), 202
+            return jsonify({"status": "complete", "message": "success", "summarization": result}), 200
+
+        return jsonify({"status": "nojob", "message": f"{resultId} does not exist"}), 404
     except Exception as e:
         logger.error("An error occurred: " + str(e))
-        return jsonify({"status":"error", "message":str(e)}), 400 
+        return jsonify({"status": "error", "message": str(e)}), 400
     
 
 # Default routes
@@ -143,19 +164,31 @@ def worker():
                 backend = backends["vLLM"]
             backend.loadPrompt(task["type"], task["fields"])
             backend.setup(task["backendParams"], task["task_id"])
+            logger.info(f"Task {task['task_id']} setup with backend parameters: {task['backendParams']}")
             chunked_content = backend.get_splits(task["content"])
-            summary = backend.get_generation(chunked_content)
+            logger.info(f"Chunked content for task {task['task_id']}: {chunked_content}")
+            #summary = backend.get_generation(chunked_content)
+            #publish
+            summary = backend.publish(chunked_content)
+            #summary = summary.encode('utf-8') 
+            logger.info(f"Generated summary for task {task['task_id']}: {summary}")
             #@TODO Might compare those
             chunked_content_string = "\n".join(chunked_content)
+            
             summary_string = "\n".join(summary)
-            db.put(task["task_id"], summary_string)
+            db.put(task["task_id"], summary)
+            print(f"""ceci est le text :{summary}""")
             logger.info(f"Task {task['task_id']} processing END")
             if task is None:
                 break
             # check task parameters
+        #except Exception as e:
+            #logger.error("An error occurred in processing tasks : " + str(e))
+            #break
         except Exception as e:
-            logger.error("An error occurred in processing tasks : " + str(e))
+            logger.error(f"An error occurred in processing task {task['task_id']}: {e}")
             break
+   
 
 def reload_services(fileName=None):
     services[:] = []

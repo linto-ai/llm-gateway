@@ -54,7 +54,6 @@ __note__: Always use a string val for OPENAI_API_TOKEN.
 ## vLLM backend locally
 
 ```console
-docker run --gpus=all -v ~/.cache/huggingface:/root/.cache/huggingface  -p 9000:8000     --ipc=host vllm/vllm-openai:latest --model TheBloke/Vigostral-7B-Chat-AWQ  --quantization awq
 ```
 
 ## vLLM backend on the server
