@@ -42,7 +42,7 @@ class LLMBackend:
             #self.tokenizer = LlamaTokenizerFast.from_pretrained("TheBloke/Llama2-7B-GPTQ")
 
             from transformers import LlamaTokenizerFast
-            token = "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" #"hf_hBCBERgiiYoVKYcsXStYfiojivnwlSLevXdWIIM"
+            token = ""
         
             #self.tokenizer = LlamaTokenizerFast.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=token)
             try:

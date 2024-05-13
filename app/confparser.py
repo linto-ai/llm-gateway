@@ -20,7 +20,7 @@ def createParser() -> argparse.ArgumentParser:
         "--api_base",
         type=str,
         help="OpenAI API Base URL",
-        default= "https://api.openai.com/v1/",)
+        default= "https://chat.ai.linagora.exaion.com/v1/",)
         #default=os.environ.get("OPENAI_API_BASE", "http://localhost:9000/v1"),
         #)
 
@@ -28,7 +28,7 @@ def createParser() -> argparse.ArgumentParser:
         "--api_key",
         type=str,
         help="OpenAI API Token",
-        default = "sk-proj-XQOQzDwEV3yUoF0lR9bRT3BlbkFJ64ZJpW5DIJ3rz1zRtJgv"#"sk-proj-XQOQzDwEV3yUoF0lR9bRT3BlbkFJ64ZJpW5DIJ3rz1z"   #RtJgv
+        default = "sk-7Gqg14u-mGlX-egix20lgg"
         #default=os.environ.get("OPENAI_API_TOKEN", "EMPTY"),
     )
 
@@ -78,4 +78,3 @@ def createParser() -> argparse.ArgumentParser:
     
 
     return parser
-#NFO: Namespace(service_name='LLM_Gateway', api_base='http://localhost:9000/v1', api_key='sk-proj-XQOQzDwEV3yUoF0lR9bRT3BlbkFJ64ZJpW5DIJ3rz1zRtJgv', service_port=8000, workers=2, timeout=60, swagger_url='/docs', swagger_prefix='', swagger_path='../document/swagger_llm_gateway.yml', debug=False, db_path='/home/mkeita/llm-gateway/data/results.sqlite')
