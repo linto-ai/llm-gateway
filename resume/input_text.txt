@@ -1,0 +1,935 @@
+ Voilà, c'est parti.
+ Bon, alors qu'est-ce qu'on a au programme ?
+ Super, lancez-vous.
+ On n'a pas de présentation, parce qu'on n'a pas les sujets en ce moment.
+ Par contre, on va discuter peut-être du projet du ministère des Armées.
+ Ok.
+ Comment avancer un peu ?
+ Est-ce que, donc, on diffuse ça ?
+ On va faire comme ça.
+ Ça, c'est pas très grave.
+ On va pouvoir la mettre ailleurs.
+ Alors, moi, j'avais fait cette page-là.
+ Bon, forcément, je l'ai perdue.
+ Voilà, c'est là.
+ Bon, oui, parce que j'en ai profité pour essayer de reformuler
+ et essayer de formaliser une base de proposition.
+ Donc, je l'ai envoyée ce matin.
+ Est-ce que vous avez eu le temps, Robin, d'en jeter un coup d'œil ?
+ Oui, ça a été changé.
+ Ok.
+ Alors, on la parcourt rapidement.
+ Et puis, comme ça, ça permet à tout le monde d'être un peu synchro.
+ Bon, donc ici, vous avez le mail qu'on a reçu du ministère, en fait, de l'AMD.
+ Donc, l'Agence de l'innovation pour le développement de la défense, pardon.
+ Il n'y a pas grand-chose.
+ Ok, c'est que ça.
+ Donc, je vous propose, en fait, je ferme ça.
+ Et puis, moi, j'ai essayé de le reformuler de façon…
+ Non, c'est pas ça.
+ Bon, n'importe quoi.
+ C'est fermé, déjà.
+ Voilà.
+ Donc, c'est fermé, le mail.
+ Donc, là, l'idée…
+ Donc, ce qu'il faut comprendre, en tout cas, la compréhension qu'on en a aujourd'hui,
+ c'est qu'ils veulent un dispositif.
+ Un dispositif autonome, c'est-à-dire non connecté à Internet,
+ qui soit transportable, parce qu'en fait, le ministre…
+ Donc, c'est pour le ministre des Armées et son cabinet.
+ Et donc, ils veulent se poser à peu près où ils le souhaitent.
+ Poser, en fait, le dispositif d'enregistrement de capture audio plus le PC.
+ Et le case, c'est quoi ?
+ C'est une réunion où il y a jusqu'à une trentaine de participants,
+ plutôt une dizaine qui interviennent.
+ Certainement avec des tours de parole plutôt bien.
+ C'est pas un identifié, puisque, bon, je suppose qu'une réunion de cabinet,
+ c'est relativement structuré.
+ Je pense que c'est pas la foire d'empoigne et on n'est pas à la crier sur le port de Marseille, quoi.
+ Bon, mais malgré tout, c'est un contexte multilocuteur.
+ Et donc, l'objectif, c'est d'obtenir une transcription plus un résumé
+ avec un objectif de rendu d'une vingtaine de minutes.
+ Je crois qu'ils ont dit un quart d'heure, mais en fait, globalement, c'est presque un instantané.
+ Par contre, bien sûr, le résumé qu'ils souhaitent,
+ c'est pas un résumé travaillé comme on peut l'avoir, en fait, pour le Sénat,
+ où on nous demande de faire beaucoup de choses,
+ mais plutôt, en fait, un résumé très analytique.
+ Je crois que la personne, une des personnes, Catherine,
+ qui était présente au rendez-vous, a parlé de méta-résumé.
+ Donc, globalement, c'est vraiment la liste de points,
+ pour les gens qui n'auraient pas pu participer à la réunion,
+ simplement de savoir, en fait, finalement, les items, les thématiques qui ont été abordées.
+ Et si on est capable, dans ce système-là, de construire un exec,
+ pour que, effectivement, les gens savent à peu près de quoi on a parlé pendant la réunion,
+ ça donne, en fait, un premier élément.
+ Ok ? Est-ce qu'on est d'accord, Robin, puisque tu étais toi dans la réunion avec moi ?
+ Est-ce qu'on est aligné sur la restitution ?
+ C'est ce qu'on a cherché à faire au bout d'un moment.
+ Donc, globalement, les caractéristiques, comme je vous disais, voilà,
+ c'est à peu près une dizaine de personnes, en fait, de locuteurs qui doivent s'exprimer.
+ Et...
+ Euh...
+ Une vingtaine de minutes pour obtenir, en fait, ce résumé. Ok ?
+ Avec des échéances, des échéances qui sont, là aussi, très contraintes.
+ Euh...
+ De mon point de vue, je sais pas ce que tu en penses, Robin,
+ cette pression de la part du cabinet pour obtenir quelque chose
+ mis à fin juin,
+ je pense que c'est pour les JO.
+ Je pense qu'il va y avoir des cellules de crise qui risquent d'être montées.
+ Et, compte tenu, en fait,
+ de... Enfin, comme ça, moi, quand je lis le truc,
+ je me dis, c'est certainement ce cas d'usage-là,
+ parce que, bon, on sait pas ce qui va se passer pendant les JO.
+ Et aujourd'hui, quand on leur a posé la question,
+ puisque, à un moment donné, vous allez voir, dans la phase projet,
+ on parle d'alignement et d'acculturation du modèle.
+ Et quand on leur a dit, est-ce que vous êtes en mesure de nous donner
+ des comptes rendus de réunions du cabinet, en fait, telles qu'elles existent aujourd'hui,
+ on nous a dit, y a pas de comptes rendus, en fait, aujourd'hui, de ces réunions-là qui sont faites.
+ Et ce que je me dis, c'est que, tu vois, quand j'ai fait la boucle et j'ai réfléchi,
+ je me suis dit, bah, si on avait une crise majeure
+ où ça implique beaucoup de services d'État, pas uniquement, en fait, la défense,
+ on peut imaginer que, bah, sur une cellule de crise
+ qui serait pilotée par le ministère des Armées,
+ bah, y a, en fait, un mémo à la fin qui permet de diffuser, de copier ça dans un mail
+ et de dire, attention, les gars, en fait, suite à ça,
+ suite à cet événement-là, voilà les items ou les actions qui pourraient être prises.
+ Autrement, je vois pas pourquoi y a une exigence, parce que le ministre,
+ bah, il est un peu comme tout le monde, là, il fait des ponts, y a des vacances,
+ y a, en fait, les JO, et de lancer, en fait, de nouvelles opérations, voilà.
+ Je crois pas à ça.
+ Moi, j'ai un point de vue différent, c'est que c'est un besoin qu'il avait,
+ par des membres du cabinet qui ont dit, oh, par contre, on aimerait bien savoir ça.
+ Il se passe dans les réunions, et ils avaient pas de secrétaire,
+ ils se sont dit, bah, on va faire un truc avec des gars,
+ et comme ça, ils répondent à un besoin du cabinet,
+ bah, des gars du cabinet, parce qu'ils étaient pas stressés, en fait,
+ ils étaient assez calmes et pas, ils avaient pas l'air d'avoir une,
+ ils avaient pas l'air d'avoir une pression.
+ Ils avaient l'air d'avoir envie que ça aille vite,
+ parce que c'est leur manière de travailler, genre...
+ Peut-être.
+ Mais ils, y a, ils trouvaient pas de pression, quoi.
+ C'est vrai.
+ C'est vrai que...
+ T'as raison, en fait.
+ Après, le côté rapide, pour moi, c'est le plus intratré,
+ quand vous faites, en fait, on dit, on fait ça, on fait ça.
+ C'est vrai.
+ Pas trop de tergiversés, contrairement à d'autres réunions.
+ Ouais.
+ C'est sûr que sur les sujets, sur les sujets plus sensibles,
+ moi, c'est le général Versolone qui m'appelle, quoi.
+ Par exemple, à l'intérieur, pour me dire, là, il faut activer tout ça,
+ et donc là, bon, globalement, il y a effectivement...
+ Ouais, peut-être.
+ Il faudrait voir.
+ OK.
+ Bon, en tout cas.
+ Et donc, la caractéristique un peu particulière,
+ c'est qu'ils nous demandent à la fois de fournir la solution logicielle
+ et la partie hardware.
+ Et donc, j'ai enfin retrouvé les devis, en fait, les caractéristiques des machines.
+ Et donc, je m'en tais fait hier soir à trouver des machines à 24 gigas,
+ mais je crois qu'en fait, sur portable, il n'y a pas 24 gigas.
+ Je pense que le maximum, c'est 16.
+ Et en fait, j'ai retrouvé, en fait, effectivement, les caractéristiques.
+ Est-ce qu'on est vraiment obligé d'acheter un...
+ portable ou on peut acheter une tour comme on a réussi ?
+ Le truc, c'est que moi, j'imagine le truc transportable quand même.
+ Alors, c'est quand même moins...
+ Je pense qu'il faut plutôt viser si, bien entendu,
+ la solution s'exécute correctement et qu'on obtient des résultats
+ sur un dispositif transportable.
+ Je pense que la valeur, elle est encore même plus forte.
+ OK.
+ Donc, voilà pour le besoin.
+ Donc, moi, en me cassant un peu la tête pour savoir comment,
+ parce que je voyais que vous étiez en train de faire des choses,
+ et je me suis dit...
+ Il y a une phrase dans leur expression de besoin où je me suis dit, tiens,
+ mais en fait, il y a peut-être une autre ici dans l'expression de besoin.
+ Tac, tac, tac.
+ Voilà.
+ C'est ça qui m'a mis, en fait, la puce à l'oreille.
+ Je me suis dit, ah oui, mais s'il y a une synthèse par rapport à un ordre du jour,
+ donc on pourrait quand même très bien imaginer qu'il y a un ordre du jour à la réunion
+ qui donnerait les points ou les thématiques qui vont être abordées.
+ Et à ça, je me suis dit, mais alors oui, mais dans le studio,
+ comme on ne peut pas, en fait, injecter un document pour faire du RAG,
+ pour dire au modèle, by the way, puis faire un résumé,
+ mais en tenant compte des inputs qui seraient transmis dans un document au préalable,
+ je me suis dit, bah, en parallèle de ce que vous êtes en train de faire,
+ je me suis dit que ça ne serait pas idiot.
+ Donc là, j'ai designé, en fait, un processus opérationnel.
+ Globalement, j'arrive dans la salle de réunion, je connecte,
+ je mets sur attention sur le PC, j'allume le PC.
+ Donc, il y a quand même, au-delà de la solution technique de collecte,
+ il faut qu'on ait un système qui permette d'enregistrer.
+ Alors, ce qu'on est en train de faire là avec Tela, alors bon,
+ si on est en environnement Windows, on peut mettre effectivement Tela
+ comme, en fait, on est en train d'utiliser là.
+ Si c'est, en fait, une machine sous Linux ou, en fait,
+ si on veut un autre truc, bon, il y a OBS, Open Broadcast Studio,
+ qui est, en fait, le truc utilisé par les streamers qui permet de faire ça.
+ Bon, à voir.
+ Et ensuite, donc, du coup, de toute façon, l'idée, c'est de récupérer un média,
+ donc un fichier son ou une vidéo.
+ Je pense que pour que ça soit simple, il ne faut pas qu'on passe par des systèmes de conversion.
+ Ça tombe bien, de toute façon, le studio est capable de prendre un flux audio.
+ Et donc, il y a quand même cette question-là.
+ Il faut trouver le bon dispositif.
+ Il faut trouver le bon dispositif logiciel pour enregistrer l'échange.
+ Alors, bien sûr, vous allez me dire, ah, on va mettre Audacity,
+ mais bon, globalement, je pense que pour des membres, on fait du cléminé.
+ Il faut un truc plus sexy, plus simple, voilà.
+ Et je me dis qu'un truc qui enregistrerait aussi la vidéo,
+ ça peut avoir du sens certainement pour eux.
+ Donc, peut-être que voilà, Tela, mais bon, Tela, en fait, ça nécessite une connexion web.
+ Donc, je pense qu'OBS, en fait, ça permet tout simplement d'être autonome.
+ Donc, il faudrait quand même regarder ce truc-là.
+ Voilà.
+ Et après, pour le résumé, donc, il y a deux options.
+ Soit ce qu'on fait pour le Sénat.
+ Et donc, je pense que ce que vous êtes, vous, en train de tester aujourd'hui,
+ c'est de partir du studio et, en fait, d'inclure des process de génération de résumé
+ sur le deuxième écran, là, quand on demande, en fait, la publication du document.
+ Bon, ça, c'est ce qu'on fait et ce qu'on démonte pour le Sénat.
+ En tout cas, c'est ce qu'on est en train de construire.
+ Ou, solution autre.
+ J'ai compris que vos smartphones,
+ que vous êtes dans un step intermédiaire avec du Whisper, blablabla, blablabla.
+ Enfin, n'oubliez pas qu'en fait, à la fin, il faut quand même qu'il y ait une interface
+ et puis un truc qu'on présente à un utilisateur qui ne soit pas un spécialiste Python
+ et puis un machine learning engineer.
+ Voilà.
+ L'autre solution, c'était effectivement, on installe Ollama sur la machine.
+ On met, en fait, l'interface, l'interface de chat dessus.
+ Bon.
+ Et donc, ça, bon, c'est des trucs que…
+ que maintenant, je connais assez bien.
+ On peut injecter, en fait, des documents.
+ Donc, éventuellement, un ordre du jour, la transcription
+ et demander, en fait, avec les bons promptes, les… un résumé.
+ Et donc, je ne sais pas si vous le savez, mais donc, je vous l'ai mis ici dans la petite doc, là.
+ Mais Ollama…
+ Donc, il y a la communauté, là, qui s'appelle…
+ qui est la communauté derrière cette interface.
+ Et en fait, ils ont rajouté assez récemment deux trucs assez rigolos.
+ Un, c'est cette notion des GPTs, en fait, de chez OpenAI.
+ C'est-à-dire d'avoir des assistants qu'on pré-entraîne.
+ Donc, globalement, ça permet de spécifier un modèle et puis de lui donner des caractéristiques.
+ Et donc, au lieu de dire, je choisis un modèle, je fais un chat sur ce modèle-là,
+ je choisis un des modèles personnalisés.
+ Donc, on peut régler les hyperparamètres, la température, blablabla.
+ Et voire même, en fait, charger des documents pour enrichir sa base, en fait, de connaissances.
+ Et ensuite, une fois qu'on est là, c'est bon.
+ Et ensuite, une fois qu'on est dans cet environnement-là,
+ finalement, on interagit avec quelque chose qui a été déjà un petit peu personnalisé.
+ Voilà.
+ Ça, c'est déjà une opération.
+ J'en ai fait un.
+ Moi, très rapidement, c'est un fichier de description.
+ C'est assez simple à faire.
+ Voilà.
+ Et le truc qui est pas mal aussi, que je n'ai pas encore testé, c'est les prompts preset support.
+ Donc, globalement, alors là, pour le coup, en fait, on enregistre des prompts.
+ Et par exemple, on fait après slash résumé.
+ Et globalement, au lieu de taper tout le prompt, en fait, slash résumé, c'est un raccourci de commande.
+ Et il va chercher le prompt.
+ Et il exécute, en fait, le prompt dans le contexte.
+ Donc, ça peut être aussi, en fait, une option, c'est-à-dire de travailler un prompt qui pourrait être assez costaud.
+ Et d'en masquer la complexité en simplement faisant un raccourci de commande avec ces prompts preset support.
+ Voilà.
+ Voilà.
+ Bon, après, ça, c'était les deux options.
+ Donc, ensuite, sur la partie matérielle, donc, l'idée, c'était effectivement de partir plutôt sur un portable, plutôt transportable.
+ Ce sont des machines qui sont lourdes.
+ J'avais remis, donc, vous avez parlé de WL.
+ Donc, je pensais qu'ils avaient arrêté la commercialisation.
+ Mais donc, je suis allé sur le site web.
+ Donc, je confirme que c'est encore vivant.
+ Ouais, mais en fait, c'est pas si bon que ça pour nous parce que, enfin, le prix du produit, en fait, il vient de l'intégration des retours, le fait que ça tourne, que ça file.
+ Enfin, en fait, si ça tourne même pas, c'est que…
+ Ouais, il y a une caméra 360, ouais.
+ Ouais, mais il y en a plusieurs.
+ Mais du coup, il y a surtout un focus qui est fait plus que les rotations.
+ Et franchement, je pense qu'un micro de très forte qualité, ça fait plus…
+ Donc, j'ai vu que tu avais posté.
+ C'est ça que tu as posté ?
+ Tu as posté une référence ?
+ Je vais la rajouter.
+ Tu pourras la recopier, en fait, en option 3 puisque pour l'instant, bon, voilà.
+ C'est moins cher.
+ Peu importe.
+ Mais…
+ C'est le ministère de la Défense.
+ Donc, pour tout, tu vois.
+ Non.
+ Mais…
+ C'est bien placé pour savoir que…
+ C'est pour de la VR.
+ Donc, c'est un handicap…
+ Ah, ok.
+ Et je me dis que pour l'heure, en fait, en 3, 7, 8, 7, 8, 7, ça sera probablement
+ peut-être des grandes tables, etc.
+ Et c'est souvent des régions qui sont assez calmes.
+ Donc, on n'aura pas trop de bruit paradis, etc.
+ Donc, peut-être un handicap vraiment bien, mais au global…
+ Je suis d'accord.
+ Ça sera peut-être plus pertinent que quelque chose qui va retravailler un peu directement
+ le son.
+ Ouais.
+ Donc, c'est ça.
+ C'est ça.
+ C'est ça.
+ C'est ça.
+ C'est ça.
+ C'est ça.
+ Ouais.
+ Je suis d'accord.
+ Je n'ai pas de difficulté avec ça.
+ Donc, globalement, y compris nous, pour nous, on peut acheter les trois options.
+ Bon, là, sur Jabra, on l'a, mais en fait, les deux autres options, on peut les acheter
+ pour des tests.
+ Moi, je…
+ Enfin, on sait investir 1 500 balles pour se donner, en fait, une perspective.
+ Bon.
+ Voilà.
+ Donc…
+ À voir.
+ Donc, ensuite…
+ Bon, il y aura la configuration logicielle.
+ Donc, ça…
+ Il faudra voir si la machine…
+ Je pense qu'il serait quand même plus à l'aise si on pouvait tout conserver en environnement
+ Windows.
+ Voilà.
+ Bon.
+ Je ne suis pas sûr parce qu'ils vont vraiment juste allumer la machine.
+ Il y a vraiment…
+ La manip, ça va toujours être la même.
+ Il faut que ça leur prenne 30 secondes.
+ Ouais.
+ Je ne pense pas que Windows soit sur Linux.
+ Et pour nous, être sur Ubuntu, ça sera tellement…
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Beaucoup plus.
+ Si vous me garantissez que c'est un one-click bouton et que ça fonctionne…
+ Donc, il y aura ce travail d'intégration à prévoir.
+ Parce qu'en fait forcément, ce sont des gens qui n'ont jamais vu un Linux de leur
+ vie.
+ Alors il faudrait quand même que le truc quand on ouvre, quand on appuie sur le bouton que
+ le truc de boot, ça soit le vrai qu'on a enlevé, l'URF, machin qui est pas.
+ Il y a un peu de mécanique, c'est pas le bootloader.
+ Le lilo, que ça parte bien sur…
+ Enfin.
+ de préparation de l'os de façon effectivement à ce que ça soit hyper
+ fluide et donc du coup ensuite on est après non rapidement aucun cas de phase
+ donc une phase où on achète le pc et puis en fait on installe la solution
+ ici puis on va leur livrer ok classique ensuite une journée de formation parce
+ que quand même si c'est très simple il fera quand même tu vois leur montrer
+ comment brancher machin tout ça et puis certainement prévoir moi c'est ce que
+ j'ai mis donc faire un tutoriel de 3,3 minutes comme ça en fait pour la
+ solution pour les nuls et puis en fait un recto verso qu'on laisse sur la f à
+ côté du pc toi tu connais très bien ça puisque voilà plastifié le truc voilà
+ qu'il qu'ils résident
+ à la guerre s'il ya la guerre et puis donc quand même parce que là l'idée de
+ façon à très court terme on part sur un modèle digénérique donc ça peut être
+ mistral ou n'importe quel en fait on s'en fout donc il faudra quand même le
+ définir
+ j'aime bien quand c'est par rapport aux autres modèles donc le lama à 3 en lumière
+ oui
+ bon bah tant mieux tant mieux et donc du coup quand même ce qu'elle nous a dit ça
+ serait bien de faire une ce cas je trouve que le terme est assez
+ intéressant la culturation du modèle ou de faire une phase d'alignement donc
+ globalement on n'aura pas donc c'est une phase d'alignement pas sur la base de
+ compte rendu ainsi de suite ce qu'elle souhaiterait c'est qu'on prenne en fait
+ des transcriptions publiques d'intervention sur la loi programmée
+ sur l'hiver de choses comme ça ou les termes les zones le nom des unités
+ organisationnelles le cos le laisser défaire au sein en fait bon tous ces
+ trucs là tout et les termes pas que le modèle en fait les ai vu au moins une
+ fois à la fois pour les pour les reconnaître donc côté whisper et puis
+ aussi dans les résumés donc en fait il ya quand même un double finit une ligne à
+ réaliser quoi sur windows justement il n'y a pas une vocabulaire militaire il
+ me semble avoir oui mais ça on avait fait ça mais pas sur whisper on avait fait ça
+ sur nos modèles à nous c'est dire qu'on a déjà des jeux de données peut-être non
+ en fait ça avait été très simple on avait pris l'allocution du président pour
+ les voeux aux armées et puis en fait donc deux fois une heure globalement non
+ il faudrait plutôt travailler sur les vidéos des interventions du ministre à
+ l'assemblée nationale ou là en fait effectivement c'est plus riche quoi
+ selon moi mais par contre en fait on reçoit juste une transcript donc ça ça a
+ fait pas un donné deux enfin je donnais d'apprentissage donc il faut faire en
+ fait un prêt pour trouver la mécanique mais c'est je pense que c'est un bon
+ exercice façon auquel il faut qu'on se confronte c'est à dire à partir du
+ basses documentaires quelle qu'elle soit comment en fait on génère un data set
+ pour faire du fine tuning
+ du coup c'est quand même si possible de faim qui nourrissent peur à mon avis ce
+ sera l'autre ce sera intéressant et pas faisable et est le seul à demander de nous
+ même s'enregistrer à dire les c'est l'acronyme d'ici là tout ça mais sur les
+ paupières c'est bon on va tester
+ tac tac tac donc ensuite la personnalisation donc ça moi ce que dit
+ c'est que globalement de toute façon il faut surtout pas qu'on leur demande il
+ faut surtout qu'on leur demande rien parce qu'en fait ils seront pas la
+ disponibilité tout ça donc il faut qu'on se débrouille
+ et puis après moi ce que j'avais dit c'est qu'au bout de trois mois on va
+ faire un texte pour classique et globalement pendant un mois on installe
+ et puis en fait il faut qu'on leur mette au moins une ligne de support parce que
+ forcément la première réunion ça va merder donc il fera qu'en fait il ya
+ quelqu'un qui puisse répondre au téléphone
+ dans le tableau sur la dernière ligne du déprimising le 2500 x 6 qui fait 52 200
+ c'est que j'ai dû taper d'un point de vue
+ non parce que ça c'est la somme en fait c'est la somme donc ici il faudrait
+ mettre somme
+ tac 250 et la 6 x ça va faire 12
+ minutes non 8,10 ouais c'est ça 15 alors attendait ce que donc mon calcul bon en
+ fait il fera repère mais à check-in que je marquais 40 à check-in
+ ok je vais juste il faudrait que je branche mon pc il n'y a pas de chargeur
+ vous n'avez pas monté qu'un char de façon vous n'avez pas
+ voilà
+ ça doit justement
+ des mots
+ là quand je lance la
+ il a dit que la paie de contexte
+ on peut pas parce que c'est un oui
+ non c'est relance
+ et il a remonté loin
+ pourquoi parce qu'il a il a créé ça dépend d'eux
+ si ça
+ jean
+ donc il faut ça c'est cool ça ajoute un mécanisme
+ si ça dépasse il peut peut-être faire un
+ besoin de faire du coup
+ avec par exemple
+ voilà bon voilà pour le
+ voilà un peu le contexte donc alors vous vous avez un petit peu progressé c'est ça
+ voilà pour le contexte donc alors vous vous avez un petit peu progressé c'est ça
+ ouais
+ ok
+ je la prends
+ oui
+ hop
+ et vous voulez nous montrer des choses ou pas
+ hum
+ moi je vais créer vite fait
+ hum
+ une interface
+ qui tourne sur
+ une URL je peux me connecter
+ donc 10 0 0 172
+ 10 0
+ Point zéro, point zéro, cent soixante-douze.
+ Point zéro, cent soixante-douze.
+ C'est bien, c'est là.
+ C'est une instance.
+ Point zéro, cent soixante-douze, cinq cent zéro, un.
+ Oui, c'est bien.
+ Après, je suis en train d'exécuter quelque chose.
+ Je vais arrêter à la moindre côté.
+ Je vais arrêter à la moindre côté.
+ Oui, donc on est sur le même Wi-Fi.
+ Et est-ce qu'il faut activer le VPN ou pas ?
+ Il faut désactiver, en fait.
+ Donc, je suis désactivé.
+ Autrement, on récupère le câble HDMI, simplement.
+ Du coup, tu gardes l'audio, mais...
+ ...
+ ...
+ ...
+ ...
+ ...
+ ...
+ ...
+ Alors, par contre, il faut juste que tu changes la résolution.
+ Là, tu enlèves le 4K, parce qu'en haut, ça ne va rien voir.
+ ...
+ ...
+ ...
+ ...
+ ...
+ ...
+ ...
+ ...
+ ...
+ ...
+ Oui, c'est dans les paramètres, oui.
+ Effectivement, il switch...
+ ...
+ C'est quoi ?
+ En 1920 par 1080, en fait, la classique.
+ Oui, je suis sur le PC, pas sur l'écran externe, à mon avis.
+ ...
+ ...
+ ...
+ ...
+ ...
+ ...
+ Et plus simple, parce que quand tu fais ce genre de présentation,
+ il vaut mieux que tu fasses le miroir entre tous les écrans,
+ que tu vois ce que tu vois sur la télé, parce que autrement, tu ne vas pas te ressortir.
+ Donc, c'est FNF5, là.
+ Je pense que ça, tu vas gagner en facilité.
+ Donc, on a monté vite fait un petit truc de Streamlit.
+ J'ai téléchargé l'audio du Sénat.
+ Donc, ça, c'était chez YouTube.
+ Du Sénat polonais, non ?
+ Du Sénat polonais.
+ Je vois que tu peux choisir la langue, donc je ne me demande pas de dire polonais.
+ Non, au courant, c'est juste les trois anglais.
+ Ok, très bien.
+ Là, c'était justement une discussion sur le droit de grève pour les transporteurs.
+ Ok.
+ Donc, une heure et demie.
+ Ok.
+ Donc, ici, par exemple, quand je fais upload audio,
+ dans le Sénat, c'est chez Wave.
+ Donc, il fait un upload.
+ Vous avez réécrit le studio, quoi.
+ Je comprends.
+ Oui, pour la raison, je peux expliquer.
+ Sauf qu'il n'y a pas l'édition.
+ C'est-à-dire qu'en fait, c'est une version simplifiée.
+ Mais ce qui me va bien, je comprends, c'est que ça vous évite surtout de taper les commandes.
+ Oui, exactement.
+ En plus, potentiellement, on est plus rapide que ça.
+ Et maintenant, il y a juste un bouton summarize.
+ Donc, pour voir.
+ Est-ce qu'on peut sélectionner la langue ?
+ Déjà, Regalt.
+ C'est Michel.
+ Ah, je n'ai pas sélectionné la langue.
+ Ça, ça va pas me chier.
+ Donc, là, il lance Fast Whisper.
+ Ok.
+ Donc, la librairie qui est vraiment très rapide.
+ J'ai testé sur une autre machine avec la carte graphique.
+ En fait, une heure et demie d'audio, il fait la transcription, tu vois.
+ Ici, en temps réel, en trois minutes.
+ Donc, beaucoup plus rapide que Whisper ou les autres librairies.
+ Et pour réussir, j'étais obligé de compiler le code C++ directement sur la machine avec la carte graphique, le driver.
+ Parce que ce n'était pas compatible.
+ Par défaut, si Translate 2, leur Docker, il marche sur CUDA 11, alors que nous, on a la version 12.
+ C'est la dernière.
+ C'est la dernière version depuis déjà cinq mois.
+ Et c'est pareil, c'est la même problématique pour l'IntoStudio.
+ Donc, leur Docker, quand j'ai essayé de l'installer, il m'a dit qu'il y a un conflit de CUDA Runtime avec CUDA.
+ Donc, je ne pouvais pas.
+ Maintenant, justement, j'ai passé un peu de temps pour regarder si je peux réécrire un Docker pour l'IntoStudio.
+ Mais là, ça nécessite justement de…
+ Je crois que leur Docker…
+ Ce n'est pas bien fait.
+ Dans le sens qu'il prend première image de C Translate 2, d'image Docker sur le hub de Docker, qui est fait pour Ubuntu 20, pas 22 déjà, avec la version CUDA 11.
+ Donc, pas du tout compatible.
+ Et après, bien sûr, il affiche, parce que j'ai regardé le fichier Docker, et après, justement, il affiche, il ajoute les briques au studio.
+ Donc, justement, moi…
+ Moi, je pensais que c'était mieux de partir sur l'image Docker de CUDA 12, et après, builder directement dans le fichier Dockerfile, builder correctement le C Translate 2.
+ Ça, bon, j'ai galéré un peu hier, mais je pense que j'ai réussi.
+ C'est juste que…
+ Parce que je faisais exactement le même exercice sur la machine là-bas.
+ Ça prend trois heures.
+ Après, il faut aussi linker quelques fichiers de…
+ Blast, SO…
+ Pour le côté, ça serait une belle contribution.
+ De Paris, en fait, à quelque chose de tout.
+ Bien.
+ Pardon ?
+ Non.
+ Donc, voilà.
+ Et maintenant, on voit en temps réel la…
+ Oui, donc là, en fait, il prend toujours, c'est les blocs de 30 secondes, pour qu'on…
+ Je ne sais pas si les gens connaissent, mais globalement, le fonctionnement Whisper, en fait, il coupe.
+ Il fait des segments, on dirait, des segments de 30 secondes.
+ Et donc, c'est ce qu'il envoie.
+ Et après, justement, une fois l'instruction est finie…
+ On a développé, j'ai testé aussi avec…
+ Parce qu'on utilise les API de Exaion, en ce moment, l'AMAT-3.
+ Après, bien sûr, l'étape prochaine, c'est celle de Maramadou.
+ Il travaille sur le déploiement ou création de Docker de l'AMAT-3 sur la machine ici.
+ D'accord.
+ Comme ça, on va juste switcher pour qu'il soit compatible, bien sûr, avec l'API OpenAI.
+ Et les images Docker, en fait, les images Docker de l'AMAT-3, il y en a un, non ?
+ Déjà, non ?
+ Non ? Non ? Elles n'existent pas ? Non ?
+ Je ne sais pas.
+ Je ne sais pas.
+ Justement, d'utiliser le token d'HuggingPace.
+ Et c'est ce qu'on veut éviter, justement.
+ Parce que, justement, le créer, le faire, et qu'il soit complètement autonome,
+ il va pas chercher à faire le wait de l'AMAT-3 sur le hub de HuggingPace,
+ parce qu'il faut installer…
+ Oui, bien sûr.
+ OK.
+ Ça, c'est pas…
+ Donc, OK.
+ Super.
+ Justement, j'ai testé aussi, ce qui est pas mal, en fait,
+ les API…
+ Asynchrones, pour…
+ 5 000 secondes, donc là, on est bientôt là.
+ Oui, parce que c'est 5 200…
+ Le tout pour le tour, mais moins de 5 minutes.
+ Ça prend, oui, 3 à 4 minutes pour l'interaction.
+ Il y a deux heures, j'ai été attendu.
+ Et maintenant, la samarisation avec…
+ Parce que j'ai développé, j'ai testé un truc asynchrones
+ pour envoyer la requête de résumé sur Exaion.
+ En mode asynchrones, c'est-à-dire qu'on coupe le fichier texte en tant que…
+ Et j'envoie tous les chunks en même temps.
+ Et je demande les résumés.
+ Je récupère les résumés.
+ Donc, ça, c'est la partie map.
+ Et après, une fois qu'on récupère les résumés partiels,
+ on fait un deuxième appel à la matroi pour faire le résumé final.
+ Qui récupère les chunks, c'est ça ?
+ Oui, les résumés.
+ Les recompiles, quoi.
+ Alors, là, il y a peut-être une cohérence.
+ Oui, parfait.
+ C'est comme…
+ Vous dites, dans ce chunk, donne-moi les trois, quatre sujets abordés.
+ Et après, on vous compile les trucs sur un seul prompt.
+ Et vous dites, maintenant, on droppe les doublons et enrichit les trucs.
+ Et franchement, c'est pas très intéressant.
+ Parce que là, peut-être…
+ Et donc, vous en avez des résultats déjà qui sont intéressants ?
+ Ah oui, c'est nickel.
+ Il a fait justement là sur…
+ Bullet points.
+ Bullet points qui étaient vraiment…
+ C'est dommage.
+ C'est dommage.
+ C'est pas parce que j'ai modifié tout à l'heure le…
+ Non, error code.
+ Tu vois, c'est…
+ Oui, le token.
+ Ça, c'est la papier des deux codes.
+ Alors, il y a des codes du compte dans la radio ?
+ Non, c'est par rapport au contexte.
+ Donc, effectivement.
+ Mais en fait, justement, on fait un appel.
+ Et pour te dire, Michel-Marie,
+ donc, le fichier TXT de une heure et demie d'audio,
+ là, avec la solution A5,
+ on a un appel.
+ Les appels…
+ Les appels…
+ Les appels…
+ Les appels…
+ Les appels Exaion,
+ on récupère le résumé en 22 secondes.
+ Final.
+ Donc, ça marche hyper bien.
+ Putain, c'est énorme.
+ Bravo, hein.
+ Donc, là, c'était vraiment…
+ C'était bien.
+ Au lieu de faire de manière…
+ Tu vois, chunk par chunk.
+ Là, j'ai trouvé, donc,
+ heureusement, bon,
+ les API sont compatibles avec les API OpenAI A5.
+ Donc, au lieu de créer un…
+ Au lieu de créer un client OpenAI avec l'URL d'Exaion et clé,
+ je fais Asynchron OpenAI,
+ et après, je modifie les fonctions pour l'apparence du LLM
+ de manière asynchrone,
+ et pour récupérer après dans l'ordre des réponses.
+ Et ça, donc, on a…
+ On a fait le mécanisme MapReduce
+ pour les résumés en mode asynchrone,
+ donc, c'est pour ça, en total, une heure et demie.
+ Oui, vous avez une trace, là, de ce que ça sort après, non ?
+ Les types de réponses…
+ Non, vous n'avez pas vu la vidéo.
+ Pardon.
+ On va le continuer.
+ Je pensais que…
+ Moi, j'ai dit, justement, il faut faire attention
+ parce qu'on a fait vite fait pour avoir la démo.
+ OK.
+ En fait, tu sais, quand on récupère les chunks pour les résumés,
+ après, pour le dernier appel à…
+ À LLM, on donne tout ça dans le contexte.
+ Ça dépend des tailles de chunks.
+ Si on a 100 chunks, ça dépasse la taille des 8.
+ Donc, il faut ajouter un mécanisme, justement,
+ de si la taille est plus grande,
+ peut-être il faut faire encore une itération
+ pour, je ne sais pas, faire moitié-moitié,
+ et après, dernier pour la finale.
+ Donc, ça, il faut compter, peut-être,
+ essentiellement le nombre de tokens qui sort.
+ Oui, ça serait…
+ Mais ça, c'est énorme.
+ Mais en tout, justement, je…
+ En plus, le faire retourner,
+ c'est réduire le nombre de…
+ Parce qu'on est d'accord qu'en fait…
+ Ça sera avec la…
+ Écoutez, je vais…
+ Je modifie le…
+ Bon, sauf que le async,
+ donc la synchronisme,
+ quand vous allez le faire exécuter sur la 4090 en local,
+ en fait, avec notre…
+ À nous, ça risque…
+ La machine risque de chauffer un peu, quoi.
+ Oui, ça, c'est…
+ Je pense qu'on aura peut-être des temps.
+ On n'aura pas 22 secondes,
+ puisque là, il y a 2 à 4 000.
+ En fait, au cul, c'est ce qu'ils nous ont dit.
+ Je ne sais pas ce que ça donnera,
+ mais en fait, c'est vachement intéressant, en tout cas.
+ Mais là, il ne devrait pas commencer à faire le résumé
+ pendant la réunion.
+ Ça peut aussi faire gagner du temps.
+ Non, c'est pas vraiment possible.
+ Je ne peux pas.
+ OK.
+ Pourquoi ?
+ Parce que tu vas faire la centricité en tant que…
+ Tu n'as pas l'ensemble.
+ Oui, parce que tu veux découper en pariables, c'est ça.
+ Non, mais aussi parce qu'il s'en sert de l'ensemble pour…
+ D'accord.
+ La cohérence, oui.
+ De construire le début.
+ Ils utilisent le contexte, en fait.
+ En fait, c'est pour utiliser seulement les 30 derniers tokens.
+ Oui, mais tu pourrais quand même déjà faire certains des résumés partiels
+ pendant la réunion.
+ Oui, oui.
+ Pas faire une réunion.
+ Oui, mais tu pourrais reprendre Wister.
+ Oui, c'est…
+ Tu dis ça, c'est une bonne question, Adrien,
+ parce que c'est ce qu'on nous demande, en fait, pour le Sénat.
+ OK.
+ Le Sénat, en fait, on nous dit,
+ toutes les 15 minutes,
+ vous faites une extraction
+ et vous mettez à disposition le transcript
+ plus une version de résumé
+ qu'un annéant.
+ Et l'analyste va pouvoir commencer à enrichir
+ de façon à ce qu'effectivement,
+ quand c'est une réunion qui dure deux heures et demie,
+ globalement,
+ quelques minutes après,
+ il ait en fait un compte-rendu,
+ mais en plus qui a été revu par un humain.
+ Oui, c'est…
+ C'est génial, là.
+ Ce que vous avez fait, là, c'est top, là.
+ Donc, oui, mais on a parti justement
+ sur la partie fast Wister,
+ bien rebuildée
+ pour la Cuda 12
+ et pour la machine qui est chez nous.
+ Donc, ça, bien sûr, on a bien optimisé.
+ La partie est à 5 ans.
+ C'est top, hein ?
+ Ça marche.
+ Après, pour…
+ Est-ce que vous êtes bien d'accord
+ qu'en fait, si on n'envoie pas
+ un audio
+ et qu'on envoie…
+ Ça refait ?
+ Oui, c'est la taille du contexte.
+ Bon, on va…
+ Peut-être que t'as pas re-généré le contexte.
+ T'as pas re-généré le contexte ?
+ Non, j'ai…
+ Maintenant, j'ai juste commenté la partie.
+ C'est speech-to-texte
+ parce que le fichier est externe.
+ Je pense que la partie,
+ ça va…
+ Non, non, non.
+ La gamme.
+ Donc, justement,
+ sur la carte graphique,
+ une seule carte graphique
+ de 24 gigas de mémoire,
+ on va pouvoir faire tout
+ en 4-5 minutes.
+ Oui, enfin, il faudra le démontrer,
+ mais c'est un peu ça, notre perspective.
+ C'est-à-dire, passer de 20 gigas de mémoire
+ à 22 secondes
+ parce que les 22 secondes,
+ tu vas les exploser sur la 40-90, là.
+ Je pense.
+ Je pense.
+ Je pense que là-bas,
+ on a, je pense, 4-4 gratuites.
+ Non, non, non.
+ Je lui ai demandé la conférence à Mohamed.
+ On a 2 à 4 000.
+ 2 à 4 000 avec 16 gigas de mémoire.
+ Parce que moi, je ne spécifie pas
+ justement le nombre de frais.
+ Non, c'est lui aussi.
+ C'est lui qui matche.
+ Oui, j'étais surpris.
+ Donc, voilà.
+ Donc, notre point blocage,
+ c'était l'Into,
+ le Docker et l'Into
+ qui n'est pas compatible
+ avec la dernière version de la base.
+ C'est le coup de 11.
+ De toute façon,
+ dans le Docker, j'avais gardé
+ parce qu'ils utilisent le site Translate 2,
+ le pass Whisper,
+ la librairie,
+ la librairie Python,
+ ils utilisent le site Translate 2
+ un peu de tout.
+ Et quand j'essayais justement
+ d'exécuter
+ pass Whisper directement
+ sur cette machine,
+ ça n'a pas marché justement
+ parce qu'il y a une compatibilité.
+ Mais,
+ j'avais travaillé pour faire un build.
+ C'est bon, je vais prendre un sur le serveur.
+ Et donc, là,
+ j'ai pas de délai.
+ Oui, tu peux l'envoyer
+ pour le signal.
+ Oui, pour le partager.
+ Donc, voilà.
+ Si on a une constante,
+ si on avait un paramétrage qui définissait
+ la taille de contexte du modèle,
+ tu vois,
+ il faudrait qu'on ait une description
+ de quel modèle tu es en train d'utiliser,
+ quelle fenêtre de contexte il a.
+ Oui, il faut faire un contexte
+ d'abord un peu
+ tu vois, d'avoir un algo
+ qui permettrait de faire une dichotomie.
+ En fait, c'est un signe de faire une dichotomie.
+ Ce serait vachement bon.
+ Et après, justement,
+ nous, on a testé la première approche de
+ résumé, c'est à dire en coupe du texte.
+ Et enfin, on fait la numérisation partielle.
+ Et après, le dernier appel, c'est pour la finale.
+ Il existe l'autre approche qui s'appelle Refine,
+ qui est utilisée par Damien dans le contexte du Sénat.
+ C'est à dire que tu prends la première chanque,
+ tu fais la marée, tu ajoutes une deuxième chanque,
+ et tu fais encore une première.
+ Mais ça, ce n'est pas paralysant, bien sûr.
+ Parce que tu peux faire de manière très séquentielle.
+ Oui.
+ Après, c'est la première chanque, c'est la deuxième chanque,
+ c'est la deuxième chanque, c'est la deuxième chanque,
+ c'est la deuxième chanque, c'est la deuxième chanque,
+ c'est la deuxième chanque, c'est la deuxième chanque.
+ Après, on peut aussi justement tester son paramètre de qualité.
+ Mais 22 secondes, juste 22 secondes en asynchronisme.
+ Est-ce que tu l'as fait tester en séquentiel pour voir combien ça faisait?
+ Oui.
+ Est-ce que ça vaut peut-être le coup de faire le ?
+ Oui.
+ Oui, je pense que.
+ Oui, parce qu'en fait, du coup,
+ parce que si tu, ça permet de faire ce trade-off entre,
+ effectivement, un truc ultra efficace,
+ mais peut-être avec un niveau de qualité qui est peut-être moins beau,
+ mais qui est peut-être moins bon,
+ mais qui est peut-être moins bon,
+ mais qui est peut-être moins bon,
+ mais qui est peut-être moins bon,
+ mais qui est peut-être moins bon,
+ que effectivement, faire un refi fine.
+ Pour moi, je ne suis pas sûr si c'est vraiment un peu testé,
+ mais moi, je vois les avantages et les inconvénients de ces approches.
+ Par exemple, le refi fine, pour moi,
+ en fait,
+ j'ai l'impression que pour moi,
+ c'est un peu plus facile de faire des rapports.
+ Je ne sais pas si c'est possible,
+ mais je vois que dans les approches de réfine,
+ je vois que dans les approches de réfine,
+ il y a un peu plus de détail,
+ mais je pense que c'est peut-être plus facile de faire des rapports.
+ Mais non, je ne sais pas.
+ Non, je ne sais pas.
+ J'ai l'impression que dans les approches de réfine,
+ c'est un peu plus facile de faire des rapports.
+ On peut tester, mais moi, je vois les avantages et les inconvénients de ces approches.
+ Par exemple, les approches Refine, pour moi, en fait, j'ai l'impression que dans le résultat final,
+ le modèle, il va faire beaucoup plus d'attention au début du texte qu'à la fin.
+ Parce que normalement, il va voir toujours le début, entre guillemets.
+ C'est vrai.
+ Donc, pour moi, c'est la bonne approche par rapport à ce qu'on veut, c'est-à-dire en résumé, des points abordés.
+ Là, pour le coup, je suis d'accord.
+ Il n'y a pas quelque chose qui réfléchit particulièrement, mais quelque chose qui justement,
+ il prend en compte tout ce qui est dit de manière égale, c'est-à-dire que, autant le milieu ou la fin,
+ parce qu'en fait, dans une réunion, ce n'est pas forcément au début qu'on aborde les trucs importants,
+ ou à l'inversement, peut-être au début, mais ce n'est pas forcément au début.
+ Et du coup, finalement, c'est un peu...
+ Et du coup, finalement, c'est un peu...
+ En résumé, par chunk, c'est beaucoup plus pertinent, mais c'est plus qu'on le ferait naturellement.
+ Après, je pensais à une troisième approche.
+ Par exemple, on peut essayer de découper de manière plus intelligente des chunks,
+ en utilisant les embeddings ou des trucs de similarité sémantique,
+ et créer, détecter les sujets, en utilisant par exemple un algorithme de détection de communautés,
+ de vins ou les autres, parmi les chunks, et commencer avec juste les samaritains.
+ Oui, de clusteriser.
+ De clusteriser et faire des chunks, samaritains de chunks.
+ Pour cette expérience-là, on peut essayer d'utiliser une autre solution ou justement expérimentation.
+ L'intérêt que je vois à ça, c'est que ça permettrait globalement d'avoir...
+ C'est un peu l'effet qui se coule.
+ C'est-à-dire que tu as les thématiques.
+ Donc, parce que tu vois...
+ Tu as le premier niveau de résumé, et puis ensuite, tu peux ouvrir,
+ et puis en fait, avoir dedans, tu vois le chunk qui...
+ Donc, c'est aussi...
+ Et on commence à parler d'un autre quelque chose, on parle d'un autre sujet,
+ et puis on retourne sur le sujet précédent.
+ Ça permettrait aussi de...
+ Justement, de...
+ Oui, on peut le couper, finalement.
+ C'est un bon truc aussi.
+ Oui, c'est intéressant.
+ Donc, il faudrait faire effectivement un premier traitement, de passer à un modèle qui...
+ Mais là, pour ça, il faut aussi utiliser ou choisir un modèle de bedding.
+ Ça va rajouter encore un peu de...
+ Enfin, pour l'instant, si vous êtes à 5 minutes,
+ enfin, bon, peut-être que ça va être plus long, en fait, avec la 40-90, en fait, embarqué.
+ Mais bon, en fait...
+ C'est un petit match.
+ On a... Voilà.
+ Non, mais tu vois...
+ On a gagné du temps pour...
+ Non, mais sincèrement, je trouve que le truc est top.
+ Pour moi, ils seront contents d'avoir ça venu.
+ Et donc, du coup, là, je coupe.
+ Je coupe, t'envoies les fichiers, puis tu l'envoies.
+ Attends, mais...
+ Attends, attends, attends, mais je te l'envoie, là.
+ On coupe la réunion.
+ Oui, ils vont le faire.
