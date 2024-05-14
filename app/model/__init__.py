@@ -9,7 +9,7 @@ logging.basicConfig(
 )
 
 class Database:
-    def __init__(self, db_path="/home/mkeita/llm-gateway/data/results.sqlite"):
+    def __init__(self, db_path="path_to_results.sqlite"):
         self.db_path = db_path
         self.init_db()  # Initialize the database
         logging.info("Database initialized successfully.")  # Log successful initialization

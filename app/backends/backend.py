@@ -37,32 +37,19 @@ class LLMBackend:
                 setattr(self, attr, params[attr])
             # @TODO: Shall use the tokenizer from the model name / tokenizerclass
             # seems fine so far as it yields the same token count as the tokenizer from the mixed model
-            #self.tokenizer =  LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
-            #from transformers import LlamaTokenizerFast
-            #self.tokenizer = LlamaTokenizerFast.from_pretrained("TheBloke/Llama2-7B-GPTQ")
 
-            from transformers import LlamaTokenizerFast
-            token = ""
-        
-            #self.tokenizer = LlamaTokenizerFast.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=token)
             try:
-                #self.tokenizer = LlamaTokenizerFast.from_pretrained("meta-llama/Llama-2-7b-chat-hf", token=token)
-                self.tokenizer = LlamaTokenizerFast.from_pretrained("TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ", token  = token)
+                
+                self.tokenizer = LlamaTokenizerFast.from_pretrained("TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ")
             except Exception as e:
                 self.logger.error(f"Error initializing tokenizer: {e}")
 
             self.logger.info("Starting summarization")
-            # Process content and generate summarization
             
-        
-            #self.tokenizer = LlamaTokenizerFast.from_pretrained("Llama2-7B")
 
             self.promptTokenCount = len(self.tokenizer(self.prompt)['input_ids'])
 
-            #def get_generation(self, turns):
-                #self.logger.info("Starting summarization")
-    # Log the content to be summarized
-                #self.logger.info(f"Content to summarize: {turns[:50]}...")  # Example logging
+            
 
 
             return True
@@ -127,7 +114,4 @@ class LLMBackend:
     
     def publish(self, content: str):
         pass
-        #def get_generation(self, turns):
-            #self.logger.info("Starting summarization")
-    # Log the content to be summarized
-            #self.logger.info(f"Content to summarize: {turns[:50]}...")  # Example logging
+       

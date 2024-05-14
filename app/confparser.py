@@ -21,15 +21,13 @@ def createParser() -> argparse.ArgumentParser:
         type=str,
         help="OpenAI API Base URL",
         default= "https://chat.ai.linagora.exaion.com/v1/",)
-        #default=os.environ.get("OPENAI_API_BASE", "http://localhost:9000/v1"),
-        #)
+    
 
     parser.add_argument(
         "--api_key",
         type=str,
         help="OpenAI API Token",
         default = "sk-7Gqg14u-mGlX-egix20lgg"
-        #default=os.environ.get("OPENAI_API_TOKEN", "EMPTY"),
     )
 
     # GUNICORN
@@ -74,7 +72,7 @@ def createParser() -> argparse.ArgumentParser:
     parser.add_argument("--debug", action="store_true",
                         help="Display debug logs")
     
-    parser.add_argument("--db_path", type=str, help="Path to the result database", default ="/home/mkeita/llm-gateway/data/results.sqlite")
+    parser.add_argument("--db_path", type=str, help="Path to the result database", default ="path_to_results.sqlite_database")
     
 
     return parser
