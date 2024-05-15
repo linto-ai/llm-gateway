@@ -97,7 +97,7 @@ async def queue_api_calls_map_reduce(client: LLM, prompt_map: str, prompt_reduce
 
 
 def queue_api_calls_refined(client: LLM, prompt_refine: str, prompt_refined_bf_text : str, chunks: list[str],
-                            max_tokens_llm, max_tokens):
+                            max_tokens_llm):
     """
     Calls the API to refine each chunk of the document.
 
