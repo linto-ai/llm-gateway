@@ -95,6 +95,30 @@ async def queue_api_calls_map_reduce(client: LLM, prompt_map: str, prompt_reduce
     return final_response
 
 
+
+def queue_api_calls_refined(client: LLM, prompt_refine: str, prompt_refined_bf_text : str, chunks: list[str],
+                            max_tokens_llm, max_tokens):
+    """
+    Calls the API to refine each chunk of the document.
+
+    Args:
+        client (LLM): The LLM client.
+        prompt_refine (str): The prompt for refining.
+        prompt_refined_bf_text (str): The prompt before refining the text.
+        chunks (list): The list of chunks to be refined.
+        max_tokens_llm (int): Maximum tokens for LLM.
+    Returns:
+        str: The final refined text.
+    """
+    n = len(chunks)
+    resume = ""
+    for chunk in chunks:
+        message = get_chat_prompt(prompt_refine + resume, prompt_refined_bf_text + chunk)
+        response = asyncio.run(client.call_llm(message, max_tokens_llm // n))
+        resume += response
+    return resume
+
+
 def summarized_text(api_key, base_url, prompts_file: str, input_file, output_file, chunk_size, chunk_overlap,
                     max_tokens_llm,
                     max_tokens):
@@ -124,9 +148,13 @@ def summarized_text(api_key, base_url, prompts_file: str, input_file, output_fil
     input_text = load_file(input_file)
     chunks = split_text(input_text, chunk_size, chunk_overlap)
 
-    final_summary = asyncio.run(
-        queue_api_calls_map_reduce(llm, prompt_map=prompts["prompt_map"], prompt_reduce=prompts["prompt_reduce"],
-                                   chunks=chunks, max_tokens_llm=max_tokens_llm, max_tokens=max_tokens))
+    #final_summary = asyncio.run(
+    #    queue_api_calls_map_reduce(llm, prompt_map=prompts["prompt_map"], prompt_reduce=prompts["prompt_reduce"],
+    #                               chunks=chunks, max_tokens_llm=max_tokens_llm, max_tokens=max_tokens))
+
+    final_summary = queue_api_calls_refined(llm, prompt_refine=prompts["prompt_refine"],
+                                prompt_refined_bf_text=prompts["prompt_refine_bf_text"],
+                                chunks=chunks, max_tokens_llm=max_tokens_llm, max_tokens=max_tokens)
 
     with open(output_file, 'w', encoding='utf-8') as file:
         file.write(final_summary)

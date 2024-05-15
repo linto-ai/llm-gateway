@@ -18,7 +18,6 @@ def get_chat_prompt(prompt: str, input_text: str) -> list[dict]:
     ]
     return chat_prompt
 
-
 class Prompt:
     """
     The Prompt class is used to generate chat prompts for a conversation.
