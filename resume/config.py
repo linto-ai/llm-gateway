@@ -3,6 +3,7 @@ import os
 
 __all__ = ["createParser"]
 
+
 def createParser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
 
