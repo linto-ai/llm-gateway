@@ -106,18 +106,23 @@ def summarized_text(api_key, base_url, prompts_file: str, input_file, output_fil
 
     start = time.time()
 
+    # Initialize the LLM client
     llm = LLM(api_key=api_key, base_url=base_url)
 
     # Check if max_tokens is lower than llm.max_tokens
     if max_tokens > llm.max_tokens:
         raise ValueError("max_tokens cannot be greater than llm.max_tokens")
 
+    # Load prompts from file depending on the resume type
     f = open(prompts_file, "r")
     prompts = json.loads(f.read())
+    f.close()
 
+    # Load input text
     input_text = load_file(input_file)
     chunks = split_text(input_text, chunk_size, chunk_overlap)
 
+    # Call the API based on the resume type
     if resume_type == 'map_reduce':
         final_summary = asyncio.run(
             queue_api_calls_map_reduce(llm, prompt_map=prompts["prompt_map"], prompt_reduce=prompts["prompt_reduce"],
