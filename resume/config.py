@@ -55,12 +55,6 @@ def create_parser() -> argparse.ArgumentParser:
         default=200,
     )
     parser.add_argument(
-        "--max_tokens_llm",
-        type=int,
-        help="The maximum number of tokens for LLM",
-        default=7000,
-    )
-    parser.add_argument(
         "--max_tokens",
         type=int,
         help="The maximum number of tokens for reduction",

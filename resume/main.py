@@ -1,6 +1,7 @@
 from config import create_parser
 from summary import summarized_text
 
+
 def main():
     """
     This function reads the configuration and calls the summarized_text function.
@@ -18,6 +19,7 @@ def main():
         chunk_overlap=args.chunk_overlap,
         max_tokens=args.max_tokens
     )
+
 
 if __name__ == "__main__":
     parser = create_parser()

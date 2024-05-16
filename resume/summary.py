@@ -102,9 +102,15 @@ def summarized_text(api_key, base_url, prompts_file: str, input_file, output_fil
     Returns:
         str: The summarized text.
     """
+
     start = time.time()
 
     llm = LLM(api_key=api_key, base_url=base_url)
+
+    # Check if max_tokens is lower than llm.max_tokens
+    if max_tokens > llm.max_tokens:
+        raise ValueError("max_tokens cannot be greater than llm.max_tokens")
+
     f = open(prompts_file, "r")
     prompts = json.loads(f.read())
 
