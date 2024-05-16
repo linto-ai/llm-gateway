@@ -23,7 +23,7 @@ class LLM:
             model : str
                 The model to use for the LLM
             max_tokens : int
-                The maximum number of tokens for the LLM
+                The maximum number of tokens that the llm can get as an input
         """
         self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.model = model

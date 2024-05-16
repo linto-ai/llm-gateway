@@ -5,6 +5,18 @@ __all__ = ["create_parser"]
 
 
 def create_parser() -> argparse.ArgumentParser:
+    """
+    Creates a parser for the command line arguments.
+    The parser is created with the following arguments:
+    --api_key: OpenAI API Token
+    --api_base: OpenAI API Base URL
+    --prompt_file: Path to the prompt file
+    --input_file: Path to the input text file
+    --output_file: Path to the output text file
+    --chunk_size: The size of each chunk
+    --chunk_overlap: The overlap between chunks
+    --max_tokens: The maximum number of tokens for reduction
+    """
     parser = argparse.ArgumentParser()
 
     # OpenAI settings

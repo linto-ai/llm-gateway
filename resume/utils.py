@@ -28,3 +28,24 @@ def split_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
     for i in range(0, len(text), chunk_size - chunk_overlap):
         chunks.append(text[i:i + chunk_size])
     return chunks
+
+
+def get_chat_prompt(prompt: str, input_text: str) -> list[dict]:
+    """
+    Generate a chat prompt for a conversation.
+
+    Args:
+        prompt (str): The initial prompt for the conversation.
+        input_text (str): The user's input text for the conversation.
+
+    Returns:
+        list[dict]: A list of dictionaries representing the chat prompt.
+    """
+    chat_prompt = [
+        {"role": "system",
+         "content": "Vous êtes un assistant spécialisé dans le résumé de conversations en francais et vous parlez uniquement francais dans un langage soutenu."},
+        {"role": "user",
+         "content": prompt},
+        {"role": "user", "content": input_text},
+    ]
+    return chat_prompt

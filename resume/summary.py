@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 from llm import LLM
-from prompt import get_chat_prompt
+from resume.utils import get_chat_prompt
 from utils import load_file, split_text
 
 
