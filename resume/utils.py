@@ -1,3 +1,4 @@
+RESUME_TYPE = ['refine', 'map_reduce']
 def load_file(file_path: str) -> str:
     """
     Reads a file and returns its content.

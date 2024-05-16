@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 from llm import LLM
-from resume.utils import get_chat_prompt
+from resume.utils import get_chat_prompt, RESUME_TYPE
 from utils import load_file, split_text
 
 
@@ -86,7 +86,7 @@ def queue_api_calls_refined(client: LLM, prompt_refine: str, prompt_refined_bf_t
 
 
 def summarized_text(api_key, base_url, prompts_file: str, input_file, output_file, chunk_size, chunk_overlap,
-                    max_tokens) -> str:
+                    max_tokens, resume_type: str) -> str:
     """
     Summarizes a text from a given file path.
 
@@ -99,6 +99,7 @@ def summarized_text(api_key, base_url, prompts_file: str, input_file, output_fil
         chunk_size (int): The size of each chunk.
         chunk_overlap (int): The overlap between chunks.
         max_tokens (int): Maximum tokens for the output.
+        resume_type (str): The type of resume to use.
     Returns:
         str: The summarized text.
     """
@@ -117,13 +118,16 @@ def summarized_text(api_key, base_url, prompts_file: str, input_file, output_fil
     input_text = load_file(input_file)
     chunks = split_text(input_text, chunk_size, chunk_overlap)
 
-    # final_summary = asyncio.run(
-    #    queue_api_calls_map_reduce(llm, prompt_map=prompts["prompt_map"], prompt_reduce=prompts["prompt_reduce"],
-    #                               chunks=chunks,max_tokens = max_tokens))
-
-    final_summary = queue_api_calls_refined(llm, prompt_refine=prompts["prompt_refine"],
+    if resume_type == 'map_reduce':
+        final_summary = asyncio.run(
+            queue_api_calls_map_reduce(llm, prompt_map=prompts["prompt_map"], prompt_reduce=prompts["prompt_reduce"],
+                                       chunks=chunks, max_tokens=max_tokens))
+    elif resume_type == 'refine':
+        final_summary = queue_api_calls_refined(llm, prompt_refine=prompts["prompt_refine"],
                                             prompt_refined_bf_text=prompts["prompt_refine_bf_text"],
                                             chunks=chunks, max_tokens=max_tokens)
+    else:
+        raise ValueError("Invalid resume type. Please choose from {}".format(RESUME_TYPE))
 
     with open(output_file, 'w', encoding='utf-8') as file:
         file.write(final_summary)
