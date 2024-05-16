@@ -1,11 +1,11 @@
-from config import createParser
+from config import create_parser
 from summary import summarized_text
 
 def main():
     """
     This function reads the configuration and calls the summarized_text function.
     """
-    parser = createParser()
+    parser = create_parser()
     args = parser.parse_args()
 
     summarized_text(
@@ -16,12 +16,11 @@ def main():
         output_file=args.output_file,
         chunk_size=args.chunk_size,
         chunk_overlap=args.chunk_overlap,
-        max_tokens_llm=args.max_tokens_llm,
         max_tokens=args.max_tokens
     )
 
 if __name__ == "__main__":
-    parser = createParser()
+    parser = create_parser()
     args = parser.parse_args()
     summarized_text(
         api_key=args.api_key,
@@ -31,6 +30,5 @@ if __name__ == "__main__":
         output_file="resume.txt",
         chunk_size=1000,
         chunk_overlap=100,
-        max_tokens_llm=8000,
-        max_tokens=1000
+        max_tokens=5000
     )

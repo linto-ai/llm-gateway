@@ -10,7 +10,7 @@ class LLM:
     """
 
     def __init__(self, api_key: str, base_url: str = "https://api.openai.com/v1",
-                 model: str = "meta-llama-3-8b-instruct"):
+                 model: str = "meta-llama-3-8b-instruct", max_tokens: int = 8000):
         """
         Constructs all the necessary attributes for the LLM object.
 
@@ -22,9 +22,12 @@ class LLM:
                 Base URL for the OpenAI API
             model : str
                 The model to use for the LLM
+            max_tokens : int
+                The maximum number of tokens for the LLM
         """
         self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.model = model
+        self.max_tokens = max_tokens
 
     async def call_llm(self, message: list[dict], max_tokens: int = 1000, retries: int = 3) -> str:
         """
@@ -35,7 +38,7 @@ class LLM:
             message : list[dict]
                 the prompt and input text to send to the LLM
             max_tokens : int
-                the maximum number of tokens to generate
+                the maximum number of tokens to generate as an output
             retries : int
                 the number of times to retry in case of failure
 

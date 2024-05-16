@@ -1,10 +1,10 @@
 import argparse
 import os
 
-__all__ = ["createParser"]
+__all__ = ["create_parser"]
 
 
-def createParser() -> argparse.ArgumentParser:
+def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
 
     # OpenAI settings
