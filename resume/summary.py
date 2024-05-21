@@ -129,8 +129,8 @@ def summarized_text(api_key, base_url, prompts_file: str, input_file, output_fil
                                        chunks=chunks, max_tokens=max_tokens))
     elif resume_type == 'refine':
         final_summary = queue_api_calls_refined(llm, prompt_refine=prompts["prompt_refine"],
-                                            prompt_refined_bf_text=prompts["prompt_refine_bf_text"],
-                                            chunks=chunks, max_tokens=max_tokens)
+                                                prompt_refined_bf_text=prompts["prompt_refine_bf_text"],
+                                                chunks=chunks, max_tokens=max_tokens)
     else:
         raise ValueError("Invalid resume type. Please choose from {}".format(RESUME_TYPE))
 

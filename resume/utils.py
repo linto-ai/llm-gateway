@@ -1,4 +1,8 @@
+import re
+
 RESUME_TYPE = ['refine', 'map_reduce']
+
+
 def load_file(file_path: str) -> str:
     """
     Reads a file and returns its content.
@@ -50,3 +54,37 @@ def get_chat_prompt(prompt: str, input_text: str) -> list[dict]:
         {"role": "user", "content": input_text},
     ]
     return chat_prompt
+
+# def split_speaker(text: str):
+#     """
+#     Split the text into turns based on the speaker.
+#
+#     Args:
+#         text (str): The text to split into turns.
+#
+#     Returns:
+#         list[str]: A list of turns.
+#     """
+#     lines = [line for line in text.splitlines() if line.strip()]
+#     speaker = "(?) : "
+#     new_turns = []
+#     pattern = r"^[A-Za-z0-9\s\-éèêëàâäôöùûüçïîÿæœñ]+ ?: ?"
+#     sentence_endings = r"(?:\. |\.\.\. |\? |! |\.\.\.|\?\"|!\"|\?'|!'|¿ |¡ |« |» |· )(?=[A-Z])"
+#     for line in lines:
+#         token_count = 0
+#         match = re.match(pattern, line, re.I)
+#         if match:
+#             speaker = match.group(0)
+#         else:
+#             line = f"{speaker}{line}" if speaker else f"(?) : {line}"
+#
+#         tokens = self.tokenizer(line)['input_ids']
+#         token_count += len(tokens)
+#         if token_count > self.createNewTurnAfter:
+#             sentences = [sentence for sentence in re.split(sentence_endings, line) if sentence.strip()]
+#             for i, sentence in enumerate(sentences):
+#                 new_turns.append(sentence if i == 0 else f"{speaker}{sentence}")
+#         else:
+#             new_turns.append(line)
+#
+#     return new_turns
