@@ -15,7 +15,7 @@ def create_parser() -> argparse.ArgumentParser:
     --output_file: Path to the output text file
     --chunk_size: The size of each chunk
     --chunk_overlap: The overlap between chunks
-    --max_tokens: The maximum number of tokens for reduction
+    --max_tokens: The maximum number of tokens for reductionA
     """
     parser = argparse.ArgumentParser()
 

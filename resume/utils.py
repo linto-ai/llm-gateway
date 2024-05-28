@@ -48,43 +48,32 @@ def get_chat_prompt(prompt: str, input_text: str) -> list[dict]:
     """
     chat_prompt = [
         {"role": "system",
-         "content": "Vous êtes un assistant spécialisé dans le résumé de conversations en francais et vous parlez uniquement francais dans un langage soutenu."},
+         "content": "Vous êtes un assistant spécialisé dans le résumé de conversations en francais et vous parlez uniquement francais dans une langage similaire ce celui qui vous ai donné."},
         {"role": "user",
-         "content": prompt},
-        {"role": "user", "content": input_text},
+         "content": prompt + "### Retourne le texte modifié dans des balises <TEXTE> ... </TEXTE>."},
+        {"role": "user", "content": "<TEXTE>" + input_text + "</TEXTE>"},
     ]
     return chat_prompt
 
-# def split_speaker(text: str):
-#     """
-#     Split the text into turns based on the speaker.
-#
-#     Args:
-#         text (str): The text to split into turns.
-#
-#     Returns:
-#         list[str]: A list of turns.
-#     """
-#     lines = [line for line in text.splitlines() if line.strip()]
-#     speaker = "(?) : "
-#     new_turns = []
-#     pattern = r"^[A-Za-z0-9\s\-éèêëàâäôöùûüçïîÿæœñ]+ ?: ?"
-#     sentence_endings = r"(?:\. |\.\.\. |\? |! |\.\.\.|\?\"|!\"|\?'|!'|¿ |¡ |« |» |· )(?=[A-Z])"
-#     for line in lines:
-#         token_count = 0
-#         match = re.match(pattern, line, re.I)
-#         if match:
-#             speaker = match.group(0)
-#         else:
-#             line = f"{speaker}{line}" if speaker else f"(?) : {line}"
-#
-#         tokens = self.tokenizer(line)['input_ids']
-#         token_count += len(tokens)
-#         if token_count > self.createNewTurnAfter:
-#             sentences = [sentence for sentence in re.split(sentence_endings, line) if sentence.strip()]
-#             for i, sentence in enumerate(sentences):
-#                 new_turns.append(sentence if i == 0 else f"{speaker}{sentence}")
-#         else:
-#             new_turns.append(line)
-#
-#     return new_turns
+def find_string_in_text(text: str, pattern: str) -> str:
+    """
+    Finds a string in a text using a regular expression pattern.
+
+    Args:
+        text (str): The text to search in.
+        pattern (str): The regular expression pattern to match.
+
+    Returns:
+        str: The matched string.
+    """
+    matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
+    return matches
+
+def get_text_inside_tags(text: str) -> str:
+    pattern = r'<TEXTE>(.*?)</TEXTE>'
+    try:
+        matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)[-1]
+    except:
+        print(text)
+        exit(100)
+    return matches

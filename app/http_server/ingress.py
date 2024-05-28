@@ -33,12 +33,15 @@ args = parser.parse_args()
 db = Database(args.db_path)
 # uses db and lock from ingress.py
 from app.backends.vLLM import VLLM
+from app.backends.senat import Senat
 
 # Instantiate backend threadSafe singletons for every supported backends inside guicorn workers
 vLLM = VLLM(api_key=args.api_key, api_base=args.api_base)
-backends = {"vLLM": vLLM}
+senat  = Senat(api_key=args.api_key, api_base=args.api_base)
+
+backends = {"vLLM": vLLM, "senat": senat}
 # Loads defined services from JSON manifests and creates a flask route for each service
-def handleGeneration(service_name):
+def handleGeneration(service_name : str):
     def flaskHandler():
         try:
             file = request.files.get('file')
@@ -160,27 +163,40 @@ def worker():
             logger.info(f"Task {task['task_id']} processing started")
             # setup backend to process task
             # @TODO: Implement other backends
-            if task["backend"] == "vLLM":
-                backend = backends["vLLM"]
-            backend.loadPrompt(task["type"], task["fields"])
-            backend.setup(task["backendParams"], task["task_id"])
-            logger.info(f"Task {task['task_id']} setup with backend parameters: {task['backendParams']}")
-            chunked_content = backend.get_splits(task["content"])
-            logger.info(f"Chunked content for task {task['task_id']}: {chunked_content}")
-            #summary = backend.get_generation(chunked_content)
-            #publish
-            summary = backend.publish(chunked_content)
-            #summary = summary.encode('utf-8') 
-            logger.info(f"Generated summary for task {task['task_id']}: {summary}")
-            #@TODO Might compare those
-            chunked_content_string = "\n".join(chunked_content)
-            
-            summary_string = "\n".join(summary)
-            db.put(task["task_id"], summary)
-            print(f"""ceci est le text :{summary}""")
-            logger.info(f"Task {task['task_id']} processing END")
-            if task is None:
-                break
+            if task["backend"] == 'senat':
+                backend = backends["senat"]
+                texte = task["content"]
+                type_cr = task['type']
+                logger.info(f"Task {task['task_id']} setup with backend parameters: {task['backendParams']}")
+                summary = backend.get_resume(texte, type_cr, task["backendParams"])
+                db.put(task["task_id"], summary)
+                print(f"""ceci est le text :{summary}""")
+                logger.info(f"Task {task['task_id']} processing END")
+                if task is None:
+                    break
+
+            else :
+                if task["backend"] == 'vLLM':
+                    backend = backends["vLLM"]
+                backend.loadPrompt(task["type"], task["fields"])
+                backend.setup(task["backendParams"], task["task_id"])
+                logger.info(f"Task {task['task_id']} setup with backend parameters: {task['backendParams']}")
+                chunked_content = backend.get_splits(task["content"])
+                logger.info(f"Chunked content for task {task['task_id']}: {chunked_content}")
+                #summary = backend.get_generation(chunked_content)
+                #publish
+                summary = backend.publish(chunked_content)
+                #summary = summary.encode('utf-8')
+                logger.info(f"Generated summary for task {task['task_id']}: {summary}")
+                #@TODO Might compare those
+                chunked_content_string = "\n".join(chunked_content)
+
+                summary_string = "\n".join(summary)
+                db.put(task["task_id"], summary)
+                print(f"""ceci est le text :{summary}""")
+                logger.info(f"Task {task['task_id']} processing END")
+                if task is None:
+                    break
             # check task parameters
         #except Exception as e:
             #logger.error("An error occurred in processing tasks : " + str(e))

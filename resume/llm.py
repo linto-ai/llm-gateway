@@ -2,6 +2,8 @@ import asyncio
 import aiohttp
 from openai import AsyncOpenAI
 
+from utils import get_text_inside_tags
+
 
 class LLM:
     """
@@ -55,7 +57,8 @@ class LLM:
                     stream=False,
                     max_tokens=max_tokens
                 )
-                return response.choices[0].message.content.strip()
+                # Get the text inside the tags <TEXT> </TEXT>
+                return get_text_inside_tags(response.choices[0].message.content.strip())
             except (aiohttp.ClientError, aiohttp.ServerTimeoutError) as e:
                 print(f"Request failed: {e}, retrying {attempt + 1}/{retries}...")
                 await asyncio.sleep(2 ** attempt)

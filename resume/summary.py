@@ -1,8 +1,11 @@
 import asyncio
 import json
 import time
+
+from transcriptions import Transcription
+
 from llm import LLM
-from resume.utils import get_chat_prompt, RESUME_TYPE
+from utils import get_chat_prompt, RESUME_TYPE
 from utils import load_file, split_text
 
 
@@ -22,6 +25,11 @@ async def infer_llm_map(client: LLM, prompt_map: str, text: str, max_tokens: int
     message = get_chat_prompt(prompt_map, text)
     return await client.call_llm(message, max_tokens)
 
+
+async def infer_llm_on_chunck(client: LLM, prompt: str, chunk: dict, max_tokens: int) -> dict:
+    message = get_chat_prompt(prompt, chunk['text'])
+    chunk['text'] = await client.call_llm(message, max_tokens)
+    return chunk
 
 async def infer_llm_reduce(client: LLM, prompt_reduce: str, text: str, max_tokens) -> str:
     """
@@ -141,3 +149,73 @@ def summarized_text(api_key, base_url, prompts_file: str, input_file, output_fil
     print(f"Time taken: {end - start}")
 
     return final_summary
+
+
+async def map_trancription(api_key, base_url, prompt, transcription: Transcription, max_call=5):
+    """
+    Asynchronously calls the LLM to process each chunk of the transcription.
+
+    Args:
+        api_key (str): The API key for OpenAI.
+        base_url (str): The base URL for the OpenAI API.
+        prompt (str): The prompt for the LLM.
+        transcription (Transcription): The transcription to be processed.
+        max_call (int, optional): The maximum number of API calls to make at once. Defaults to 5.
+
+    Returns:
+        list[dict]: A list of processed transcription chunks.
+
+    Raises:
+        Exception: If the API fails to respond after multiple retries.
+    """
+    start = time.time()
+
+    # Initialize the LLM client
+    llm = LLM(api_key=api_key, base_url=base_url)
+    n = len(transcription)
+    i = 0
+    responses = []
+    while(i < n):
+        print(responses)
+        print(len(transcription[i:min(i + max_call, n - 1)]))
+        result = await asyncio.gather(
+            *[infer_llm_on_chunck(llm, prompt, turn, 4000) for turn in transcription[i:min(i+max_call,n-1)]])
+        for r in result:
+            responses.append(r)
+        i+= max_call
+    end = time.time()
+    print(f"Time taken: {end - start}")
+    return responses
+
+
+
+
+async def generate_cri(api_key, base_url, prompts_file: str, input_file):
+    start = time.time()
+
+    # Initialize the LLM client
+    llm = LLM(api_key=api_key, base_url=base_url)
+
+    # Load prompts from file depending on the resume type
+    f = open(prompts_file, "r")
+    prompts = json.loads(f.read())
+    f.close()
+
+    # Load input text
+    with open(input_file, 'r') as file:
+        dict_json = json.load(file)
+
+    #chunks = split_json_text(dict_json)[:10]
+
+    responses = await asyncio.gather(
+        *[infer_llm_map(llm, prompts['prompt_CRI'], chunk, 3000) for chunk in chunks])
+    results = [response for response in responses]
+
+    # Call the API based on the resume type
+
+    end = time.time()
+    print(f"Time taken: {end - start}")
+
+    for i in range(len(results)):
+        dict_json[i]['CRI'] = results[i]
+    return dict_json
