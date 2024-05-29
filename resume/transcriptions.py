@@ -27,7 +27,7 @@ class Transcription:
     def __iter__(self):
         return iter(self.chuncked_transcription)
 
-    def __getitem__(self, i : int):
+    def __getitem__(self, i: int):
         return self.chuncked_transcription[i]
 
     def chunck_turns(self, max_length=4000):
@@ -146,7 +146,7 @@ class Transcription:
 
         while i < n:
             result = await asyncio.gather(
-                *[infer_llm_on_chunck(llm, prompt, turn, 2000) for turn in self[i:min(i + max_call, n)]])
+                *[infer_llm_on_chunck(llm, prompt, turn, 6000) for turn in self[i:min(i + max_call, n)]])
             responses.extend(result)
             i += max_call
 
@@ -194,7 +194,8 @@ class Transcription:
         self.reverse_chunck()
         return None
 
-def group_by_speaker(data: list) -> list:
+
+def group_by_speaker(data: list) -> list[dict]:
     """
     Groups the given data by speaker.
 
@@ -206,7 +207,7 @@ def group_by_speaker(data: list) -> list:
         data (list): A list of dictionaries where each dictionary represents a turn in a conversation.
 
     Returns:
-        list: A list of dictionaries where each dictionary represents a grouped turn in the conversation.
+        list: A list of dictionaries where each dictionary represents a grouped turn in the conversation speaker are converted to int.
     """
     grouped_data = []
     last_speaker = ''
@@ -217,7 +218,11 @@ def group_by_speaker(data: list) -> list:
         if speaker == last_speaker:
             grouped_data[-1]['text'] += ' ' + item['text']
         else:
-            grouped_data.append({'speaker': speaker, 'text': item['text'], 'start': item['start']})
+            if (type(speaker) == str):
+                speaker_id = int(speaker.split('_')[1])
+            speaker_id = speaker
+            grouped_data.append(
+                {'speaker': speaker_id, 'text': item['text'], 'start': item['start']})
 
         last_speaker = speaker
 

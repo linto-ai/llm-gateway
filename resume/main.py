@@ -50,7 +50,7 @@ if __name__ == "__main__":
         trans.clean_original_file()
         trans.transcription = trans.transcription[:4]
         trans.chuncked_transcription = trans.chunck_turns()
-        trans.apply_map(args.api_key, args.api_base, PROMPT_CLEAN, max_call=5, model =  "meta-llama-3-8b-instruct")
+        trans.apply_map(args.api_key, args.api_base, PROMPT_CLEAN, max_call=5, model =  "meta-llama-3-70b-instruct")
         with open('../transcription_db/senat_test_clean.json', 'w') as file:
             print('écriture du fichier')
             json.dump(trans.transcription, file, indent=4)

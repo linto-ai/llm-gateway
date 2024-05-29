@@ -1,3 +1,4 @@
+import json
 import re
 
 RESUME_TYPE = ['refine', 'map_reduce']
@@ -15,6 +16,20 @@ def load_file(file_path: str) -> str:
     """
     with open(file_path, 'r', encoding='utf-8') as file:
         return file.read()
+
+def load_prompts(prompts_file: str) -> dict:
+    """
+    Loads prompts from a file.
+
+    Args:
+        prompts_file (str): The path to the prompts file.
+
+    Returns:
+        dict: The loaded prompts.
+    """
+    with open(prompts_file, "r") as file:
+        prompts = json.loads(file.read())
+    return prompts
 
 
 def split_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:

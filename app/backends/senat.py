@@ -21,6 +21,21 @@ class Senat(LLMBackend):
     def get_generation(self, turns: List[str]):
         pass
     def get_resume(self,transcription, cr_type, model_name):
-        Interface()
+        """
+        Generate a resume from a transcription
+        """
+        interface = Interface(api_key=self.api_key, api_base=self.api_base, logger=self.logger)
+        return reformat_out(interface.generate_resume(cr_type, model_name, reformat(transcription)))
 
 
+def reformat(transcription):
+    """
+    Reformat the transcription to the format that the interface can understand
+    """
+    return transcription
+
+def reformat_out(transcription):
+    """
+    Reformat the transcription to the format that the interface can understand for output
+    """
+    return transcription
