@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 from openai import AsyncOpenAI
 
-from utils import get_text_inside_tags
+from resume.utils import get_text_inside_tags
 
 
 class LLM:

@@ -1,9 +1,8 @@
-from resume.corrections import Dictionary, read_epitran_dictionary
+from resume.dictionnaires import Dictionary, read_epitran_dictionary
 from resume.transcriptions import Transcription
-from utils import load_prompts
+from resume.utils import load_prompts, read_file_to_string
 
-PROMPTS = load_prompts('prompts.json')
-
+PROMPTS_DIR = 'prompts/'
 
 class Interface:
     """Interface class for the resume module. Main use is llm-gateway"""
@@ -13,14 +12,14 @@ class Interface:
         self.api_base = api_base
         self.logger = logger
 
-    def generate_resume(self, cr_type, model_name, transcription):
+    def generate_resume(self, cr_type : str, model_name : str, transcription : Transcription):
         trans = Transcription(transcription)
         trans.clean_original_file()
         trans.chuncked_transcription = trans.chunck_turns()
         if self.logger:
             self.logger.info("Cleaning the transcription and balise noms")
         # Cleaning the transcription and balise noms
-        trans.apply_map(self.api_key, self.api_base, PROMPTS['CLEAN'], max_call=5, model="meta-llama-3-8b-instruct")
+        trans.apply_map(self.api_key, self.api_base, read_file_to_string(PROMPTS_DIR+'clean.txt'), max_call=5, model="meta-llama-3-8b-instruct")
         if self.logger:
             self.logger.info("Cleaning the names")
         # Clean the name with epitran
@@ -48,7 +47,15 @@ class Interface:
                 self.logger.error(f"Format de CR non reconnu : {cr_type}")
         pass
 
-    def generate_cri(self, transcription, cr_type, model_name) -> list[dict]:
-        ### Il faut faire en sorte que le format qui arrive ici est de la bonne forme sinon l'interfacer
-        ###
-        return None
+    def generate_cri(self, transcription : Transcription, model_name : str) -> list[dict]:
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS['CRI'], max_call=5, model=model_name)
+        return transcription.transcription
+
+    def generate_cra(self, transcription : Transcription, model_name : str) -> list[dict]:
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS['CRA'], max_call=5, model=model_name)
+        return transcription.transcription
+
+    def generate_cred(self, transcription : Transcription, model_name : str) -> list[dict]:
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS['CRED'], max_call=5, model=model_name)
+        return transcription.transcription
+

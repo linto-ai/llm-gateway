@@ -1,3 +1,5 @@
+import re
+
 from resume.interface import Interface
 from .backend import LLMBackend
 from typing import List, Tuple
@@ -25,17 +27,30 @@ class Senat(LLMBackend):
         Generate a resume from a transcription
         """
         interface = Interface(api_key=self.api_key, api_base=self.api_base, logger=self.logger)
-        return reformat_out(interface.generate_resume(cr_type, model_name, reformat(transcription)))
+        return reformat_out(interface.generate_resume(cr_type, model_name, reformat_in(transcription)))
 
 
-def reformat(transcription):
+
+def reformat_in(transcription):
     """
     Reformat the transcription to the format that the interface can understand
     """
-    return transcription
+    lines = transcription.split('\n')
+    result = []
+    for i, line in enumerate(lines):
+        match = re.match(r'(.*?):\s(.*)', line)
+        if match:
+            speaker, text = match.groups()
+            result.append({'speaker': speaker, 'start': i, 'text': text})
+    return result
 
 def reformat_out(transcription):
     """
-    Reformat the transcription to the format that the interface can understand for output
+    Reformat the transcription to the original format from the list of dictionaries
     """
-    return transcription
+    result = []
+    for line in transcription:
+        result.append(f"{line['speaker']} : {line['text']}")
+    return '\n'.join(result)
+
+

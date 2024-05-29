@@ -92,3 +92,7 @@ def get_text_inside_tags(text: str) -> str:
         print(text)
         exit(100)
     return matches
+
+def read_file_to_string(file_path):
+    with open(file_path, 'r') as file:
+        return file.read()

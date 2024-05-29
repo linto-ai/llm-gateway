@@ -2,8 +2,8 @@ import asyncio
 import json
 import re
 
-from corrections import Dictionary
-from llm import LLM
+from resume.dictionnaires import Dictionary
+from resume.llm import LLM
 
 
 class Transcription:
@@ -105,7 +105,7 @@ class Transcription:
             for match in re.finditer(r'<(.*?)>', text):
                 noun = match.group(1)
                 score, best_match = dictionary.get_best_match_with_score(noun)
-
+                print(f'{noun} -> {best_match} ({score})')
                 if score > threshold:
                     # Replace the noun with the best match
                     text = text.replace(f'<{noun}>', best_match)
@@ -193,6 +193,14 @@ class Transcription:
         self.replace_text(responses)
         self.reverse_chunck()
         return None
+    def speaker_to_int(self) -> None:
+        """
+        Converts the speaker in the transcription to int.
+        """
+        for turn in self.transcription:
+            turn['speaker'] = speaker_to_int(turn['speaker'])
+        for turn in self.chuncked_transcription:
+            turn['speaker'] = speaker_to_int(turn['speaker'])
 
 
 def group_by_speaker(data: list) -> list[dict]:
@@ -214,20 +222,28 @@ def group_by_speaker(data: list) -> list[dict]:
 
     for item in data:
         speaker = item['speaker']
-
         if speaker == last_speaker:
             grouped_data[-1]['text'] += ' ' + item['text']
         else:
-            if (type(speaker) == str):
-                speaker_id = int(speaker.split('_')[1])
-            speaker_id = speaker
             grouped_data.append(
-                {'speaker': speaker_id, 'text': item['text'], 'start': item['start']})
-
+                {'speaker': speaker, 'text': item['text'], 'start': item['start']})
         last_speaker = speaker
 
     return grouped_data
 
+def speaker_to_int(speaker: str) -> int:
+    """
+    Converts the given speaker string to an integer.
+
+    This function takes a speaker string and converts it to an integer by extracting the numeric part of the string.
+
+    Args:
+        speaker (str): The speaker string to convert to an integer.
+
+    Returns:
+        int: The integer representation of the speaker string.
+    """
+    return int(speaker.split('_')[1])
 
 def split_text_into_n_parts(text: str, n: int) -> list[str]:
     """

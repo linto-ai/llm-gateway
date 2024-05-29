@@ -1,5 +1,0 @@
-{
-  "CLEAN" :"Je vais vous fournir un texte transcrit qui peut contenir des erreurs. \n### Veuillez corriger uniquement les erreurs d'orthographe, de grammaire et de ponctuation. ### Ne pas changer un mot sauf si celui ci rend la phrase incorrecte et que c'est certainement du a une erreur de restranscription. Le vocabulaire doit rester le même. \n### Entoure les prénoms et noms de famille avec des balises '<' et '>'. Ne mets pas de balises ailleurs et ne remplace aucun mot, les balises sont un ajout dans le texte. Utilise le contexte et ne mets des balises qu'aux noms de personnes. ### Contexte : Séance parlementaire au Sénat français. ### Donne le résultat directement sans introduction.",
-  "LOCUTERUS" : "Ici le prompt pour identifier les locuteurs",
-  "L"
-}

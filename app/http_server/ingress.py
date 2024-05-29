@@ -16,7 +16,6 @@ from app.model import Database
 from . import FileChangeHandler
 from watchdog.observers import Observer
 
-
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
@@ -37,11 +36,13 @@ from app.backends.senat import Senat
 
 # Instantiate backend threadSafe singletons for every supported backends inside guicorn workers
 vLLM = VLLM(api_key=args.api_key, api_base=args.api_base)
-senat  = Senat(api_key=args.api_key, api_base=args.api_base)
+senat = Senat(api_key=args.api_key, api_base=args.api_base)
 
 backends = {"vLLM": vLLM, "senat": senat}
+
+
 # Loads defined services from JSON manifests and creates a flask route for each service
-def handleGeneration(service_name : str):
+def handleGeneration(service_name: str):
     def flaskHandler():
         try:
             file = request.files.get('file')
@@ -56,7 +57,7 @@ def handleGeneration(service_name : str):
                 raise Exception("flavor")
             service = next((s for s in services if s['name'] == service_name), None)
             if service is None:
-                return jsonify({"message":"Service not found"}), 404
+                return jsonify({"message": "Service not found"}), 404
             backendParams = next((f for f in service['flavor'] if f['name'] == flavor), None)
             # default temperature and top_p in flavor
             if temperature:
@@ -66,20 +67,23 @@ def handleGeneration(service_name : str):
                 if 0 < float(top_p) <= 1:
                     backendParams['top_p'] = float(top_p)
             if backendParams is None:
-                return jsonify({"message":"Flavor not found"}), 404
+                return jsonify({"message": "Flavor not found"}), 404
             task_id = str(uuid.uuid4())
             # create task
             with lock:
-                tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id, "backendParams":backendParams, "fields":service['fields'], "content": content})
+                tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id,
+                           "backendParams": backendParams, "fields": service['fields'], "content": content})
                 logger.info(f"Task {task_id} queued")
-            #{db.put(task_id, "Processing 0%")
+                # {db.put(task_id, "Processing 0%")
                 db.put(task_id, content)
-            
-            return jsonify({"message":"request successfulty queued", "jobId":task_id}), 200
+
+            return jsonify({"message": "request successfulty queued", "jobId": task_id}), 200
         except Exception as e:
-            return  jsonify({"message": "Missing request parameter: {}".format(e)}), 400
+            return jsonify({"message": "Missing request parameter: {}".format(e)}), 400
+
     return flaskHandler
-                
+
+
 # Routes
 
 
@@ -88,7 +92,6 @@ def handleGeneration(service_name : str):
 def set_content_type(response):
     response.headers["Content-Type"] = "application/json; charset=utf-8"
     return response
-
 
 
 @flaskApp.route("/services", methods=["GET"])
@@ -103,17 +106,16 @@ def get_result(resultId):
         logger.info("Got get_result request: " + str(resultId))
         result = db.get(resultId)
         logger.info("Got get_result request: " + result)
-        
 
         # Check if result is already a string
-        #if isinstance(result, bytes):
-            #result = result.decode('utf-8')  # Decode bytes to string
+        # if isinstance(result, bytes):
+        # result = result.decode('utf-8')  # Decode bytes to string
 
         if result:
             print(f"This is the result content: {result}")
 
             # Fix possible Unicode escape issues
-            #result = result.encode().decode('unicode-escape')
+            # result = result.encode().decode('unicode-escape')
             match = re.match(r'^Processing ([0-9]*\.[0-9]*)%$', result)
             print(f"Ici!!!!!!!!!!!: {match}")
             if match:
@@ -130,12 +132,13 @@ def get_result(resultId):
     except Exception as e:
         logger.error("An error occurred: " + str(e))
         return jsonify({"status": "error", "message": str(e)}), 400
-    
+
 
 # Default routes
 @flaskApp.route("/healthcheck", methods=["GET"])
 def healthcheck():
     return "1", 200
+
 
 # Rejected request handlers
 @flaskApp.errorhandler(405)
@@ -175,7 +178,7 @@ def worker():
                 if task is None:
                     break
 
-            else :
+            else:
                 if task["backend"] == 'vLLM':
                     backend = backends["vLLM"]
                 backend.loadPrompt(task["type"], task["fields"])
@@ -183,12 +186,12 @@ def worker():
                 logger.info(f"Task {task['task_id']} setup with backend parameters: {task['backendParams']}")
                 chunked_content = backend.get_splits(task["content"])
                 logger.info(f"Chunked content for task {task['task_id']}: {chunked_content}")
-                #summary = backend.get_generation(chunked_content)
-                #publish
+                # summary = backend.get_generation(chunked_content)
+                # publish
                 summary = backend.publish(chunked_content)
-                #summary = summary.encode('utf-8')
+                # summary = summary.encode('utf-8')
                 logger.info(f"Generated summary for task {task['task_id']}: {summary}")
-                #@TODO Might compare those
+                # @TODO Might compare those
                 chunked_content_string = "\n".join(chunked_content)
 
                 summary_string = "\n".join(summary)
@@ -198,13 +201,13 @@ def worker():
                 if task is None:
                     break
             # check task parameters
-        #except Exception as e:
-            #logger.error("An error occurred in processing tasks : " + str(e))
-            #break
+        # except Exception as e:
+        # logger.error("An error occurred in processing tasks : " + str(e))
+        # break
         except Exception as e:
             logger.error(f"An error occurred in processing task {task['task_id']}: {e}")
             break
-   
+
 
 def reload_services(fileName=None):
     services[:] = []
@@ -224,12 +227,12 @@ def reload_services(fileName=None):
                     service_info = json.load(f)
                     services.append(service_info)
                     flaskApp.add_url_rule(f"/services/{service_info['name']}/generate",
-                                        endpoint=service_info['name'], 
-                                        view_func=handleGeneration(service_info['name']), 
-                                        methods=["POST"])
+                                          endpoint=service_info['name'],
+                                          view_func=handleGeneration(service_info['name']),
+                                          methods=["POST"])
             except Exception as e:
                 logger.error(f"Service not loaded: {e}")
-        
+
 
 def start():
     logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
@@ -241,7 +244,6 @@ def start():
     except Exception as e:
         logger.warning("Could not setup swagger: {}".format(str(e)))
 
-
     logger.info(args)
     serving = GunicornServing(
         flaskApp,
@@ -252,7 +254,7 @@ def start():
             "timeout": args.timeout
         },
     )
-    
+
     try:
         global manager, services
         # Services list in shared memory
@@ -277,6 +279,7 @@ def start():
         logger.error(str(e))
         logger.critical("Service is shut down (Error)")
         exit(e)
+
 
 if __name__ == "__main__":
     start()
