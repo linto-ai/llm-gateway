@@ -1,0 +1,23 @@
+{
+    "type": "summary",
+    "fields": 2,
+    "name": "cri",
+    "description": {
+        "fr": "Compte Rendu Intégral"
+    },
+    "backend": "senat",
+    "flavor": [
+        {
+            "name":"llama3",
+            "modelName": "meta-llama-3-70b-instruct",
+            "totalContextLength": 32768,
+            "maxGenerationLength": 2048,
+            "tokenizerClass": "LlamaTokenizer",
+            "createNewTurnAfter": 178,
+            "summaryTurns": 2,
+            "maxNewTurns": 6,
+            "temperature": 0.1,
+            "top_p": 0.8
+        }
+    ]
+}

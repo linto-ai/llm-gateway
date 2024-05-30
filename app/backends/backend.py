@@ -1,8 +1,6 @@
 import os
 # Prevents tokenizers from using multiple threads
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-from transformers import AutoTokenizer
-from transformers import LlamaTokenizerFast
 from typing import List, Tuple
 import json
 import re

@@ -27,7 +27,7 @@ def createParser() -> argparse.ArgumentParser:
         "--api_key",
         type=str,
         help="OpenAI API Token",
-        default = "sk-7Gqg14u-mGlX-egix20lgg"
+        default = "EMPTY"
     )
 
     # GUNICORN

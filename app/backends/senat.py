@@ -3,8 +3,6 @@ import re
 from resume.interface import Interface
 from .backend import LLMBackend
 from typing import List, Tuple
-import openai
-from openai import OpenAI
 
 class Senat(LLMBackend):
     def __init__(self, *args, **kwargs):
