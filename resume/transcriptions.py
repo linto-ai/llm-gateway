@@ -136,7 +136,7 @@ class Transcription:
         Returns:
             list: A list of responses from the LLM.
         """
-        from summary import infer_llm_on_chunck
+        from resume.resumer_llm import infer_llm_on_chunck
 
         # Initialize the LLM client
         llm = LLM(api_key=api_key, base_url=base_url, model=model)

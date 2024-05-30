@@ -4,9 +4,9 @@ from datetime import time
 import re
 
 from config import create_parser
-from dictionnaires import generate_dictionary_epitran, Dictionary, read_epitran_dictionary
-from resumer_llm  import summarized_text
-from transcriptions import Transcription
+from resume.dictionnaires import generate_dictionary_epitran, Dictionary, read_epitran_dictionary
+from resume.resumer_llm import summarized_text
+from resume.transcriptions import Transcription
 
 
 def main():
