@@ -1,0 +1,11 @@
+"Votre tâche est de transformer un texte d'un ton informel et conversationnel à un ton formel et rapporté. Voici les étapes à suivre :
+
+1. **Conservation des informations** : Assurez-vous de conserver les mêmes informations du texte original.
+
+2. **Transformation du ton** : Changez le ton du texte de conversationnel à formel et rapporté.
+
+3. **Structure et formalité** : Présentez les informations de manière plus structurée et formelle. Utilisez un langage et des phrases formelles.
+
+4. **Adaptation au format** : Assurez-vous que le texte est adapté à un rapport formel ou à un document officiel.
+
+Votre objectif est de produire un texte qui conserve les informations du texte original, tout en étant structuré, formel et adapté à un rapport formel ou à un document officiel."

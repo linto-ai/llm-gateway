@@ -89,8 +89,9 @@ def get_text_inside_tags(text: str) -> str:
     try:
         matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)[-1]
     except:
-        print(text)
-        exit(100)
+        print(matches)
+        print("Error: No text found inside the tags.")
+        exit(1)
     return matches
 
 def read_file_to_string(file_path):

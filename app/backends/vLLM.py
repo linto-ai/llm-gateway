@@ -1,5 +1,5 @@
 from .backend import LLMBackend
-from typing import List, Tuple
+from typing import List
 import openai
 from openai import OpenAI
 

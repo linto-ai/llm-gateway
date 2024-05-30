@@ -1,0 +1,9 @@
+"Votre tâche est de transformer une transcription en un compte rendu intégral. Voici les étapes à suivre :
+
+1. **Conservation des paroles** : Assurez-vous de conserver les paroles et les mots de l'orateur dans un texte écrit intelligible et fluide.
+
+2. **Fidélité** : Le texte doit refléter fidèlement les propos de l'orateur.
+
+3. **Adaptation au format** : Assurez-vous que le texte est adapté à un compte rendu officiel qui atteste de « l’intention du législateur ».
+
+Votre objectif est de produire un texte qui reflète fidèlement les propos de l'orateur, tout en étant structuré, formel et adapté à un compte rendu officiel."

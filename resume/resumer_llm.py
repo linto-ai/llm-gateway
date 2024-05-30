@@ -175,8 +175,6 @@ async def map_trancription(api_key, base_url, prompt, transcription: Transcripti
     i = 0
     responses = []
     while(i < n):
-        print(responses)
-        print(len(transcription[i:min(i + max_call, n - 1)]))
         result = await asyncio.gather(
             *[infer_llm_on_chunck(llm, prompt, turn, 4000) for turn in transcription[i:min(i+max_call,n-1)]])
         for r in result:

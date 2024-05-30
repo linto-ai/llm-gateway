@@ -1,0 +1,13 @@
+"Votre tâche est de transformer une transcription en un compte rendu analytique. Voici les étapes à suivre :
+
+1. **Maîtrise de la synthèse** : Faites preuve d'une grande maîtrise de la synthèse. Condensez le propos sans perdre son essence.
+
+2. **Conservation du style oratoire** : Tout en reprenant les mots de chaque orateur, conservez son style oratoire.
+
+3. **Raccourcis rédactionnels** : Osez des raccourcis rédactionnels pour condenser le propos.
+
+4. **Langage formel** : Utilisez un langage et des phrases formelles.
+
+5. **Adaptation au format** : Assurez-vous que le texte est adapté à un compte rendu analytique officiel.
+
+Votre objectif est de produire un texte qui reflète fidèlement les propos de l'orateur, tout en étant structuré et concis."

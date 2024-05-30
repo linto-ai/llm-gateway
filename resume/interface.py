@@ -2,7 +2,7 @@ from resume.dictionnaires import Dictionary, read_epitran_dictionary
 from resume.transcriptions import Transcription
 from resume.utils import load_prompts, read_file_to_string
 
-PROMPTS_DIR = 'prompts/'
+PROMPTS_DIR = '../resume/prompts/'
 
 class Interface:
     """Interface class for the resume module. Main use is llm-gateway"""
@@ -19,7 +19,7 @@ class Interface:
         if self.logger:
             self.logger.info("Cleaning the transcription and balise noms")
         # Cleaning the transcription and balise noms
-        trans.apply_map(self.api_key, self.api_base, read_file_to_string('../resume/'+PROMPTS_DIR+'clean.txt'), max_call=5, model="meta-llama-3-8b-instruct")
+        trans.apply_map(self.api_key, self.api_base, read_file_to_string(PROMPTS_DIR+'clean.txt'), max_call=5, model="meta-llama-3-8b-instruct")
         if self.logger:
             self.logger.info("Cleaning the names")
         # Clean the name with epitran
@@ -32,7 +32,7 @@ class Interface:
 
         if cr_type == 'cri':
             if self.logger:
-                self.logger.info("Génération du CRA")
+                self.logger.info("Génération du CRI")
             return self.generate_cri(trans, model_name)
         elif cr_type == 'cra':
             if self.logger:
@@ -48,14 +48,14 @@ class Interface:
         pass
 
     def generate_cri(self, transcription : Transcription, model_name : str) -> list[dict]:
-        transcription.apply_map(self.api_key, self.api_base, PROMPTS['CRI'], max_call=5, model=model_name)
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cri.txt', max_call=5, model=model_name)
         return transcription.transcription
 
     def generate_cra(self, transcription : Transcription, model_name : str) -> list[dict]:
-        transcription.apply_map(self.api_key, self.api_base, PROMPTS['CRA'], max_call=5, model=model_name)
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cra.txt', max_call=5, model=model_name)
         return transcription.transcription
 
     def generate_cred(self, transcription : Transcription, model_name : str) -> list[dict]:
-        transcription.apply_map(self.api_key, self.api_base, PROMPTS['CRED'], max_call=5, model=model_name)
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cred.txt', max_call=5, model=model_name)
         return transcription.transcription
 
