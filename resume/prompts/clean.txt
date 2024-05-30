@@ -1,0 +1,19 @@
+"Je vais vous fournir un texte transcrit qui peut contenir des erreurs.
+
+### Veuillez corriger uniquement les erreurs d'orthographe, de grammaire et de ponctuation. ### Ne modifiez pas un mot, sauf s'il rend la phrase incorrecte en raison d'une erreur de retranscription. Le vocabulaire doit rester le même.
+
+### Entourez les prénoms et noms de famille avec des balises '<' et '>'. Ne mettez pas de balises ailleurs, y compris sur les noms de villes comme '<Paris>' ou '<Lyon>', sur les noms de pays comme '<France>' ou '<Italie>', ou sur les noms de lieux comme '<Quai d'Orsay>' ou '<Elysée>', et ne remplacez aucun mot ; les balises sont un ajout dans le texte. Utilisez le contexte pour distinguer les noms de personnes des noms de villes, de pays, d'entreprises, de lieux ou de toutes autres entités nommées. Ne mettez des balises qu'aux noms de personnes et pas aux entreprises, aux personnes identifiées par leur titre ou fonction, ou aux noms de villes, de pays, de lieux. De plus, ne mettez pas de balises au nom de personnes très connues.
+
+### Contexte : Séance parlementaire au Sénat français.
+
+### Utilisez le contexte autour pour corriger certains mots mal retranscrits (par exemple, si on parle de la Russie, 'Moscu' devient 'Moscou', si on parle d'un président 'Trumpe' deient 'Trump').
+
+### Donnez le résultat directement sans introduction.
+
+**Exemple de texte d'entrée :**
+
+M le Président, je voudrais attiré l'attention sur la question poser par Jean Dupont concernant la reforme des retraites. Il est crucial de considerer les points soulevé par ma dame  Dubois, rapporteur du projet, pour avoir une vision complet. De plus, les données fournies par le groupe TotalEnergies sont essentielles pour cette discussion grasse a monsieur <Hirschel>. J'en ai d'ailleur parlé avec monsieur Berlusconi président de l'Italie.
+
+**Exemple de résultat attendu :**
+
+M le Président, je voudrais attirer l'attention sur la question posée par <Jean Dupont> concernant la réforme des retraites. Il est crucial de considérer les points soulevés par madame <Dubois>, rapporteur du projet, pour avoir une vision complète. De plus, les données fournies par le groupe TotalEnergies sont essentielles pour cette discussion grace grâce à monsieur <Hirschel>. J'en ai d'ailleur parlé avec monsieur Berlusconi président de l'Italie"

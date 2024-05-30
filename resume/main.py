@@ -5,7 +5,7 @@ import re
 
 from config import create_parser
 from dictionnaires import generate_dictionary_epitran, Dictionary, read_epitran_dictionary
-from summary import summarized_text
+from resumer_llm  import summarized_text
 from transcriptions import Transcription
 
 

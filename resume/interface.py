@@ -19,7 +19,7 @@ class Interface:
         if self.logger:
             self.logger.info("Cleaning the transcription and balise noms")
         # Cleaning the transcription and balise noms
-        trans.apply_map(self.api_key, self.api_base, read_file_to_string(PROMPTS_DIR+'clean.txt'), max_call=5, model="meta-llama-3-8b-instruct")
+        trans.apply_map(self.api_key, self.api_base, read_file_to_string('../resume/'+PROMPTS_DIR+'clean.txt'), max_call=5, model="meta-llama-3-8b-instruct")
         if self.logger:
             self.logger.info("Cleaning the names")
         # Clean the name with epitran
