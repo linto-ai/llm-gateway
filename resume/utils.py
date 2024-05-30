@@ -63,12 +63,10 @@ def get_chat_prompt(prompt: str, input_text: str) -> list[dict]:
     """
     chat_prompt = [
         {"role": "system",
-         "content": "Vous êtes un assistant spécialisé dans le résumé de conversations en francais et vous parlez uniquement francais dans une langage similaire ce celui qui vous ai donné."},
+         "content": "Vous êtes un assistant linguistique qui aide à reformuler des textes. Vous travaillez pour le Sénat Francais."},
         {"role": "user",
          "content": prompt + "### Veuillez retourner le texte modifié en l'encadrant avec les balises <TEXTE> et </TEXTE>. Assurez-vous que tout le texte modifié est inclus entre ces balises."},
-        {"role": "user", "content": "<TEXTE>" + input_text + "</TEXTE>"},
-        {"role": "assistant", "content": "<TEXTE>"}
-    ]
+        {"role": "user", "content": "<TEXTE>" + input_text + "</TEXTE>"}    ]
     return chat_prompt
 
 def find_string_in_text(text: str, pattern: str) -> str:

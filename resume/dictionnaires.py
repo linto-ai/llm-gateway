@@ -4,23 +4,33 @@ import Levenshtein
 
 
 class Dictionary:
-    def __init__(self, epitran_dict, epitran_instance: str = 'fra-Latn-p'):
+    def __init__(self, epitran_special_dict, epitran_general_dict = None, epitran_instance: str = 'fra-Latn-p'):
         self.epitran_instance = epitran.Epitran(epitran_instance)
-        self.epitran_dict = epitran_dict
+        self.epitran_special_dict = epitran_special_dict
+        self.epitran_general_dict = epitran_general_dict
 
-    def get_best_match_with_score(self, noum_words: str) -> tuple[float, str]:
+
+    def get_best_match_with_score(self, noum_words: str, special : bool = True) -> tuple[float, str]:
         """
         Returns the best match for a given word in the epitran dictionary along with the score.
         The score is the normalized Jaro-Winkler score.
             Args:
                 noum_words (str): The word to be matched.
+                special (bool): Whether to use the special dictionary or the general one.
             Returns:
                 tuple[float, str]: The normalized Jaro-Winkler score and the matched word.
         """
-        results = [(Levenshtein.ratio(noum_words, self.epitran_dict[key]), self.epitran_dict[key]) for key in
-                   self.epitran_dict]
+        if special:
+            results = [(Levenshtein.ratio(noum_words, self.epitran_special_dict[key]), self.epitran_special_dict[key]) for key in
+                       self.epitran_special_dict]
+        else:
+            results = [(Levenshtein.ratio(noum_words, self.epitran_general_dict[key]), self.epitran_general_dict[key])
+                       for key in
+                       self.epitran_general_dict]
         max_result = max(results, key=lambda x: x[0])
         return max_result
+
+
 
 
 def generate_dictionary_epitran(txt_file: str, csv_output: 'str') -> None:
