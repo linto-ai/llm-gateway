@@ -65,8 +65,9 @@ def get_chat_prompt(prompt: str, input_text: str) -> list[dict]:
         {"role": "system",
          "content": "Vous êtes un assistant spécialisé dans le résumé de conversations en francais et vous parlez uniquement francais dans une langage similaire ce celui qui vous ai donné."},
         {"role": "user",
-         "content": prompt + "### Retourne le texte modifié dans des balises <TEXTE> ... </TEXTE>."},
+         "content": prompt + "### Veuillez retourner le texte modifié en l'encadrant avec les balises <TEXTE> et </TEXTE>. Assurez-vous que tout le texte modifié est inclus entre ces balises."},
         {"role": "user", "content": "<TEXTE>" + input_text + "</TEXTE>"},
+        {"role": "assistant", "content": "<TEXTE>"}
     ]
     return chat_prompt
 
@@ -88,11 +89,10 @@ def get_text_inside_tags(text: str) -> str:
     pattern = r'<TEXTE>(.*?)</TEXTE>'
     try:
         matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)[-1]
+        return matches
     except:
-        print(matches)
-        print("Error: No text found inside the tags.")
-        exit(1)
-    return matches
+        print('*** Probleme de balise ***')
+        return pattern
 
 def read_file_to_string(file_path):
     with open(file_path, 'r') as file:

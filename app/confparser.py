@@ -45,7 +45,7 @@ def createParser() -> argparse.ArgumentParser:
         "--timeout",
         type=int,
         help="Request timeout",
-        default=int(os.environ.get("TIMEOUT", 120)),
+        default=int(os.environ.get("TIMEOUT", 600)),
     )
 
     # SWAGGER

@@ -50,11 +50,12 @@ if __name__ == "__main__":
     create_trans = True
     parser = create_parser()
     args = parser.parse_args()
-    trans = Transcription(reformat_in(read_file_to_string('../transcription_db/exemple.txt')))
+    doc_loaad = json.load(open('../transcription_db/senat_test.json', 'r'))
+    trans = Transcription(doc_loaad['segments'])
     trans.clean_original_file()
     trans.transcription = trans.transcription[:4]
     trans.chuncked_transcription = trans.chunck_turns()
-    trans.apply_map(args.api_key, args.api_base, PROMPT_CLEAN, max_call=5, model =  "meta-llama-3-70b-instruct")
+    trans.apply_map('sk-7Gqg14u-mGlX-egix20lgg', 'https://chat.ai.linagora.exaion.com/v1/', PROMPT_CLEAN, max_call=5, model =  "meta-llama-3-70b-instruct")
     with open('../transcription_db/exemple_clean.json', 'w') as file:
         print('écriture du fichier')
         json.dump(trans.transcription, file, indent=4)
@@ -62,6 +63,8 @@ if __name__ == "__main__":
     epi_dic = Dictionary(read_epitran_dictionary('../transcription_db/noms_acteurs/acteurs_phonetic.csv'))
 
     modif = trans.clean_noms(epi_dic, threshold=0.8)
+
+    print(trans.transcription)
 
     with open('../transcription_db/exemple_correct_names.json', 'w') as file:
         print('écriture du fichier')

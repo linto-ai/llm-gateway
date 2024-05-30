@@ -48,14 +48,14 @@ class Interface:
         pass
 
     def generate_cri(self, transcription : Transcription, model_name : str) -> list[dict]:
-        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cri.txt', max_call=5, model=model_name)
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cri.txt', max_call=5, model="meta-llama-3-8b-instruct")
         return transcription.transcription
 
     def generate_cra(self, transcription : Transcription, model_name : str) -> list[dict]:
-        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cra.txt', max_call=5, model=model_name)
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cra.txt', max_call=5, model="meta-llama-3-8b-instruct")
         return transcription.transcription
 
     def generate_cred(self, transcription : Transcription, model_name : str) -> list[dict]:
-        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cred.txt', max_call=5, model=model_name)
+        transcription.apply_map(self.api_key, self.api_base, PROMPTS_DIR+'cred.txt', max_call=5, model="meta-llama-3-8b-instruct")
         return transcription.transcription
 

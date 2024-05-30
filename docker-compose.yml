@@ -26,7 +26,7 @@ services:
       - OPENAI_API_TOKEN=EMPTY
       - HTTP_PORT=8000
       - CONCURRENCY=2
-      - TIMEOUT=60
+      - TIMEOUT=300
       - SWAGGER_PREFIX=
       - SWAGGER_PATH=../document/swagger_llm_gateway.yml
       - RESULT_DB_PATH=./results.sqlite
