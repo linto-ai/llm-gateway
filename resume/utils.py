@@ -90,7 +90,7 @@ def get_text_inside_tags(text: str) -> str:
         return matches
     except:
         print('*** Probleme de balise ***')
-        return pattern
+        return text
 
 def read_file_to_string(file_path):
     with open(file_path, 'r') as file:

@@ -1,14 +1,12 @@
-"Je vais vous fournir un texte transcrit qui peut contenir des erreurs.
+"Votre tâche est de transformer une transcription Voici les étapes à suivre :
 
-### Veuillez corriger uniquement les erreurs d'orthographe, de grammaire et de ponctuation. ### Ne modifiez pas un mot, sauf s'il rend la phrase incorrecte en raison d'une erreur de retranscription. Le vocabulaire doit rester le même.
+1. ** Correction des erreurs de retranscription** Corriger uniquement les erreurs d'orthographe, de grammaire et de ponctuation. ### Ne modifiez pas un mot, sauf s'il rend la phrase incorrecte en raison d'une erreur de retranscription. Le vocabulaire doit rester le même.
 
-### Entourez les prénoms et noms de famille avec des balises '<' et '>'. Ne mettez pas de balises ailleurs, y compris sur les noms de villes comme '<Paris>' ou '<Lyon>', sur les noms de pays comme '<France>' ou '<Italie>', ou sur les noms de lieux comme '<Quai d'Orsay>' ou '<Elysée>', et ne remplacez aucun mot ; les balises sont un ajout dans le texte. Utilisez le contexte pour distinguer les noms de personnes des noms de villes, de pays, d'entreprises, de lieux ou de toutes autres entités nommées. Ne mettez des balises qu'aux noms de personnes et pas aux entreprises, aux personnes identifiées par leur titre ou fonction, ou aux noms de villes, de pays, de lieux. De plus, ne mettez pas de balises au nom de personnes que tu connais déja bien.
+2. ** Balisage des prénoms et noms ** :  Entourez les prénoms et noms de famille avec des balises '<' et '>'. Ne mettez pas de balises ailleurs, y compris sur les noms de villes comme '<Paris>' ou '<Lyon>', sur les noms de pays comme '<France>' ou '<Italie>', ou sur les noms de lieux comme '<Quai d'Orsay>' ou '<Elysée>', ou sur le bien sur les noms de personnes connues comme 'Macron' et ne remplacez aucun mot ; les balises sont un ajout dans le texte. Utilisez le contexte pour distinguer les noms de personnes des noms de villes, de pays, d'entreprises, de lieux ou de toutes autres entités nommées. Ne mettez des balises qu'aux noms de personnes et pas aux entreprises, aux personnes identifiées par leur titre ou fonction, ou aux noms de villes, de pays, de lieux.
 
-### Contexte : Séance parlementaire au Sénat français.
+3. ** Corrections ** Utilisez le contexte autour pour corriger certains mots mal retranscrits (par exemple, si on parle de la Russie, 'Moscu' devient 'Moscou', si on parle d'un président 'Trumpe' deient 'Trump').
 
-### Utilisez le contexte autour pour corriger certains mots mal retranscrits (par exemple, si on parle de la Russie, 'Moscu' devient 'Moscou', si on parle d'un président 'Trumpe' deient 'Trump').
-
-### Donnez le résultat directement sans introduction.
+4. ** Donnez le résultat directement sans introduction.
 
 **Exemple de texte d'entrée :**
 
