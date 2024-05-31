@@ -86,14 +86,6 @@ def handleGeneration(service_name: str):
 
 # Routes
 
-
-# Ensure correct Content-Type header for all responses
-@flaskApp.after_request
-def set_content_type(response):
-    response.headers["Content-Type"] = "application/json; charset=utf-8"
-    return response
-
-
 @flaskApp.route("/services", methods=["GET"])
 def summarization_info_route():
     services_list = list(services)
@@ -121,14 +113,14 @@ def get_result(resultId):
             if match:
                 processing_percentage = float(match.group(1))
                 if processing_percentage == 0:
-                    return jsonify({"status": "queued", "message": result}), 202
-                return jsonify({"status": "processing", "message": processing_percentage}), 202
-
-            if result == "Processing 0%":
-                return jsonify({"status": "queued", "message": result}), 202
-            return jsonify({"status": "complete", "message": "success", "summarization": result}), 200
-
-        return jsonify({"status": "nojob", "message": f"{resultId} does not exist"}), 404
+                    return jsonify({"status":"queued", "message":result}), 202
+                else:
+                    return jsonify({"status":"processing", "message":processing_percentage}), 202
+            elif result == "Processing 0%":
+                return jsonify({"status":"queued", "message":result}), 202
+            else:
+                return jsonify({"status":"complete", "message":"success",
+                                "summarization":result.strip()}), 200
     except Exception as e:
         logger.error("An error occurred: " + str(e))
         return jsonify({"status": "error", "message": str(e)}), 400
