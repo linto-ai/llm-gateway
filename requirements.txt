@@ -12,6 +12,5 @@ plyvel==1.5.1
 PyTorch
 TensorFlow
 Flax
-yaml~=0.2.5
-aiohttp~=3.9.5
-epitran~=1.25
+aiohttp>=3.9.5
+epitran>=1.25

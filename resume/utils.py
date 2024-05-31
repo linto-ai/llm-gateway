@@ -83,13 +83,15 @@ def find_string_in_text(text: str, pattern: str) -> str:
     matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
     return matches
 
-def get_text_inside_tags(text: str) -> str:
+def get_text_inside_tags(text: str,) -> str:
     pattern = r'<TEXTE>(.*?)</TEXTE>'
     try:
         matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)[-1]
         return matches
     except:
         print('*** Probleme de balise ***')
+        print(text)
+        print('*** Fin de problème de balise ***')
         return text
 
 def read_file_to_string(file_path):
