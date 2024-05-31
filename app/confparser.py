@@ -27,7 +27,7 @@ def createParser() -> argparse.ArgumentParser:
         "--api_key",
         type=str,
         help="OpenAI API Token",
-        default = "EMPTY"
+        default = os.environ.get("OPENAI_API_TOKEN", "None")
     )
 
     # GUNICORN
@@ -73,6 +73,5 @@ def createParser() -> argparse.ArgumentParser:
                         help="Display debug logs")
     
     parser.add_argument("--db_path", type=str, help="Path to the result database", default ="path_to_results.sqlite_database")
-    
 
     return parser
