@@ -3,10 +3,9 @@ epitran==1.25
 Flask==2.2.5
 flask_swagger_ui==4.11.1
 gunicorn==20.1.0
-openai==1.30.5
-python_Levenshtein==0.25.1
-PyYAML==6.0.1
-PyYAML==6.0.1
+openai
+Levenshtein
+PyYAML
 watchdog==4.0.1
 jamo
 g2pk
