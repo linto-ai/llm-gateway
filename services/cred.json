@@ -3,7 +3,7 @@
     "fields": 2,
     "name": "cred",
     "description": {
-        "fr": "Compte Rendu de Délégation",
+        "fr": "Compte Rendu de Délégation"
     },
     "backend": "senat",
     "flavor": [

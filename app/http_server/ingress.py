@@ -38,7 +38,7 @@ from app.backends.senat import Senat
 vLLM = VLLM(api_key=args.api_key, api_base=args.api_base)
 senat = Senat(api_key=args.api_key, api_base=args.api_base)
 
-backends = {"vLLM": vLLM, "senat": senat}
+backends = {"senat": senat}
 
 
 # Loads defined services from JSON manifests and creates a flask route for each service
@@ -254,7 +254,6 @@ def start():
             "timeout": args.timeout
         },
     )
-
     try:
         global manager, services
         # Services list in shared memory
@@ -267,11 +266,14 @@ def start():
         reload_services()
         # Queue startup
         worker_thread = threading.Thread(target=worker)
+
         # Daemonize worker thread to allow for clean shutdown with SIGINT
         worker_thread.daemon = True
         worker_thread.start()
+
         # Start serving, blocking app here
         serving.run()
+
     except KeyboardInterrupt:
         logger.info("Process interrupted by user")
         # observer.stop()
