@@ -105,7 +105,7 @@ class Transcription:
             for match in re.finditer(r'<(.*?)>', text):
                 noun = match.group(1)
                 score, best_match = dictionary.get_best_match_with_score(noun)
-                print(f'{noun} -> {best_match} ({score})')
+                #print(f'{noun} -> {best_match} ({score})')
                 if score > threshold:
                     # Replace the noun with the best match
                     text = text.replace(f'<{noun}>', best_match)
