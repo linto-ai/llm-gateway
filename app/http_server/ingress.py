@@ -74,9 +74,7 @@ def handleGeneration(service_name: str):
                 tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id,
                            "backendParams": backendParams, "fields": service['fields'], "content": content})
                 logger.info(f"Task {task_id} queued")
-                # {db.put(task_id, "Processing 0%")
-                db.put(task_id, content)
-
+            db.put(task_id, "Processing 0%")
             return jsonify({"message": "request successfulty queued", "jobId": task_id}), 200
         except Exception as e:
             return jsonify({"message": "Missing request parameter: {}".format(e)}), 400
