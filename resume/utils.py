@@ -17,6 +17,7 @@ def load_file(file_path: str) -> str:
     with open(file_path, 'r', encoding='utf-8') as file:
         return file.read()
 
+
 def load_prompts(prompts_file: str) -> dict:
     """
     Loads prompts from a file.
@@ -66,8 +67,9 @@ def get_chat_prompt(prompt: str, input_text: str) -> list[dict]:
          "content": "Vous êtes un assistant linguistique qui aide à reformuler des textes. Vous travaillez pour le Sénat Francais."},
         {"role": "user",
          "content": prompt + "### Veuillez retourner le texte modifié en l'encadrant avec les balises <TEXTE> et </TEXTE>. Assurez-vous que tout le texte modifié est inclus entre ces balises."},
-        {"role": "user", "content": "<TEXTE>" + input_text + "</TEXTE>"}    ]
+        {"role": "user", "content": "<TEXTE>" + input_text + "</TEXTE>"}]
     return chat_prompt
+
 
 def find_string_in_text(text: str, pattern: str) -> str:
     """
@@ -83,16 +85,16 @@ def find_string_in_text(text: str, pattern: str) -> str:
     matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
     return matches
 
-def get_text_inside_tags(text: str,) -> str:
+
+def get_text_inside_tags(text: str, ) -> str:
     pattern = r'<TEXTE>(.*?)</TEXTE>'
     try:
         matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)[-1]
         return matches
     except:
-        print('*** Probleme de balise ***')
         print(text)
-        print('*** Fin de problème de balise ***')
-        return text
+        raise ValueError("No text found inside the tags.")
+
 
 def read_file_to_string(file_path):
     with open(file_path, 'r') as file:

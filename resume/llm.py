@@ -59,7 +59,8 @@ class LLM:
                 )
                 # Get the text inside the tags <TEXT> </TEXT>
                 return get_text_inside_tags(response.choices[0].message.content.strip())
-            except (aiohttp.ClientError, aiohttp.ServerTimeoutError) as e:
+            except (aiohttp.ClientError, aiohttp.ServerTimeoutError, ValueError) as e:
+                print(message)
                 print(f"Request failed: {e}, retrying {attempt + 1}/{retries}...")
                 await asyncio.sleep(2 ** attempt)
         raise Exception("Failed to get response from OpenAI API after multiple retries")
