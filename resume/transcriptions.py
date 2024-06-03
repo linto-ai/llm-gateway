@@ -143,10 +143,9 @@ class Transcription:
         n = len(self)
         i = 0
         responses = []
-
         while i < n:
             result = await asyncio.gather(
-                *[infer_llm_on_chunck(llm, prompt, turn, 6000) for turn in self[i:min(i + max_call, n)]])
+                *[infer_llm_on_chunck(llm, prompt, turn, 6000) for turn in self[i:min(i + max_call, n)]], return_exceptions=True)
             responses.extend(result)
             i += max_call
 

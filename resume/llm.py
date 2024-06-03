@@ -5,6 +5,10 @@ from openai import AsyncOpenAI
 from resume.utils import get_text_inside_tags
 
 
+class BaliseError(Exception):
+    pass
+
+
 class LLM:
     """
     A class to represent a Language Model (LLM).
@@ -31,7 +35,8 @@ class LLM:
         self.model = model
         self.max_tokens = max_tokens
 
-    async def call_llm(self, message: list[dict], max_tokens: int = 1000, retries: int = 3) -> str:
+    async def call_llm(self, message: list[dict], max_tokens: int = 1000, retries: int = 3,
+                       base_text: str = "Ici il y a eu un problème") -> str:
         """
         Calls the LLM with the given prompt and input text.
 
@@ -43,7 +48,8 @@ class LLM:
                 the maximum number of tokens to generate as an output
             retries : int
                 the number of times to retry in case of failure
-
+            base_text : str
+                the default text to return in case of failure
         Returns
         -------
             str
@@ -60,7 +66,8 @@ class LLM:
                 # Get the text inside the tags <TEXT> </TEXT>
                 return get_text_inside_tags(response.choices[0].message.content.strip())
             except (aiohttp.ClientError, aiohttp.ServerTimeoutError, ValueError) as e:
-                print(message)
                 print(f"Request failed: {e}, retrying {attempt + 1}/{retries}...")
                 await asyncio.sleep(2 ** attempt)
-        raise Exception("Failed to get response from OpenAI API after multiple retries")
+        print("Failed to get response from OpenAI API after multiple retries")
+        return base_text
+        # raise BaliseError("Failed to get response from OpenAI API after multiple retries")

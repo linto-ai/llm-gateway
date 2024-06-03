@@ -27,7 +27,7 @@ async def infer_llm_map(client: LLM, prompt_map: str, text: str, max_tokens: int
 
 async def infer_llm_on_chunck(client: LLM, prompt: str, chunk: dict, max_tokens: int) -> dict:
     message = get_chat_prompt(prompt, chunk['text'])
-    chunk['text'] = await client.call_llm(message, max_tokens)
+    chunk['text'] = await client.call_llm(message, max_tokens, base_text=chunk['text'])
     return chunk
 
 async def infer_llm_reduce(client: LLM, prompt_reduce: str, text: str, max_tokens) -> str:
