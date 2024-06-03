@@ -5,7 +5,7 @@ import time
 from resume.transcriptions import Transcription
 
 from resume.llm import LLM
-from resume.utils import get_chat_prompt, RESUME_TYPE, load_file, split_text
+from resume.utils import get_chat_prompt, load_file, split_text
 
 
 async def infer_llm_map(client: LLM, prompt_map: str, text: str, max_tokens: int) -> str:

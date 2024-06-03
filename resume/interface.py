@@ -24,7 +24,7 @@ class Interface:
             self.logger.info("Cleaning the names")
         # Clean the name with epitran
 
-        epi_dic = Dictionary(read_epitran_dictionary('../transcription_db/noms_acteurs/acteurs_phonetic.csv'))
+        epi_dic = Dictionary(read_epitran_dictionary('../resume/transcription_db/noms_acteurs/acteurs_phonetic.csv'))
 
         modif = trans.clean_noms(epi_dic, threshold=0.8)
         if self.logger:
