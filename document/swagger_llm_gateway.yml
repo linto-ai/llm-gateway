@@ -26,7 +26,7 @@ paths:
         - name: serviceName
           in: path
           required: true
-          description: The name of the service to use (cri, cra, cred)
+          description: The name of the service to use
           schema:
             type: string
       requestBody:
@@ -42,7 +42,7 @@ paths:
                   description: File to summarize
                 flavor:
                   type: string
-                  default: "llama3"
+                  default: "vigostral"
                   description: Flavor of the service
                 temperature:
                   type: number
