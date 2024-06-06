@@ -20,19 +20,20 @@ def createParser() -> argparse.ArgumentParser:
         "--api_base",
         type=str,
         help="OpenAI API Base URL",
-        default= "https://chat.ai.linagora.exaion.com/v1/",)
-    
+        default=os.environ.get("OPENAI_API_BASE", "http://localhost:9000/v1"),
+    )
 
     parser.add_argument(
         "--api_key",
         type=str,
         help="OpenAI API Token",
-        default = "sk-7Gqg14u-mGlX-egix20lgg"
+        default=os.environ.get("OPENAI_API_TOKEN", "EMPTY"),
     )
 
     # GUNICORN
     parser.add_argument("--service_port", type=int,
-                        help="Service port", default=int(os.environ.get("HTTP_PORT",9000)))
+                        help="Service port", default=int(os.environ.get("HTTP_PORT",8000))
+    )
           
     parser.add_argument(
         "--workers",
