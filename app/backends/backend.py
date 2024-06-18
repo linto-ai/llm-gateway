@@ -51,7 +51,7 @@ class LLMBackend:
         # - any characters or numbers of words followed by " : " or ": " or " :"
         pattern = r"^[A-Za-z0-9\s\-éèêëàâäôöùûüçïîÿæœñ]+ ?: ?"
         #sentence_endings = r"(?:\. |\.\.\. |\? |! |\.\.\.|\?\"|!\"|\?'|!'|¿ |¡ |« |» |· )"
-        sentence_endings = r"(?:\. |\.\.\. |\? |! |\.\.\.|\?\"|!\"|\?'|!'|¿ |¡ |« |» |· )(?=[A-Z])" #followed by capital letter ?
+        sentence_endings = r"((?:\. |\.\.\. |\? |! |\.\.\.|\?\"|!\"|\?'|!'|¿ |¡ |« |» |· )(?=[A-Z]))" #followed by capital letter ?
         # This loop ensures all new lines are related to the last speaker
         for line in lines:
             if line.strip() == "":
