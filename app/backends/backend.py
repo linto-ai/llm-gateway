@@ -69,13 +69,18 @@ class LLMBackend:
                 # Use spaCy's sentence segmentation
                 doc = nlp(line)
                 sentences = [sent.text for sent in doc.sents]
-                for i, sentence in enumerate(sentences):
-                    if sentence.strip() == "":
-                        continue
-                    if i == 0:
-                        newTurns.append(sentence)
+                tempTurn = ""
+                tempCount = 0
+                for sentence in sentences:
+                    tempTokens = self.tokenizer(sentence)['input_ids']
+                    if tempCount + len(tempTokens) > self.createNewTurnAfter:
+                        newTurns.append(tempTurn)
+                        tempTurn = speaker + sentence + " "
+                        tempCount = len(tempTokens)
                     else:
-                        newTurns.append(speaker + sentence)
+                        tempTurn += sentence + " "
+                        tempCount += len(tempTokens)
+                newTurns.append(tempTurn)
                 tokenCount = 0  # Reset token count for the new line
             else:
                 if line.strip() != "":

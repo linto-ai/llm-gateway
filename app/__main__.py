@@ -9,4 +9,5 @@ logging.basicConfig(
 )
 logger = logging.getLogger("__llm_gateway__")
 logger.setLevel(logging.INFO)
+print("############# Starting LLM Gateway - v1.0.1 ############# ")
 start()
