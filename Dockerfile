@@ -14,6 +14,9 @@ WORKDIR /usr/src/
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Download the spaCy French model
+RUN python -m spacy download fr_core_news_sm
+
 # Copy the code of your application
 COPY . /usr/src
 
