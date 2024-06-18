@@ -25,9 +25,9 @@ class VLLM(LLMBackend):
         while i < len(turns):
             turn = turns[i]
             turn_token_count = len(self.tokenizer(turn))
-            # Add a *0.15 buffer to the token count to ensure we don't go over the limit. Due to token count being an approximation (local token count vs. API token count)
-            # @TODO : again, we shall use relevant tokenizer from the model name. But auto-tokenizer is not available for some models
+            # Check if adding the next turn would exceed the token limit
             if (total_token_count + turn_token_count)*1.15 > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
+                # If it would, publish the current turns
                 if self.promptFields == 2:
                     filled_prompt = self.prompt.format('\n'.join(summarized_turns), '\n'.join(new_turns_to_summarize))
                 else:
@@ -35,8 +35,9 @@ class VLLM(LLMBackend):
                 response = self.publish(filled_prompt)
                 if response is None:
                     self.logger.error(f"No response received. Continuing with the next turn.")
-                response_turns = response.split('\n')
-                self.progressiveSummary.extend(response_turns)
+                else:
+                    response_turns = response.split('\n')
+                    self.progressiveSummary.extend(response_turns)
                 # calculate percentage of turns handled
                 percentage_handled = round((i / len(turns)) * 100, 2)
                 self.updateTask(self.task_id, percentage_handled)
@@ -46,11 +47,12 @@ class VLLM(LLMBackend):
                 if self.promptFields == 2:
                     summarized_turns = self.progressiveSummary[-self.summaryTurns:]
                     total_token_count += sum(len(self.tokenizer(turn)) for turn in summarized_turns)
-            else:
-                new_turns_to_summarize.append(turn)
-                total_token_count += turn_token_count
-                i += 1
+            # After publishing, add the current turn to new_turns_to_summarize and update total_token_count
+            new_turns_to_summarize.append(turn)
+            total_token_count += turn_token_count
+            i += 1
 
+        # Handle any remaining turns after the while loop
         if new_turns_to_summarize:
             if self.promptFields == 2:
                 filled_prompt = self.prompt.format('\n'.join(summarized_turns), '\n'.join(new_turns_to_summarize))
