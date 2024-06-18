@@ -47,10 +47,11 @@ class VLLM(LLMBackend):
                 if self.promptFields == 2:
                     summarized_turns = self.progressiveSummary[-self.summaryTurns:]
                     total_token_count += sum(len(self.tokenizer(turn)) for turn in summarized_turns)
-            # After publishing, add the current turn to new_turns_to_summarize and update total_token_count
-            new_turns_to_summarize.append(turn)
-            total_token_count += turn_token_count
-            i += 1
+            else:
+                # Only add the current turn to new_turns_to_summarize and update total_token_count if it doesn't exceed the token limit
+                new_turns_to_summarize.append(turn)
+                total_token_count += turn_token_count
+                i += 1
 
         # Handle any remaining turns after the while loop
         if new_turns_to_summarize:
