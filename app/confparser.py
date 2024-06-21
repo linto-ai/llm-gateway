@@ -1,6 +1,7 @@
 import argparse
 import os
 
+
 __all__ = ["createParser"]
 
 
@@ -20,14 +21,15 @@ def createParser() -> argparse.ArgumentParser:
         "--api_base",
         type=str,
         help="OpenAI API Base URL",
-        default=os.environ.get("OPENAI_API_BASE", "http://localhost:9000/v1"),
+        default=os.getenv("BASE_URL"),
     )
     
     parser.add_argument(
         "--api_key",
         type=str,
         help="OpenAI API Token",
-        default=os.environ.get("OPENAI_API_TOKEN", "EMPTY"),
+        default = os.environ.get("OPENAI_API_TOKEN", "None"),
+
     )
 
     # GUNICORN

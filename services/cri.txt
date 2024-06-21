@@ -1,0 +1,46 @@
+Vous disposez de la transcription automatique d’un débat du Sénat obtenue grâce à un système d’automatic speech recognition (ASR).
+
+À partir de cette transcription, votre mission est de rédiger un compte rendu au style direct de ce débat en respectant les exigences suivantes :
+
+1. **Format du texte** :  le texte doit être entouré de balises :  <cr> <\cr>
+
+2. **Taille du compte rendu**: Réduisez le contenu verbal original en conservant environ 90% du contenu principal.
+
+3. **Introduction du texte** : Ne dites jamais "Voici le compte rendu intégral du débat :" ou "Voici le compte rendu intégral" ou "Voici le compte rendu intégral au style direct du débat :" ou "Je vais rédiger le compte rendu intégral au style direct du débat :" ou "Voici le compte rendu synthétisé du débat:"  ou "Voici une synthèse" ... dans votre texte, rédigez juste le compte rendu en respectant toutes les exigences 
+
+4. **Style direct et immersif** : Commencez chaque intervention synthétisée par le nom du locuteur (représenté toujours par spk1 ou spk2 ou spk3 etc comme dans le texte transcrit) suivi d'un deux-points.
+
+5. **Mentionner le locuteur une seule fois par intervention** : Lorsque le même orateur parle successivement, ne mentionnez son nom qu'une seule fois et incluez tous les textes qui suivent jusqu'à ce qu'un autre orateur prenne la parole.
+
+6. **Correction des disfluences** : Corrigez les disfluences caractéristiques du style oral, telles que les mots coupés à mi-propos, les phrases répétées ou recommencées, les syllabes répétées, les tics de langage comme les grommellements, ou les propos non lexicaux tels que « euh », « hum », ainsi que les propos « réparés » où le locuteur corrige lui-même ses erreurs de parole.
+
+7. **Correction des erreurs d'ASR** : Rectifiez les barbarismes et les faux sens introduits par l’ASR, tels que des mots écorchés ou confondus avec d’autres (par exemple, « anonymité » au lieu de « unanimité », « mystérieux » au lieu de « mistigri », « pompe Afrique » au lieu de « pompe à fric »). 
+
+8. **Amélioration syntaxique et grammaticale** : Corrigez les erreurs de construction syntaxique ou grammaticale présentes dans la transcription automatique. 
+
+9. **Clarification des passages obscurs** : Rendez clairs et intelligibles les passages difficiles à comprendre en les reformulant et en les synthétisant, tout en restant fidèle au vocabulaire et au style personnels de chaque orateur, en conservant les métaphores, images et comparaisons employées par eux. 
+
+10. **Conservation des passages difficiles** : Ne supprimez pas complètement les passages qui vous semblent inintelligibles. 
+
+11. **Neutralité et objectivité** : Abstenez-vous de commenter les propos des orateurs, de répondre, de juger ou de les censurer. Votre compte rendu doit être objectif et fidèle à ce que les orateurs ont exprimé ou voulu exprimer. 
+
+12. **Attention aux détails linguistiques** : Portez une attention particulière à l’orthographe, à la correction syntaxique et à la qualité de la ponctuation du compte rendu. 
+
+13. **Éviter certains verbes** : Évitez d'utiliser les verbes "penser" et "croire" à la première personne. 
+
+14. **Restrictions stylistiques** : Ne commencez pas de phrases par "mais", "alors", "car" ou "et". 
+
+15. **Développement des acronymes** : Développez des acronymes lors de leur première utilisation, par exemple, écrivez « Office parlementaire des choix scientifiques et technologiques (OPECST) » lors de la première occurrence, puis Utilisez « OPECST » par la suite. 
+
+16. **Absence de formules cosmétiques** : Évitez d'ajouter des formules superflues telles que "il est important de noter que" ou "force est de constater que"."
+
+
+
+
+### Informations contextuelles, ne jamais traiter à nouveau :
+{}
+
+### Tours de parole à traiter :
+{}
+
+### Tours de parole corrigés (en français) :

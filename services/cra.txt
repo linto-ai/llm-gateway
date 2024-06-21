@@ -1,17 +1,47 @@
-Vous devez réduire de 40% la taille de tours de parole issus d'une transcription en suivant les directives suivantes :
-Toujours utiliser les conventions orthographiques standard du français. Adopter un style formel identique à celui du locuteur.
-S'appuyer strictement sur le texte sans inclure d'informations externes ou issues des tours précédents.
-Conserver toutes les mentions d'individus, de lieux, d'événements ou de textes.
-Conserver les tournures de phrase et les effets stylistiques.
-Conserver les explications contextuelles.
-Eviter les reformulations.
-Ne jamais rien écrire d'autre que les tours de parole traités, ne pas donner d'informations sur la réduction et les traitements réalisés.
-Un tour de parole réduit, ou résumé, commence toujours par le nom du locuteur qui s'exprime suivit de ":" et conserve un style parlé à la première personne.
+Vous disposez de la transcription automatique d'un débat de l'Assemblée nationale française, obtenue grâce à un système de reconnaissance de la parole. 
 
-### Tours de parole précédents :
+A partir de cette transcription , votre mission est de synthétiser ce débat en un compte rendu qui non seulement condense les échanges mais conserve également la force et le style des interventions.
+
+Instructions détaillées pour la rédaction du compte rendu :
+
+1. **Format du texte** : Le texte doit être entouré de balises : <cr> <\cr>.
+
+2. **Absence d'introduction personnelle** : Plongez directement dans le vif du sujet en respectant la structure nommée, aucune phrase introductive de votre part n'est tolérée dans le compte rendu.
+
+3. **Réduction du contenu** : Réduisez le contenu verbal original en conservant uniquement environ 30-40% du contenu principal. Focus sur les déclarations clés et éliminez les redondances.
+
+4. **Maintien de l'intensité et du style** : Maintenez l'intensité et les tournures originales des expressions utilisées par les orateurs. Évitez d'affadir les formulations, et préservez le caractère expressif des interventions.
+
+5. **Éviter les répétitions** : Ne faites pas de répétitions de phrases dans le résultat.
+
+6. **Fidélité aux propos** : Ne faites pas de contresens, inventions, ou distorsions du message original. Restez fidèle aux faits et aux opinions exprimées, sans ajout ni omission.
+
+7. **Normes du français écrit** : Adhérez aux normes du français écrit pour assurer la clarté, la correction grammaticale, et la lisibilité du compte rendu.
+
+8. **Style direct et immersif** : Commencez chaque intervention synthétisée par le nom du locuteur (représenté toujours par spk1 ou spk2 ou spk3 etc comme dans le texte transcrit) suivi d'un deux-points.
+
+9. **Mentionner le locuteur une seule fois par intervention** : Lorsque le même orateur parle successivement, ne mentionnez son nom qu'une seule fois et incluez tous les textes qui suivent jusqu'à ce qu'un autre orateur prenne la parole.
+
+10. **Neutralité et objectivité** : Rédigez de manière neutre et objective, sans interprétation personnelle ni commentaire sur les propos.
+
+11. **Objectivité stricte** : Abstenez-vous de commenter les propos des orateurs, de répondre, de juger ou de les censurer. Ton compte rendu doit être objectif et fidèle à ce que les orateurs ont exprimé ou voulu exprimer.
+
+12. **Attention aux détails linguistiques** : Portez une attention particulière à l’orthographe, à la correction syntaxique et à la qualité de la ponctuation du compte rendu.
+
+13. **Restrictions verbales** : Ne pas utiliser les verbes "penser" et "croire" à la première personne.
+
+14. **Restrictions stylistiques** : Ne commencez pas de phrases par "mais", "alors", "car" ou "et".
+
+15. **Développement des acronymes** : Développez les acronymes lors de leur première utilisation, par exemple, écrivez « Office parlementaire des choix scientifiques et technologiques (OPECST) » lors de la première occurrence, puis utilisez « OPECST » par la suite.
+
+16. **Éviter les formules superflues** : Évitez d'ajouter des formules superflues telles que "il est important de noter que" ou "force est de constater que".
+
+17. **Interventions courtes** : Lorsque le tour de parole est trop court pour être condensé, ne faites aucun commentaire, laissez-le tel qu'il est.
+
+Informations contextuelles, ne jamais traiter à nouveau :
 {}
 
-### Tours de parole à traiter :
+Tours de parole à traiter :
 {}
 
-### Tours de parole réduits (en français) :
+Tours de parole synthétisés (en français) :

@@ -145,9 +145,17 @@ def worker():
             backend.setup(task["backendParams"], task["task_id"])
             chunked_content = backend.get_splits(task["content"])
             summary = backend.get_generation(chunked_content)
+            
             #@TODO Might compare those
+            
             chunked_content_string = "\n".join(chunked_content)
+            
             summary_string = "\n".join(summary)
+            
+            # Remove the <\\cr> and <cr> tags from the summary_string
+            #summary_string = summary_string.replace("<\\cr>", "").replace("<cr>", "").replace("</cr>","")
+            #summary_string = re.sub(r'<(/?\\?cr)>', '', summary_str)
+            
             db.put(task["task_id"], summary_string)
             logger.info(f"Task {task['task_id']} processing END")
             if task is None:

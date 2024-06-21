@@ -1,9 +1,9 @@
 {
     "type": "summary",
     "fields": 2,
-    "name": "cra",
+    "name": "cri",
     "description": {
-        "fr": "Compte Rendu Analytique"
+        "fr": "Compte Rendu Intégral"
     },
     "backend": "vLLM",
     "flavor": [
@@ -14,12 +14,10 @@
             "maxGenerationLength": 2048,
             "tokenizerClass": "LlamaTokenizer",
             "createNewTurnAfter": 178,
-            "summaryTurns": 1,
+            "summaryTurns": 2,
             "maxNewTurns": 6,
             "temperature": 0.1,
             "top_p": 0.8
         }
     ]
 }
-
-

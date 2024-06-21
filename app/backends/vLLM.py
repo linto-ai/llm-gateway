@@ -1,7 +1,7 @@
 from .backend import LLMBackend
 from typing import List, Tuple
 from openai import OpenAI
-
+import re 
 
 class VLLM(LLMBackend):
     def __init__(self, *args, **kwargs):
@@ -11,16 +11,28 @@ class VLLM(LLMBackend):
         self.logger.info(f"API Key: {self.api_key}")
         self.logger.info(f"API Base: {self.api_base}")
         self.client = OpenAI(api_key=self.api_key, base_url=self.api_base)
+    
+    def extract_text_between_tags(self, text: str) -> str:
+            # Extract tags <\\cr>, <cr>, and </cr>
+            pattern = re.compile(r'<\\?/?cr>(.*?)<\\?/?cr>', re.DOTALL)
+            matches = pattern.findall(text)
+            # Join all matches to get the final text
+            return ' '.join(matches)
+
         
     def process_turns(self, summarized_turns, new_turns_to_summarize, i, turns):
         if self.promptFields == 2:
             filled_prompt = self.prompt.format('\n'.join(summarized_turns), '\n'.join(new_turns_to_summarize))
         else:
             filled_prompt = self.prompt.format('\n'.join(new_turns_to_summarize))
-        response = self.publish(filled_prompt)
-        if response is None:
+        response_text = self.publish(filled_prompt)
+        if response_text is None:
             return None
+        
+        response = self.extract_text_between_tags(response_text)
+        
         response_turns = response.split('\n')
+        
         self.progressiveSummary.extend(response_turns)
         # calculate percentage of turns handled
         percentage_handled = round((i / len(turns)) * 100, 2)
@@ -67,6 +79,7 @@ class VLLM(LLMBackend):
                 model=self.modelName,
                 
                 messages=[
+                    {"role": "system", "content": "Ton objectif est de fournir un compte rendu"},
                     {"role": "user", "content": content}
                 ],
                 temperature=self.temperature,
