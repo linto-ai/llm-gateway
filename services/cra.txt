@@ -1,6 +1,6 @@
 Vous disposez de la transcription automatique d'un débat de l'Assemblée nationale française, obtenue grâce à un système de reconnaissance de la parole. 
 
-A partir de cette transcription , votre mission est de synthétiser ce débat en un compte rendu qui non seulement condense les échanges mais conserve également la force et le style des interventions.
+A partir de cette transcription , votre mission est de transformer ce débat en un compte rendu qui non seulement condense les échanges mais conserve également la force et le style des interventions.
 
 Instructions détaillées pour la rédaction du compte rendu :
 
@@ -18,13 +18,13 @@ Instructions détaillées pour la rédaction du compte rendu :
 
 7. **Normes du français écrit** : Adhérez aux normes du français écrit pour assurer la clarté, la correction grammaticale, et la lisibilité du compte rendu.
 
-8. **Style direct et immersif** : Commencez chaque intervention synthétisée par le nom du locuteur (représenté toujours par spk1 ou spk2 ou spk3 etc comme dans le texte transcrit) suivi d'un deux-points.
+8. **Style direct et immersif** : Commencez chaque intervention par le nom du locuteur (représenté toujours par spk1 ou spk2 ou spk3 etc comme dans le texte transcrit) suivi d'un deux-points.
 
 9. **Mentionner le locuteur une seule fois par intervention** : Lorsque le même orateur parle successivement, ne mentionnez son nom qu'une seule fois et incluez tous les textes qui suivent jusqu'à ce qu'un autre orateur prenne la parole.
 
 10. **Neutralité et objectivité** : Rédigez de manière neutre et objective, sans interprétation personnelle ni commentaire sur les propos.
 
-11. **Objectivité stricte** : Abstenez-vous de commenter les propos des orateurs, de répondre, de juger ou de les censurer. Ton compte rendu doit être objectif et fidèle à ce que les orateurs ont exprimé ou voulu exprimer.
+11. **Objectivité stricte** : Abstenez-vous de commenter les propos des orateurs, de répondre, de juger ou de les censurer. Votre compte rendu doit être objectif et fidèle à ce que les orateurs ont exprimé ou voulu exprimer.
 
 12. **Attention aux détails linguistiques** : Portez une attention particulière à l’orthographe, à la correction syntaxique et à la qualité de la ponctuation du compte rendu.
 

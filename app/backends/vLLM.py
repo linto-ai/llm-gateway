@@ -13,10 +13,10 @@ class VLLM(LLMBackend):
         self.client = OpenAI(api_key=self.api_key, base_url=self.api_base)
     
     def extract_text_between_tags(self, text: str) -> str:
-            # Extract tags <\\cr>, <cr>, and </cr>
+            # Extract text between tags <\\cr>, <cr>, and </cr>
             pattern = re.compile(r'<\\?/?cr>(.*?)<\\?/?cr>', re.DOTALL)
             matches = pattern.findall(text)
-            # Join all matches to get the final text
+            # Join all matches to get the final output
             return ' '.join(matches)
 
         
