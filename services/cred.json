@@ -1,35 +1,24 @@
 {
     "type": "summary",
     "fields": 2,
-    "name": "cred",
+    "name": "cri",
     "description": {
-        "fr": "Compte Rendu Délégations"
+        "fr": "Compte Rendu "
     },
     "backend": "vLLM",
     "flavor": [
         {
-            "name":"mixtral",
-            "modelName": "TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ",
-            "totalContextLength": 32768,
+            "name":"llama3",
+            "modelName": "meta-llama-3-70b-instruct",
+            "totalContextLength": 8192,
             "maxGenerationLength": 2048,
             "tokenizerClass": "LlamaTokenizer",
-            "createNewTurnAfter": 250,
-            "summaryTurns": 3,
-            "maxNewTurns": 9,
+            "createNewTurnAfter": 178,
+            "summaryTurns": 2,
+            "maxNewTurns": 6,
             "temperature": 0.2,
-            "top_p": 0.7
-        },
-        {
-            "name":"vigostral",
-            "modelName": "TheBloke/Vigostral-7B-Chat-AWQ",
-            "totalContextLength": 32768,
-            "maxGenerationLength": 2048,
-            "tokenizerClass": "LlamaTokenizer",
-            "createNewTurnAfter": 250,
-            "summaryTurns": 3,
-            "maxNewTurns": 9,
-            "temperature": 0.2,
-            "top_p": 0.7
+            "top_p": 0.8
         }
     ]
 }
+

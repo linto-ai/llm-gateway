@@ -79,7 +79,7 @@ class VLLM(LLMBackend):
                 model=self.modelName,
                 
                 messages=[
-                    {"role": "system", "content": "Ton objectif est de fournir un compte rendu"},
+                    {"role": "system", "content": "Vous êtes un assistant IA compétent, efficace et direct. Fournissez des réponses concises, en vous concentrant sur les informations clés nécessaires. Engagez-vous dans une collaboration productive avec l'utilisateur et votre objectif est de fournir un compte rendu"},
                     {"role": "user", "content": content}
                 ],
                 temperature=self.temperature,

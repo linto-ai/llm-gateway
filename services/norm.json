@@ -1,9 +1,9 @@
 {
     "type": "summary",
     "fields": 2,
-    "name": "cri",
+    "name": "norm",
     "description": {
-        "fr": "Compte Rendu Intégral"
+        "fr": "Normalisation du verbatim"
     },
     "backend": "vLLM",
     "flavor": [
@@ -21,4 +21,5 @@
         }
     ]
 }
+
 
