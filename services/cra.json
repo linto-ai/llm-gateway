@@ -30,6 +30,18 @@
             "maxNewTurns": 6,
             "temperature": 0.1,
             "top_p": 0.8
+        },
+        {
+            "name":"llama",
+            "modelName": "meta-llama-31-8b-it",
+            "totalContextLength": 32768,
+            "maxGenerationLength": 2048,
+            "tokenizerClass": "LlamaTokenizer",
+            "createNewTurnAfter": 178,
+            "summaryTurns": 2,
+            "maxNewTurns": 6,
+            "temperature": 0.1,
+            "top_p": 0.8
         }
     ]
 }

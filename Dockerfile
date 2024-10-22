@@ -14,6 +14,8 @@ WORKDIR /usr/src/
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install spacy model
+RUN python3 -m spacy download fr_core_news_sm
 # Copy the code of your application
 COPY . /usr/src
 
