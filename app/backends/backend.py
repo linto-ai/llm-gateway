@@ -33,7 +33,7 @@ class LLMBackend:
         self.logger.info(f"Setting up backend with params: {params} for task: {task_id}")
         self.task_id = task_id
         try:
-            for attr in ['totalContextLength', 'maxGenerationLength', 'createNewTurnAfter', 'modelName', 'summaryTurns', 'maxNewTurns', 'top_p', 'temperature']:
+            for attr in ['totalContextLength', 'maxGenerationLength', 'createNewTurnAfter', 'modelName', 'summaryTurns', 'maxNewTurns', 'top_p', 'temperature','reduceSummary','consolidateSummary']:
                 setattr(self, attr, params[attr])
             # @TODO: Shall use the tokenizer from the model name / tokenizerclass
             # seems fine so far as it yields the same token count as the tokenizer from the mixed model
@@ -44,29 +44,28 @@ class LLMBackend:
             self.logger.error(f"Error setting up backend: {e}")
             raise e
 
+    def get_speaker(self, line: str, speaker:str=None ):
+        pattern = r"^[A-Za-z0-9\s\-éèêëàâäôöùûüçïîÿæœñ]+ ?: ?"
+        match = re.match(pattern, line)
+        if match:
+            return line, match.group(0)
+        else:
+            if speaker:
+                line = speaker + line
+            else:
+                line = "(?) : " + line
+            return line, speaker
+
     def get_splits(self, content: str):
-        lines = content.splitlines()
+        lines = [ line for line in content.splitlines() if line.strip() != ""]
         speaker = "(?)"
         newTurns = []
         tokenCount = 0  # Initialize token counter
 
-        # Regex pattern to detect speaker in the format: "Speaker : "
-        pattern = r"^[A-Za-z0-9\s\-éèêëàâäôöùûüçïîÿæœñ]+ ?: ?"
-        # Process each line
         for line in lines:
-            if line.strip() == "":
-                continue  # Skip empty lines
             tokenCount = 0
-            # Detect speaker using regex
-            match = re.match(pattern, line)
-            if match:
-                speaker = match.group(0)
-            else:
-                if speaker:
-                    line = speaker + line
-                else:
-                    line = "(?) : " + line
-            
+            # Get speaker name
+            line, speaker = self.get_speaker(line, speaker)
             tokens = self.tokenizer(line)['input_ids']
             tokenCount = len(tokens)
 
