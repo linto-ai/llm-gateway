@@ -20,7 +20,7 @@ class VLLM(LLMBackend):
         response = self.publish(filled_prompt)
         if response is None:
             return None
-        response_turns = response.split('\n')
+        response_turns = [res for res in response.split('\n') if res.strip() != '']
         self.progressiveSummary.extend(response_turns)
         # calculate percentage of turns handled
         percentage_handled = round((i / len(turns)) * 100, 2)
