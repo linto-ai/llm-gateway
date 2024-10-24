@@ -1,0 +1,19 @@
+defaults :
+  - services :
+    - cred
+    - cra
+
+prompt_path: ../services/
+backend_defaults :
+  name: null
+  modelName: null
+  totalContextLength: null
+  maxGenerationLength: null
+  tokenizerClass: null
+  createNewTurnAfter: null
+  summaryTurns: null
+  maxNewTurns: null
+  temperature: null
+  top_p: null
+  reduceSummary: null
+  consolidateSummary: null

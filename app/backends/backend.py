@@ -7,12 +7,14 @@ import json
 import re
 import logging
 import spacy
+from conf import cfg_instance
 from app.http_server.ingress import db, lock
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
 )
 nlp = spacy.load("fr_core_news_sm")
+cfg = cfg_instance(cfg_name="config")
 
 class LLMBackend:
     def __init__(self, *args, **kwargs):
@@ -23,7 +25,8 @@ class LLMBackend:
         self.logger.info(f"Loading prompt for service: {service_name}")
         self.promptFields = fieldCount
         self.logger.info(f"Prompt fields: {self.promptFields}")
-        txt_filepath = f'../services/{service_name}.txt'
+        txt_filepath = os.path.join(cfg.prompt_path,f'{service_name}.txt')
+        print(os.getcwd())
         with open(txt_filepath, 'r') as f:
             # prevent caching
             os.fsync(f.fileno())
@@ -33,8 +36,17 @@ class LLMBackend:
         self.logger.info(f"Setting up backend with params: {params} for task: {task_id}")
         self.task_id = task_id
         try:
-            for attr in ['totalContextLength', 'maxGenerationLength', 'createNewTurnAfter', 'modelName', 'summaryTurns', 'maxNewTurns', 'top_p', 'temperature','reduceSummary','consolidateSummary']:
-                setattr(self, attr, params[attr])
+            # Set default values for attributes not found in params
+            for key, default_value in cfg.backend_defaults.items():
+                if key not in params:
+                    if not hasattr(self, key):
+                        # Only set the default if the attribute does not exist
+                        self.logger.info(f"Setting default value for attribute '{key}': {default_value}")
+                        setattr(self, key, default_value)
+            for key, value in params.items():
+                if hasattr(self, key) and (key not in cfg.backend_defaults):
+                    self.logger.info(f"Overwriting existing attribute '{key}' with new value: {value}")
+                setattr(self, key, value)
             # @TODO: Shall use the tokenizer from the model name / tokenizerclass
             # seems fine so far as it yields the same token count as the tokenizer from the mixed model
             self.tokenizer =  LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")

@@ -15,7 +15,9 @@ from .swagger import setupSwaggerUI
 from app.model import Database
 from . import FileChangeHandler
 from watchdog.observers import Observer
+from conf import cfg_instance
 
+cfg = cfg_instance(cfg_name="config")
 
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
@@ -163,23 +165,31 @@ def reload_services(fileName=None):
         logger.info("Loading service manifests")
     else:
         logger.info(f"Reloading service routes: {fileName} has been modified")
+    
+    # Clear all services routes
     for rule in list(flaskApp.url_map.iter_rules()):
         if str(rule).startswith('/services/'):
             flaskApp.url_map._rules.remove(rule)
             flaskApp.view_functions.pop(rule.endpoint, None)
 
-    for service in os.listdir("../services"):
-        if service.endswith(".json"):
-            try:
-                with open(f"../services/{service}", "r") as f:
-                    service_info = json.load(f)
-                    services.append(service_info)
-                    flaskApp.add_url_rule(f"/services/{service_info['name']}/generate",
-                                        endpoint=service_info['name'], 
-                                        view_func=handleGeneration(service_info['name']), 
-                                        methods=["POST"])
-            except Exception as e:
-                logger.error(f"Service not loaded: {e}")
+    # Iterate over each service in the Hydra config
+    for service_name, service_info in cfg.services.items():
+        try:
+            # Add service info to the services list
+            services.append(service_info)
+
+            # Register the service with Flask
+            flaskApp.add_url_rule(
+                f"/services/{service_info['name']}/generate",
+                endpoint=service_info['name'],
+                view_func=handleGeneration(service_info['name']), 
+                methods=["POST"]
+            )
+
+            logger.info(f"Service '{service_info['name']}' loaded successfully")
+
+        except Exception as e:
+            logger.error(f"Failed to load service '{service_name}': {e}")
         
 
 def start():

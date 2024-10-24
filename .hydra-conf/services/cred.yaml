@@ -1,0 +1,40 @@
+cred:
+  type: summary
+  fields: 2
+  name: cred
+  description:
+    fr: Compte Rendu Délégations
+  backend: vLLM
+  flavor:
+    - name: mixtral
+      modelName: TheBloke/Instruct_Mixtral-8x7B-v0.1_Dolly15K-AWQ
+      totalContextLength: 32768
+      maxGenerationLength: 2048
+      tokenizerClass: LlamaTokenizer
+      createNewTurnAfter: 250
+      summaryTurns: 3
+      maxNewTurns: 9
+      temperature: 0.2
+      top_p: 0.7
+    - name: vigostral
+      modelName: TheBloke/Vigostral-7B-Chat-AWQ
+      totalContextLength: 32768
+      maxGenerationLength: 2048
+      tokenizerClass: LlamaTokenizer
+      createNewTurnAfter: 250
+      summaryTurns: 3
+      maxNewTurns: 9
+      temperature: 0.2
+      top_p: 0.7
+    - name: llama
+      modelName: meta-llama-31-8b-it
+      totalContextLength: 128000
+      maxGenerationLength: 2048
+      tokenizerClass: LlamaTokenizer
+      createNewTurnAfter: 250
+      summaryTurns: 3
+      maxNewTurns: 9
+      temperature: 0.2
+      top_p: 0.7
+      reduceSummary: true
+      consolidateSummary: true
