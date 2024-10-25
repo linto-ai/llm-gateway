@@ -110,6 +110,28 @@ class cfg_instance(dict):
             return wrapper
         return decorator
 
+    def reload_services(self, app, services, handle_generation ,base_path ,logger=None):
+        from fastapi.responses import JSONResponse
+        # Clear all services routes
+        for rule in list(app.routes):
+            if str(rule.path).startswith('/services'):
+                app.routes.remove(rule)
+
+        # Iterate over each service in the Hydra config
+        for service_name, service_info in self.services.items():
+            try:
+                services.append(service_info)
+                app.add_api_route(os.path.join(base_path, service_name, 'generate'), handle_generation(service_info['name']), methods=["POST"])
+                logger.info(f"Service '{service_info['name']}' loaded successfully")
+            except Exception as e:
+                logger.error(f"Failed to load service '{service_name}': {e}")
+        def summarization_info_route():
+            services_list = [OmegaConf.to_container(service, resolve=True) for service in services]
+            return JSONResponse(content=services_list)
+        app.add_api_route(f"/services", summarization_info_route, methods=["GET"])
+        return services
+
+
     def get_cfg(self):
         return self.cfg
     

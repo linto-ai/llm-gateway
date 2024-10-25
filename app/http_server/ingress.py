@@ -156,28 +156,18 @@ async def worker():
             logger.error("An error occurred in processing tasks : " + str(e))
 
 def reload_services(file_name=None):
+    global services
     cfg = cfg_instance(cfg_name="config")
     services[:] = []
     if file_name:
         logger.info(f"Reloading service routes: {file_name} has been modified")
-    
-    # Clear all services routes
-    for rule in list(app.routes):
-        if str(rule.path).startswith('/services'):
-            app.routes.remove(rule)
-
-    # Iterate over each service in the Hydra config
-    for service_name, service_info in cfg.services.items():
-        try:
-            services.append(service_info)
-            app.add_api_route(f"/services/{service_info['name']}/generate", handle_generation(service_info['name']), methods=["POST"])
-            logger.info(f"Service '{service_info['name']}' loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load service '{service_name}': {e}")
-    def summarization_info_route():
-        services_list = [OmegaConf.to_container(service, resolve=True) for service in services]
-        return JSONResponse(content=services_list)
-    app.add_api_route(f"/services", summarization_info_route, methods=["GET"])
+    services = cfg.reload_services(
+        app=app, 
+        services=services, 
+        handle_generation=handle_generation,
+        base_path = '/services', 
+        logger = logger
+        )
 
 
 def start():
