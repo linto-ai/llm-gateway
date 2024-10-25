@@ -9,6 +9,8 @@ flask-swagger-ui>=3.36.0
 pyyaml>=5.4.1
 gunicorn>=20.1.0
 plyvel==1.5.1
-debugpy
 spacy==3.8.2
 hydra-core==1.3.2
+fastapi
+uvicorn
+python-multipart

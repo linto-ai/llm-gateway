@@ -13,5 +13,3 @@ Un tour de parole réduit, ou résumé, commence toujours par le nom du locuteur
 
 ### Tours de parole à traiter :
 {}
-
-### Tours de parole réduits (en français) :

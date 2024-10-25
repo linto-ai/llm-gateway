@@ -1,24 +1,32 @@
 #!/usr/bin/env python3
 import json
-import threading
 import os
-import signal
 import re
 import logging
-from multiprocessing import Queue, Manager
-from threading import Lock
 import uuid
-from flask import Flask, json, request, jsonify
-from ..confparser import createParser
-from .serving import GunicornServing
-from .swagger import setupSwaggerUI
+import threading
+
+from fastapi import FastAPI, HTTPException, UploadFile, Form, Depends
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from multiprocessing import  Manager
+from threading import Lock
 from app.model import Database
+from ..confparser import createParser
 from . import FileChangeHandler
 from watchdog.observers import Observer
 from conf import cfg_instance
+from omegaconf import OmegaConf
+from asyncio import Queue
+import asyncio
 
+# Configuration
 cfg = cfg_instance(cfg_name="config")
+parser = createParser()
+args = parser.parse_args()
 
+# Logging Setup
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
@@ -26,218 +34,155 @@ logging.basicConfig(
 logger = logging.getLogger("http_server")
 logger.setLevel(logging.DEBUG)
 
-# App Setup
-flaskApp = Flask(__name__)
+# FastAPI App Setup
+app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 tasks = Queue()
 lock = Lock()
-parser = createParser()
-args = parser.parse_args()
 db = Database(args.db_path)
-# uses db and lock from ingress.py
+
 from app.backends.vLLM import VLLM
 
-# Instantiate backend threadSafe singletons for every supported backends inside guicorn workers
+# Backends
 vLLM = VLLM(api_key=args.api_key, api_base=args.api_base)
 backends = {"vLLM": vLLM}
-# Loads defined services from JSON manifests and creates a flask route for each service
-def handleGeneration(service_name):
-    def flaskHandler():
+
+
+
+def handle_generation(service_name: str):
+    async def generate(file: UploadFile = None, flavor: str = Form(...), temperature: float = Form(None), top_p: float = Form(None)):
         try:
-            file = request.files.get('file')
-            content = file.read().decode('utf-8') if file else ""
-            flavor = request.form.get('flavor')
-            temperature = request.form.get('temperature')
-            top_p = request.form.get('top_p')
-            # check parameters
+            content = await file.read() if file else b""
+            content = content.decode('utf-8') if content else ""
+
             if not content:
-                raise Exception("content")
+                raise HTTPException(status_code=400, detail="Missing content")
             if not flavor:
-                raise Exception("flavor")
+                raise HTTPException(status_code=400, detail="Missing flavor")
+
             service = next((s for s in services if s['name'] == service_name), None)
             if service is None:
-                return jsonify({"message":"Service not found"}), 404
-            backendParams = next((f for f in service['flavor'] if f['name'] == flavor), None)
-            # default temperature and top_p in flavor
-            if temperature:
-                backendParams['temperature'] = float(temperature)
-            if top_p:
-                # must be between 0 and 1 or failsback to default
-                if 0 < float(top_p) <= 1:
-                    backendParams['top_p'] = float(top_p)
-            if backendParams is None:
-                return jsonify({"message":"Flavor not found"}), 404
+                raise HTTPException(status_code=404, detail="Service not found")
+
+            backend_params = next((f for f in service['flavor'] if f['name'] == flavor), None)
+            if backend_params is None:
+                raise HTTPException(status_code=404, detail="Flavor not found")
+
+            # Set temperature and top_p
+            if temperature is not None:
+                backend_params['temperature'] = float(temperature)
+            if top_p is not None and (0 < float(top_p) <= 1):
+                backend_params['top_p'] = float(top_p)
+
             task_id = str(uuid.uuid4())
-            # create task
             with lock:
-                tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id, "backendParams":backendParams, "fields":service['fields'], "content": content})
+                await tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id, "backendParams": backend_params, "fields": service['fields'], "content": content})
                 logger.info(f"Task {task_id} queued")
             db.put(task_id, "Processing 0%")
-            return jsonify({"message":"request successfulty queued", "jobId":task_id}), 200
+
+            return JSONResponse(status_code=200, content={"message": "Request successfully queued", "jobId": task_id})
         except Exception as e:
-            return  jsonify({"message": "Missing request parameter: {}".format(e)}), 400
-    return flaskHandler
-                
-# Routes
+            logger.error(f"Error in generate: {str(e)}")
+            raise HTTPException(status_code=400, detail=str(e))
 
-@flaskApp.route("/services", methods=["GET"])
-def summarization_info_route():
-    services_list = list(services)
-    return jsonify(services_list), 200
+    return generate
+
+# Fetch the latest `services` config on startup
+@app.on_event("startup")
+async def startup_event():
+    global services, manager
+    manager = Manager()
+    services = manager.list()
+
+    # Setup file change handler for service reloading
+    event_handler = FileChangeHandler('.yaml', reload_services)
+    observer = Observer()
+    observer.schedule(event_handler, path='../.hydra-conf/services/', recursive=False)
+    observer.start()
+    reload_services()
+    
+    # Start worker thread
+    asyncio.create_task(worker()) 
 
 
-@flaskApp.route("/results/<resultId>", methods=["GET"])
-def get_result(resultId):
+@app.get("/results/{result_id}")
+async def get_result(result_id: str):
     try:
-        logger.info("Got get_result request: " + str(resultId))
-        result = db.get(resultId)
+        logger.info("Got get_result request: " + str(result_id))
+        result = db.get(result_id)
         if result is None:
-            return jsonify({"status":"nojob", "message":f"{resultId} does not exist"}), 404  
-        else:
-            match = re.match(r'^Processing ([0-9]*\.[0-9]*)%$', result)
-            if match:
-                processing_percentage = float(match.group(1))
-                if processing_percentage == 0:
-                    return jsonify({"status":"queued", "message":result}), 202
-                else:
-                    return jsonify({"status":"processing", "message":processing_percentage}), 202
-            elif result == "Processing 0%":
-                return jsonify({"status":"queued", "message":result}), 202
+            raise HTTPException(status_code=404, detail=f"{result_id} does not exist")
+
+        match = re.match(r'^Processing ([0-9]*\.[0-9]*)%$', result)
+        if match:
+            processing_percentage = float(match.group(1))
+            if processing_percentage == 0:
+                return JSONResponse(status_code=202, content={"status": "queued", "message": result})
             else:
-                return jsonify({"status":"complete", "message":"success", 
-                                "summarization":result.strip()}), 200
+                return JSONResponse(status_code=202, content={"status": "processing", "message": processing_percentage})
+        elif result == "Processing 0%":
+            return JSONResponse(status_code=202, content={"status": "queued", "message": result})
+        else:
+            return JSONResponse(status_code=200, content={"status": "complete", "message": "success", "summarization": result.strip()})
     except Exception as e:
         logger.error("An error occurred: " + str(e))
-        return jsonify({"status":"error", "message":str(e)}), 400 
-    
+        raise HTTPException(status_code=400, detail=str(e))
 
-# Default routes
-@flaskApp.route("/healthcheck", methods=["GET"])
-def healthcheck():
-    return "1", 200
+@app.get("/healthcheck")
+async def healthcheck():
+    return "1"
 
-# Rejected request handlers
-@flaskApp.errorhandler(405)
-def method_not_allowed(_):
-    return "The method is not allowed for the requested URL\n", 405
-
-
-@flaskApp.errorhandler(404)
-def page_not_found(_):
-    return "The requested URL was not found\n", 404
-
-
-@flaskApp.errorhandler(500)
-def server_error(error):
-    logger.error(error)
-    return "Server Error\n", 500
-
-
-# Single threaded fifo task queue, fed by Guicorn workers
-def worker():
+# Worker function for processing tasks
+async def worker():
     logger.info("Starting task queue worker thread")
     while True:
         try:
-            task = tasks.get()
+            task = await tasks.get()
+            if task is None:
+                break
             logger.info(f"Task {task['task_id']} processing started")
-            # setup backend to process task
-            # @TODO: Implement other backends
+
             if task["backend"] == "vLLM":
                 backend = backends["vLLM"]
+
             backend.loadPrompt(task["type"], task["fields"])
             backend.setup(task["backendParams"], task["task_id"])
             chunked_content = backend.get_splits(task["content"])
-            summary = backend.get_generation(chunked_content)
-            #@TODO Might compare those
-            chunked_content_string = "\n".join(chunked_content)
+            summary = await backend.get_generation(chunked_content)
             summary_string = "\n".join(summary)
             db.put(task["task_id"], summary_string)
             logger.info(f"Task {task['task_id']} processing END")
-            if task is None:
-                break
-            # check task parameters
         except Exception as e:
             logger.error("An error occurred in processing tasks : " + str(e))
-            break
 
-def reload_services(fileName=None):
+def reload_services(file_name=None):
+    cfg = cfg_instance(cfg_name="config")
     services[:] = []
-    if fileName is None:
-        logger.info("Loading service manifests")
-    else:
-        logger.info(f"Reloading service routes: {fileName} has been modified")
+    if file_name:
+        logger.info(f"Reloading service routes: {file_name} has been modified")
     
     # Clear all services routes
-    for rule in list(flaskApp.url_map.iter_rules()):
-        if str(rule).startswith('/services/'):
-            flaskApp.url_map._rules.remove(rule)
-            flaskApp.view_functions.pop(rule.endpoint, None)
+    for rule in list(app.routes):
+        if str(rule.path).startswith('/services'):
+            app.routes.remove(rule)
 
     # Iterate over each service in the Hydra config
     for service_name, service_info in cfg.services.items():
         try:
-            # Add service info to the services list
             services.append(service_info)
-
-            # Register the service with Flask
-            flaskApp.add_url_rule(
-                f"/services/{service_info['name']}/generate",
-                endpoint=service_info['name'],
-                view_func=handleGeneration(service_info['name']), 
-                methods=["POST"]
-            )
-
+            app.add_api_route(f"/services/{service_info['name']}/generate", handle_generation(service_info['name']), methods=["POST"])
             logger.info(f"Service '{service_info['name']}' loaded successfully")
-
         except Exception as e:
             logger.error(f"Failed to load service '{service_name}': {e}")
-        
+    def summarization_info_route():
+        services_list = [OmegaConf.to_container(service, resolve=True) for service in services]
+        return JSONResponse(content=services_list)
+    app.add_api_route(f"/services", summarization_info_route, methods=["GET"])
+
 
 def start():
-    logger.setLevel(logging.DEBUG if args.debug else logging.INFO)
-    try:
-        # Setup SwaggerUI
-        if args.swagger_path is not None:
-            setupSwaggerUI(flaskApp, args)
-            logger.debug("Swagger UI set.")
-    except Exception as e:
-        logger.warning("Could not setup swagger: {}".format(str(e)))
-
-
-    logger.info(args)
-    serving = GunicornServing(
-        flaskApp,
-        {
-            "preload_app": True,
-            "bind": f"0.0.0.0:{args.service_port}",
-            "workers": args.workers,
-            "timeout": args.timeout
-        },
-    )
-    
-    try:
-        global manager, services
-        # Services list in shared memory
-        manager = Manager()
-        services = manager.list()
-        event_handler = FileChangeHandler('.json', reload_services)
-        observer = Observer()
-        observer.schedule(event_handler, path='../services', recursive=False)
-        observer.start()
-        reload_services()
-        # Queue startup
-        worker_thread = threading.Thread(target=worker)
-        # Daemonize worker thread to allow for clean shutdown with SIGINT
-        worker_thread.daemon = True
-        worker_thread.start()
-        # Start serving, blocking app here
-        serving.run()
-    except KeyboardInterrupt:
-        logger.info("Process interrupted by user")
-        # observer.stop()
-    except Exception as e:
-        logger.error(str(e))
-        logger.critical("Service is shut down (Error)")
-        exit(e)
+    import uvicorn
+    uvicorn.run("app.http_server.ingress:app", host="0.0.0.0", port=args.service_port, workers=args.workers) 
 
 if __name__ == "__main__":
     start()

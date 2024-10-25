@@ -16,11 +16,11 @@ services:
       - RESULT_DB_PATH=./results.sqlite
     volumes:
       - ./services:/usr/src/services
+      - ./.hydra-conf:/usr/src/.hydra-conf
     networks:
       - llm-network
     ports:
       - 8000:8000
-
 
 networks:
   llm-network:

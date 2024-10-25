@@ -36,13 +36,12 @@ class LLMBackend:
         self.logger.info(f"Setting up backend with params: {params} for task: {task_id}")
         self.task_id = task_id
         try:
-            # Set default values for attributes not found in params
+            # Set default values for all attributes
             for key, default_value in cfg.backend_defaults.items():
                 if key not in params:
-                    if not hasattr(self, key):
-                        # Only set the default if the attribute does not exist
-                        self.logger.info(f"Setting default value for attribute '{key}': {default_value}")
-                        setattr(self, key, default_value)
+                    self.logger.info(f"Setting default value for attribute '{key}': {default_value}")
+                    setattr(self, key, default_value)
+            # Overwrite default values with the provided parameters        
             for key, value in params.items():
                 if hasattr(self, key) and (key not in cfg.backend_defaults):
                     self.logger.info(f"Overwriting existing attribute '{key}' with new value: {value}")
