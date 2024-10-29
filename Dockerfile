@@ -21,8 +21,8 @@ COPY . /usr/src
 
 # Make sure scripts are executable
 RUN chmod +x ./scripts/healthcheck.sh \
-    && chmod +x ./scripts/wait-for-it.sh
-
+    && chmod +x ./scripts/wait-for-it.sh\
+    && chmod +x ./scripts/start.sh 
 # Extract version from RELEASE.md and set it as an environment variable
 RUN VERSION=$(grep '^#' RELEASE.md | head -1 | cut -d '#' -f 2 | xargs) \
     && echo "VERSION=$VERSION" > .env
@@ -32,5 +32,5 @@ RUN VERSION=$(grep '^#' RELEASE.md | head -1 | cut -d '#' -f 2 | xargs) \
 HEALTHCHECK CMD ./scripts/healthcheck.sh
 
 # Define the entry point
-ENTRYPOINT ["python"]
-CMD ["-m", "app"]
+#ENTRYPOINT ["python", "-Xfrozen_modules=off"]
+CMD ["scripts/start.sh"]

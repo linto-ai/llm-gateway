@@ -14,6 +14,8 @@ services:
       - SWAGGER_PREFIX=
       - SWAGGER_PATH=../document/swagger_llm_gateway.yml
       - RESULT_DB_PATH=./results.sqlite
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
       - ./services:/usr/src/services
       - ./.hydra-conf:/usr/src/.hydra-conf
@@ -21,6 +23,14 @@ services:
       - llm-network
     ports:
       - 8000:8000
+    depends_on:
+      - redis
+  redis:
+    image: redis:latest  
+    networks:
+      - llm-network
+    ports:
+      - 6379:6379
 
 networks:
   llm-network:

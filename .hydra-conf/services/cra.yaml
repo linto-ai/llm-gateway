@@ -1,6 +1,6 @@
 cra:
   type: summary
-  fields: 1
+  fields: 2
   name: cra
   description:
     fr: Compte Rendu Analytique

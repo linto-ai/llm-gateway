@@ -1,30 +1,14 @@
 #!/usr/bin/env python3
-import json
-import os
-import re
 import logging
-import uuid
-import threading
-
+import json
 from fastapi import FastAPI, HTTPException, UploadFile, Form, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from multiprocessing import  Manager
-from threading import Lock
-from app.model import Database
-from ..confparser import createParser
 from . import FileChangeHandler
 from watchdog.observers import Observer
 from conf import cfg_instance
-from omegaconf import OmegaConf
-from asyncio import Queue
-import asyncio
-
-# Configuration
-cfg = cfg_instance(cfg_name="config")
-parser = createParser()
-args = parser.parse_args()
+from app.http_server.celery_app import process_task, get_task_status
+import redis
 
 # Logging Setup
 logging.basicConfig(
@@ -34,23 +18,19 @@ logging.basicConfig(
 logger = logging.getLogger("http_server")
 logger.setLevel(logging.DEBUG)
 
+# Initialize Redis client with Docker Compose Redis service name
+redis_client = redis.StrictRedis(host='redis', port=6379, db=0)
+
+# Configuration
+cfg = cfg_instance(cfg_name="config")
+
 # FastAPI App Setup
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-tasks = Queue()
-lock = Lock()
-db = Database(args.db_path)
 
-from app.backends.vLLM import VLLM
-
-# Backends
-vLLM = VLLM(api_key=args.api_key, api_base=args.api_base)
-backends = {"vLLM": vLLM}
-
-
-
+# Request handler for generating summaries
 def handle_generation(service_name: str):
-    async def generate(file: UploadFile = None, flavor: str = Form(...), temperature: float = Form(None), top_p: float = Form(None)):
+    async def generate(file: UploadFile = None, flavor: str = Form(...), temperature: float = Form(None), top_p: float = Form(None),services: dict = Depends(get_services)):
         try:
             content = await file.read() if file else b""
             content = content.decode('utf-8') if content else ""
@@ -74,13 +54,16 @@ def handle_generation(service_name: str):
             if top_p is not None and (0 < float(top_p) <= 1):
                 backend_params['top_p'] = float(top_p)
 
-            task_id = str(uuid.uuid4())
-            with lock:
-                await tasks.put({"backend": service['backend'], "type": service['name'], "task_id": task_id, "backendParams": backend_params, "fields": service['fields'], "content": content})
-                logger.info(f"Task {task_id} queued")
-            db.put(task_id, "Processing 0%")
+            task_data = {
+                "backend": service['backend'],
+                "type": service['name'],
+                "backendParams": backend_params,
+                "fields": service['fields'],
+                "content": content
+            }
+            result = process_task.delay(task_data)  # Schedule the task with Celery
 
-            return JSONResponse(status_code=200, content={"message": "Request successfully queued", "jobId": task_id})
+            return JSONResponse(status_code=200, content={"message": "Request successfully queued", "jobId": result.id})
         except Exception as e:
             logger.error(f"Error in generate: {str(e)}")
             raise HTTPException(status_code=400, detail=str(e))
@@ -90,89 +73,81 @@ def handle_generation(service_name: str):
 # Fetch the latest `services` config on startup
 @app.on_event("startup")
 async def startup_event():
-    global services, manager
-    manager = Manager()
-    services = manager.list()
-
     # Setup file change handler for service reloading
     event_handler = FileChangeHandler('.yaml', reload_services)
     observer = Observer()
     observer.schedule(event_handler, path='../.hydra-conf/services/', recursive=False)
     observer.start()
     reload_services()
-    
-    # Start worker thread
-    asyncio.create_task(worker()) 
+
+@app.get("/services")
+def summarization_info_route():
+    services_list = get_services()
+    if not services_list:
+        raise HTTPException(status_code=404, detail="No services available")
+    return JSONResponse(content=services_list)
 
 
 @app.get("/results/{result_id}")
 async def get_result(result_id: str):
     try:
         logger.info("Got get_result request: " + str(result_id))
-        result = db.get(result_id)
-        if result is None:
-            raise HTTPException(status_code=404, detail=f"{result_id} does not exist")
 
-        match = re.match(r'^Processing ([0-9]*\.[0-9]*)%$', result)
-        if match:
-            processing_percentage = float(match.group(1))
-            if processing_percentage == 0:
-                return JSONResponse(status_code=202, content={"status": "queued", "message": result})
-            else:
-                return JSONResponse(status_code=202, content={"status": "processing", "message": processing_percentage})
-        elif result == "Processing 0%":
-            return JSONResponse(status_code=202, content={"status": "queued", "message": result})
-        else:
-            return JSONResponse(status_code=200, content={"status": "complete", "message": "success", "summarization": result.strip()})
+        # Check task status in Celery
+        status, task_result = get_task_status(result_id)
+
+        if status == "PENDING":
+            return JSONResponse(status_code=202, content={"status": "queued", "message": "Task is in queue"})
+        elif status == "STARTED":
+            return JSONResponse(status_code=202, content={"status": "processing", "message": "Task is in progress"})
+        elif status == "SUCCESS":
+            # Task completed; return result from Celery or SQLite if Celery result not found
+            #summary = task_result.result.get('summary', None)
+            return JSONResponse(status_code=200, content={"status": "complete", "message": "success", "summarization": task_result.strip()})
+        elif status == "FAILURE":
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Task failed", "details": str(task_result)})
+
+        # Fall back in case status is not recognized
+        raise HTTPException(status_code=404, detail="Unknown task status")
+    except HTTPException as http_exc:
+        logger.error(f"HTTP Exception occurred: {http_exc.detail}")
+        raise
     except Exception as e:
         logger.error("An error occurred: " + str(e))
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @app.get("/healthcheck")
 async def healthcheck():
     return "1"
 
-# Worker function for processing tasks
-async def worker():
-    logger.info("Starting task queue worker thread")
-    while True:
-        try:
-            task = await tasks.get()
-            if task is None:
-                break
-            logger.info(f"Task {task['task_id']} processing started")
-
-            if task["backend"] == "vLLM":
-                backend = backends["vLLM"]
-
-            backend.loadPrompt(task["type"], task["fields"])
-            backend.setup(task["backendParams"], task["task_id"])
-            chunked_content = backend.get_splits(task["content"])
-            summary = await backend.get_generation(chunked_content)
-            summary_string = "\n".join(summary)
-            db.put(task["task_id"], summary_string)
-            logger.info(f"Task {task['task_id']} processing END")
-        except Exception as e:
-            logger.error("An error occurred in processing tasks : " + str(e))
 
 def reload_services(file_name=None):
-    global services
-    cfg = cfg_instance(cfg_name="config")
-    services[:] = []
     if file_name:
         logger.info(f"Reloading service routes: {file_name} has been modified")
+    cfg = cfg_instance(cfg_name="config")
     services = cfg.reload_services(
         app=app, 
-        services=services, 
         handle_generation=handle_generation,
         base_path = '/services', 
         logger = logger
-        )
+        )    
+    redis_client.set("services_config", json.dumps(services))
+
+# Retrieve services from Redis for each request
+def get_services():
+    services_json = redis_client.get("services_config")
+    if services_json is None:
+        reload_services()  # Ensures services are loaded on startup if not found
+        services_json = redis_client.get("services_config")
+    return json.loads(services_json)
+
 
 
 def start():
+    logger.info("Starting FastAPI application...")
     import uvicorn
-    uvicorn.run("app.http_server.ingress:app", host="0.0.0.0", port=args.service_port, workers=args.workers) 
+    uvicorn.run("app.http_server.ingress:app", host="0.0.0.0", port=cfg.service_port, workers=cfg.workers) 
 
 if __name__ == "__main__":
     start()

@@ -1,5 +1,5 @@
 from .backend import LLMBackend
-from typing import List, Tuple
+from typing import List
 from openai import OpenAI, AsyncOpenAI
 import asyncio
 
@@ -29,7 +29,7 @@ class VLLM(LLMBackend):
         self.progressiveSummary.extend(response_turns)
         # calculate percentage of turns handled
         percentage_handled = round((i / len(turns)) * 100, 2)
-        self.updateTask(self.task_id, percentage_handled)
+        self.updateTask(percentage_handled)
 
         return self.progressiveSummary[-self.summaryTurns:] if self.promptFields == 2 else summarized_turns
 
@@ -74,6 +74,7 @@ class VLLM(LLMBackend):
 
 
     async def get_generation(self, turns: List[str]):
+        #@Todo : seperate batch func from LLM generation
         self.progressiveSummary = []
         total_token_count = self.promptTokenCount
         new_turns_to_summarize = []
@@ -84,8 +85,6 @@ class VLLM(LLMBackend):
             while i < len(turns):
                 turn = turns[i]
                 turn_token_count = len(self.tokenizer(turn))
-                # Add a *0.15 buffer to the token count to ensure we don't go over the limit. Due to token count being an approximation (local token count vs. API token count)
-                # @TODO : again, we shall use relevant tokenizer from the model name. But auto-tokenizer is not available for some models
                 if (total_token_count + turn_token_count)*1.15 > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
                     # Process current batch of turns
                     summarized_turns = await self.process_turns(summarized_turns, new_turns_to_summarize, i, turns)
@@ -103,7 +102,7 @@ class VLLM(LLMBackend):
             if new_turns_to_summarize:
                 summarized_turns  = await self.process_turns(summarized_turns, new_turns_to_summarize, i, turns)
         
-        # Asynchronous processing if not Map Reduce Summary
+        # Asynchronous processing if Map Reduce Summary
         else: 
             batches = []
             # Gather turns for async processing
@@ -125,7 +124,7 @@ class VLLM(LLMBackend):
                     new_turns_to_summarize.append(turn)
                     total_token_count += turn_token_count
                     i += 1
-            # Process remaining turns if any
+            # Gather remaining turns if any
             if new_turns_to_summarize:
                 batches.append(new_turns_to_summarize)
             # Process batches asynchronously
@@ -136,6 +135,7 @@ class VLLM(LLMBackend):
 
         # Reduce summary
         if self.reduceSummary :
+            self.logger.info("Reducing summary process started.")
             total_token_count = self.promptTokenCount + sum(len(self.tokenizer(turn)) for turn in self.progressiveSummary)
             if total_token_count < self.totalContextLength - self.maxGenerationLength:
                 self.progressiveSummary = await self.reduce_summary(self.progressiveSummary)
@@ -144,6 +144,7 @@ class VLLM(LLMBackend):
         
         # consolidate turns for progressive summary
         if self.consolidateSummary:
+            self.logger.info("Consolidating turns process started.")
             self.progressiveSummary = self.consolidate_turns(self.progressiveSummary)
 
         return self.progressiveSummary

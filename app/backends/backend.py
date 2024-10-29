@@ -8,7 +8,7 @@ import re
 import logging
 import spacy
 from conf import cfg_instance
-from app.http_server.ingress import db, lock
+
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
@@ -109,9 +109,9 @@ class LLMBackend:
         
         return newTurns
     
-    def updateTask(self, task_id: str, progress: int):
-        self.logger.info(f"Task {task_id} progress : {progress}%")
-        db.put(task_id, f"Processing {progress}%")
+    def updateTask(self, progress: int):
+        self.logger.info(f"Task {self.task_id} progress : {progress}%")
+        #@TODO: Implement celery task progress update?
 
     def get_dialogs(self, chunks: List[Tuple[str, str]], max_new_speeches: int = -1) -> List[str]:
         # implementation here

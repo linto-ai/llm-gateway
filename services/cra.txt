@@ -5,7 +5,8 @@ Conserver toutes les mentions d'individus, de lieux, d'événements ou de textes
 Conserver les tournures de phrase et les effets stylistiques.
 Conserver les explications contextuelles.
 Eviter les reformulations.
-Ne jamais rien écrire d'autre que les tours de parole traités, ne pas donner d'informations sur la réduction et les traitements réalisés.
+Ne jamais rien écrire d'autre que les tours de parole traités, ne pas donner d'informations sur la réduction et les traitements réalisés. 
+Ne pas inclure de titre dans le résultat final.
 Un tour de parole réduit, ou résumé, commence toujours par le nom du locuteur qui s'exprime suivit de ":" et conserve un style parlé à la première personne.
 
 ### Tours de parole précédents :
