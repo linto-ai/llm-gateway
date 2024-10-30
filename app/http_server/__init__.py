@@ -1,8 +1,6 @@
-from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import os
 import time
-from multiprocessing import Manager
 
 
 class FileChangeHandler(FileSystemEventHandler):

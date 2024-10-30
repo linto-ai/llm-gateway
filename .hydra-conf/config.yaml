@@ -25,11 +25,7 @@ api_key: ${oc.env:OPENAI_API_TOKEN,EMPTY}
 service_port: ${oc.decode:${oc.env:HTTP_PORT,8000}}
 workers: ${oc.decode:${oc.env:CONCURRENCY,1}}
 timeout: ${oc.decode:${oc.env:TIMEOUT,60}}
-swagger_url: /docs
-swagger_prefix: ${oc.env:SWAGGER_PREFIX}
-swagger_path: ${oc.env:SWAGGER_PATH,../document/swagger_llm_gateway.yml}
 debug: false
-db_path: ${oc.env:RESULT_DB_PATH,./results.sqlite}
 
 
 redis_host: ${oc.env:REDIS_HOST,localhost}
