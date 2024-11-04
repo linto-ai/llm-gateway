@@ -9,6 +9,7 @@ from watchdog.observers import Observer
 from conf import cfg_instance
 from app.http_server.celery_app import process_task, get_task_status
 import redis
+from conf import cfg_instance
 
 # Logging Setup
 logging.basicConfig(
@@ -18,11 +19,12 @@ logging.basicConfig(
 logger = logging.getLogger("http_server")
 logger.setLevel(logging.DEBUG)
 
-# Initialize Redis client with Docker Compose Redis service name
-redis_client = redis.StrictRedis(host='redis', port=6379, db=0)
-
-# Configuration
+# Get configuration
 cfg = cfg_instance(cfg_name="config")
+
+# Initialize Redis client with Docker Compose Redis service name
+redis_host = cfg.redis_host
+redis_client = redis.StrictRedis(host=redis_host)
 
 # FastAPI App Setup
 app = FastAPI()

@@ -10,7 +10,7 @@ from app.backends.vLLM import VLLM
 trace.LOG_SUCCESS = """\
 Task %(name)s[%(id)s] succeeded in %(runtime)ss\
 """
-
+# Get configuration
 cfg = cfg_instance(cfg_name="config")
 # Backends
 vLLM = VLLM(api_key=cfg.api_key, api_base=cfg.api_base)
@@ -30,8 +30,8 @@ logger.setLevel(logging.DEBUG)
 celery_app = Celery("tasks")
 
 # Configure the broker and backend from environment variables with defaults
-celery_app.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-celery_app.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+celery_app.conf.broker_url = cfg.services_broker
+celery_app.conf.result_backend = cfg.services_broker
 
 async def worker(task, task_id):
     logger.info("Starting celery worker")

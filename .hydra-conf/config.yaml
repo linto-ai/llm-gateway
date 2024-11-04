@@ -29,3 +29,4 @@ debug: false
 
 
 redis_host: ${oc.env:REDIS_HOST,localhost}
+services_broker: ${oc.env:SERVICES_BROKER,redis://localhost:6379/0}
