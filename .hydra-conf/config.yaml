@@ -1,8 +1,8 @@
 defaults :
   - _self_
   - services :
-    - cred
-    - cra
+    - en
+    - fr
 
 prompt_path: ./services/
 backend_defaults :

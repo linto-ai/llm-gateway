@@ -49,13 +49,13 @@ class VLLM(LLMBackend):
     def consolidate_turns(self, turns: List[str]) -> List[str]:
         if not turns:
             return []
-
         consolidated_turns = []
         current_speaker = None
         current_turn = []
+        speaker = "(?)"
 
         for turn in turns:
-            content, speaker = self.get_speaker(turn)
+            content, speaker = self.get_speaker(turn, speaker)
             # Remove speaker from content
             content = content[len(speaker):].strip()
             
