@@ -10,6 +10,7 @@ from conf import cfg_instance
 from app.http_server.celery_app import process_task, get_task_status
 import redis
 from conf import cfg_instance
+from urllib.parse import urlparse
 
 # Logging Setup
 logging.basicConfig(
@@ -22,9 +23,12 @@ logger.setLevel(logging.DEBUG)
 # Get configuration
 cfg = cfg_instance(cfg_name="config")
 
-# Initialize Redis client with Docker Compose Redis service name
-redis_host = cfg.redis_host
-redis_client = redis.StrictRedis(host=redis_host)
+# Initialize Redis client
+services_broker = cfg.services_broker
+broker_pass = cfg.broker_pass
+parsed_url = urlparse(services_broker)
+hostname = parsed_url.hostname
+redis_client = redis.StrictRedis(host=hostname, password=broker_pass)
 
 # FastAPI App Setup
 app = FastAPI()

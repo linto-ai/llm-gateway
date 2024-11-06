@@ -1,7 +1,7 @@
 summarize/fr:
   type: summary
   fields: 2
-  name: fr-summary
+  name: summarize-fr
   description:
     fr: Résumé français
   backend: vLLM

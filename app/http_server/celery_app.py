@@ -1,6 +1,7 @@
 from celery import Celery
 from celery.result import AsyncResult
 import os
+from urllib.parse import urlparse
 import logging
 from asgiref.sync import async_to_sync
 from celery.app import trace
@@ -29,9 +30,13 @@ logger.setLevel(logging.DEBUG)
 
 celery_app = Celery("tasks")
 
+services_broker = cfg.services_broker
+broker_pass = cfg.broker_pass
+parsed_url = urlparse(services_broker)
+broker_url = f"{parsed_url.scheme}://:{broker_pass}@{parsed_url.hostname}:{parsed_url.port}"
 # Configure the broker and backend from environment variables with defaults
-celery_app.conf.broker_url = cfg.services_broker
-celery_app.conf.result_backend = cfg.services_broker
+celery_app.conf.broker_url = f"{broker_url}/0"
+celery_app.conf.result_backend = f"{broker_url}/1"
 
 async def worker(task, task_id):
     logger.info("Starting celery worker")

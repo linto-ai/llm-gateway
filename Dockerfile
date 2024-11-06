@@ -32,5 +32,4 @@ RUN VERSION=$(grep '^#' RELEASE.md | head -1 | cut -d '#' -f 2 | xargs) \
 HEALTHCHECK CMD ./scripts/healthcheck.sh
 
 # Define the entry point
-#ENTRYPOINT ["python", "-Xfrozen_modules=off"]
-CMD ["scripts/docker-entrypoint.sh"]
+ENTRYPOINT ["scripts/docker-entrypoint.sh"]

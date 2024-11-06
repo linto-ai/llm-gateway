@@ -27,6 +27,5 @@ workers: ${oc.decode:${oc.env:CONCURRENCY,1}}
 timeout: ${oc.decode:${oc.env:TIMEOUT,60}}
 debug: false
 
-
-redis_host: ${oc.env:REDIS_HOST,localhost}
-services_broker: ${oc.env:SERVICES_BROKER,redis://localhost:6379/0}
+services_broker: ${oc.env:SERVICES_BROKER,redis://localhost:6379}
+broker_pass: ${oc.env:BROKER_PASS,EMPTY}

@@ -1,7 +1,7 @@
 summarize/en:
   type: summary
   fields: 2
-  name: en-summary
+  name: summarize-en
   description:
     fr: English summary
   backend: vLLM

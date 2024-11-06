@@ -14,8 +14,8 @@ services:
       - SWAGGER_PREFIX=
       - SWAGGER_PATH=../document/swagger_llm_gateway.yml
       - RESULT_DB_PATH=./results.sqlite
-      - REDIS_HOST=task-broker-redis
       - SERVICES_BROKER=redis://task-broker-redis:6379/0
+      - BROKER_PASS
     volumes:
       - ./services:/usr/src/services
       - ./.hydra-conf:/usr/src/.hydra-conf
@@ -26,6 +26,7 @@ services:
     depends_on:
       - task-broker-redis
   task-broker-redis:
+    command: /bin/sh -c "redis-stack-server --requirepass My_Pasword"
     image: redis/redis-stack-server:latest  
     networks:
       - llm-network
