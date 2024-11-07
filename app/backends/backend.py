@@ -1,113 +1,94 @@
 import os
 # Prevents tokenizers from using multiple threads
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+
 from transformers import LlamaTokenizerFast
 from typing import List, Tuple
-import json
-import re
 import logging
 import spacy
 from conf import cfg_instance
+from .chunking import Chunker
 
+# Configure logging format and level
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     datefmt="%d/%m/%Y %H:%M:%S",
 )
+
+# Load the spaCy model for French NLP processing
 nlp = spacy.load("fr_core_news_sm")
 cfg = cfg_instance(cfg_name="config")
 
 class LLMBackend:
-    def __init__(self, *args, **kwargs):
+    """
+    Base class for handling LLM-related backend processes such as prompt loading, tokenization, 
+    and chunking. It configures parameters, loads defaults, and sets up necessary components.
+    """
+    def __init__(self, task):
+        """
+        Initializes the backend with task-specific parameters and sets up tokenizer and chunker.
+        
+        Args:
+            task (dict): Task containing parameters like task_id, content, backendParams, and type.
+
+        Raises:
+            Exception: If any errors occur during setup.
+        """
         self.logger = logging.getLogger("backend")
         self.logger.setLevel(logging.DEBUG)
-
-    def loadPrompt(self, service_name: str, fieldCount: int = 0):
-        self.logger.info(f"Loading prompt for service: {service_name}")
-        self.promptFields = fieldCount
-        self.logger.info(f"Prompt fields: {self.promptFields}")
-        txt_filepath = os.path.join(cfg.prompt_path,f'{service_name}.txt')
-        print(os.getcwd())
-        with open(txt_filepath, 'r') as f:
-            # prevent caching
-            os.fsync(f.fileno())
-            self.prompt = f.read()
-            
-    def setup(self, params: json, task_id: str):
-        self.logger.info(f"Setting up backend with params: {params} for task: {task_id}")
-        self.task_id = task_id
+        self.logger.info(f"Setting up backend with params: {task['backendParams']} for task: {task['task_id']}")
+        self.task_id = task['task_id']
+        self.content = task['content']
         try:
+            # Load prompt from txt file
+            self.loadPrompt(task["type"], task["fields"])
+            
             # Set default values for all attributes
             for key, default_value in cfg.backend_defaults.items():
-                if key not in params:
+                if key not in task["backendParams"]:
                     self.logger.info(f"Setting default value for attribute '{key}': {default_value}")
                     setattr(self, key, default_value)
+            
             # Overwrite default values with the provided parameters        
-            for key, value in params.items():
+            for key, value in task["backendParams"].items():
                 if hasattr(self, key) and (key not in cfg.backend_defaults):
                     self.logger.info(f"Overwriting existing attribute '{key}' with new value: {value}")
                 setattr(self, key, value)
-            # @TODO: Shall use the tokenizer from the model name / tokenizerclass
-            # seems fine so far as it yields the same token count as the tokenizer from the mixed model
+            
+            # Set up tokenizer and chunker
             self.tokenizer =  LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
-            self.promptTokenCount = len(self.tokenizer(self.prompt)['input_ids'])
+            self.prompt_token_count = len(self.tokenizer(self.prompt)['input_ids'])
+            self.chunker = Chunker(self.tokenizer, self.createNewTurnAfter)
+            
             return True
+        
         except Exception as e:
             self.logger.error(f"Error setting up backend: {e}")
             raise e
 
-    def get_speaker(self, line: str, speaker:str=None ):
-        pattern = r"^[A-Za-z0-9\s\-éèêëàâäôöùûüçïîÿæœñ]+ ?: ?"
-        match = re.match(pattern, line)
-        if match:
-            return line, match.group(0)
-        else:
-            if speaker:
-                line = speaker + line
-            else:
-                line = "(?) : " + line
-            return line, speaker
-
-    def get_splits(self, content: str):
-        lines = [ line for line in content.splitlines() if line.strip() != ""]
-        speaker = "(?)"
-        newTurns = []
-        tokenCount = 0  # Initialize token counter
-
-        for line in lines:
-            tokenCount = 0
-            # Get speaker name
-            line, speaker = self.get_speaker(line, speaker)
-            tokens = self.tokenizer(line)['input_ids']
-            tokenCount = len(tokens)
-
-            if tokenCount > self.createNewTurnAfter:
-                doc = nlp(line[len(speaker):].strip())  # Process the remaining line with spaCy (without speaker)
-                # initialize new turn and token count
-                currentTurn = speaker
-                speaker_tokens = self.tokenizer(currentTurn)['input_ids']
-                tokenCount = len(speaker_tokens)
-                # Segment the line into sentences using spaCy
-                for i,sentence in enumerate(doc.sents):
-                    sentence_text = sentence.text.strip()
-                    if sentence_text.strip() == "":
-                        continue
-                    # Tokenize the sentence to count tokens                   
-                    tokens = self.tokenizer(sentence_text)['input_ids']   
-
-                    if tokenCount + len(tokens) > self.createNewTurnAfter:
-                        # If token count exceeds the limit, add the sentence and reset token count
-                        newTurns.append(currentTurn)
-                        currentTurn = speaker + sentence_text
-                        tokenCount = len(speaker_tokens)  # Reset token count after adding a new turn
-                    else:
-                        currentTurn += sentence_text
-                        tokenCount += len(tokens)
-                # Add the last turn
-                newTurns.append(currentTurn)
-            else:
-                newTurns.append(line)
+    def loadPrompt(self, service_name: str, fieldCount: int = 0):
+        """
+        Loads the prompt from a text file and sets the prompt fields.
         
-        return newTurns
+        Args:
+            service_name (str): The name of the service to load the prompt for.
+            fieldCount (int, optional): The number of prompt fields. Defaults to 0.
+        """
+        self.logger.info(f"Loading prompt for service: {service_name}")
+        self.promptFields = fieldCount
+        self.logger.info(f"Prompt fields: {self.promptFields}")
+
+        # Construct path to the prompt text file
+        txt_filepath = os.path.join(cfg.prompt_path,f'{service_name}.txt')
+        try:
+            with open(txt_filepath, 'r') as f:
+                # Prevent file system caching
+                os.fsync(f.fileno())
+                self.prompt = f.read()
+                self.logger.info("Prompt loaded successfully.")
+        except Exception as e:
+            self.logger.error(f"Error loading prompt from {txt_filepath}: {e}")
+            raise e
     
     def updateTask(self, progress: int):
         self.logger.info(f"Task {self.task_id} progress : {progress}%")

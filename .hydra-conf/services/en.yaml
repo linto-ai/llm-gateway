@@ -17,4 +17,4 @@ summarize/en:
       temperature: 0.2
       top_p: 0.7
       reduceSummary: false
-      consolidateSummary: true
+      consolidateSummary: false

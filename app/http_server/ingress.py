@@ -27,8 +27,7 @@ cfg = cfg_instance(cfg_name="config")
 services_broker = cfg.services_broker
 broker_pass = cfg.broker_pass
 parsed_url = urlparse(services_broker)
-hostname = parsed_url.hostname
-redis_client = redis.StrictRedis(host=hostname, password=broker_pass)
+redis_client = redis.Redis(host=parsed_url.hostname,port= parsed_url.port, password=broker_pass)
 
 # FastAPI App Setup
 app = FastAPI()

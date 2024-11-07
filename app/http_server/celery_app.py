@@ -6,17 +6,15 @@ import logging
 from asgiref.sync import async_to_sync
 from celery.app import trace
 from conf import cfg_instance
-from app.backends.vLLM import VLLM
+from app.backends.llm_inference import LLMInferenceEngine
 
+# Edit the celery logs format
 trace.LOG_SUCCESS = """\
 Task %(name)s[%(id)s] succeeded in %(runtime)ss\
 """
+
 # Get configuration
 cfg = cfg_instance(cfg_name="config")
-# Backends
-vLLM = VLLM(api_key=cfg.api_key, api_base=cfg.api_base)
-backends = {"vLLM": vLLM}
-
 
 # Logging Setup
 logging.basicConfig(
@@ -26,37 +24,34 @@ logging.basicConfig(
 logger = logging.getLogger("celery_worker")
 logger.setLevel(logging.DEBUG)
 
-
-
+# Celery App Setup
 celery_app = Celery("tasks")
 
+# Configure the broker and backend from environment variables with defaults
 services_broker = cfg.services_broker
 broker_pass = cfg.broker_pass
 parsed_url = urlparse(services_broker)
 broker_url = f"{parsed_url.scheme}://:{broker_pass}@{parsed_url.hostname}:{parsed_url.port}"
-# Configure the broker and backend from environment variables with defaults
 celery_app.conf.broker_url = f"{broker_url}/0"
 celery_app.conf.result_backend = f"{broker_url}/1"
 
-async def worker(task, task_id):
-    logger.info("Starting celery worker")
-
-    try:
-        backend = backends[task["backend"]]
-        backend.loadPrompt(task["type"], task["fields"])
-        backend.setup(task["backendParams"], task_id)
-        chunked_content = backend.get_splits(task["content"])
-        summary = await backend.get_generation(chunked_content)
-        summary_string = "\n".join(summary)
-    except Exception as e:
-        logger.error(f"An error occurred in processing tasks : {str(e)}")
-    return summary_string
-# Worker function for processing tasks
+# Define the task
 @celery_app.task(bind=True)
 def process_task(self, task):
-    task_id = self.request.id
-    result = async_to_sync(worker)(task, task_id)
-    return result
+    logger.info("Starting celery worker")
+    task['task_id'] = self.request.id
+    try:
+        # Initialize backend
+        engine = LLMInferenceEngine(task=task)
+
+        # Run summarization
+        summary = engine.run()
+        
+        return summary
+    
+    except Exception as e:
+        logger.error(f"An error occurred in processing tasks : {str(e)}")
+    
 
 def get_task_status(task_id):
     # First, check if the task ID is valid and exists in the backend
