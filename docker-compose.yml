@@ -6,7 +6,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - SERVICE_NAME=LLM_Gateway
-      - OPENAI_API_BASE=https://chat.ai.linagora.exaion.com/v1/
+      - OPENAI_API_BASE
       - OPENAI_API_TOKEN
       - HTTP_PORT=8000
       - CONCURRENCY=2
