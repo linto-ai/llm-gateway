@@ -4,7 +4,7 @@ defaults :
     - en
     - fr
 
-prompt_path: ./services/
+prompt_path: ./prompts/
 backend_defaults :
   name: null
   modelName: null

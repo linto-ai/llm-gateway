@@ -11,13 +11,11 @@ services:
       - HTTP_PORT=8000
       - CONCURRENCY=2
       - TIMEOUT=60
-      - SWAGGER_PREFIX=
-      - SWAGGER_PATH=../document/swagger_llm_gateway.yml
-      - RESULT_DB_PATH=./results.sqlite
+      - SWAGGER_URL=/docs
       - SERVICES_BROKER=redis://task-broker-redis:6379/0
       - BROKER_PASS
     volumes:
-      - ./services:/usr/src/services
+      - ./prompts:/usr/src/prompts
       - ./.hydra-conf:/usr/src/.hydra-conf
     networks:
       - llm-network
