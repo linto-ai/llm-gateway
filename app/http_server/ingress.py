@@ -30,7 +30,11 @@ parsed_url = urlparse(services_broker)
 redis_client = redis.Redis(host=parsed_url.hostname,port= parsed_url.port, password=broker_pass)
 
 # FastAPI App Setup
-app = FastAPI()
+app = FastAPI(
+    title=cfg.swagger.title,
+    description=cfg.swagger.description,
+    docs_url=cfg.swagger.url
+)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # Request handler for generating summaries

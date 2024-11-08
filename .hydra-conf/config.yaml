@@ -29,6 +29,11 @@ api_params:
 semaphore:
   max_concurrent_inferences: ${oc.decode:${oc.env:MAX_CONCURRENT_INFERENCES,3}}
 
+swagger:
+  url: ${oc.env:SWAGGER_URL,/docs}
+  title: ${oc.env:SWAGGER_TITLE,STT API Documentation}
+  description: ${oc.env:SWAGGER_DESCRIPTION,API to make summary of text using LLMs.}
+
 service_port: ${oc.decode:${oc.env:HTTP_PORT,8000}}
 workers: ${oc.decode:${oc.env:CONCURRENCY,1}}
 timeout: ${oc.decode:${oc.env:TIMEOUT,60}}
