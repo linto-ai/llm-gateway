@@ -10,20 +10,24 @@ Follow these steps:
 
 1. **Create a `.env` file** with the necessary environment variables. Below is a table listing configurable parameters that can be set in the `.env` file.
 
-   **Parameters:**
+**Parameters:**
 
-   | Variable               | Description                                                                                   | Default                       | Example                          |
-   |------------------------|-----------------------------------------------------------------------------------------------|-------------------------------|----------------------------------|
-   | `PYTHONUNBUFFERED`     | Ensures Python output is immediately visible                                                 |                            | `1`                              |
-   | `SERVICE_NAME`         | Sets the service name                                                                        | `LLM_Gateway`                 | `LLM_Gateway`                    |
-   | `OPENAI_API_BASE`      | Base URL for the OpenAI API                                                                  | `http://localhost:9000/v1`     | `http://vllm-backend:8000/v1`    |
-   | `OPENAI_API_TOKEN`     | Token for OpenAI API access                                                                  | `EMPTY`                       | `EMPTY`                          |
-   | `HTTP_PORT`            | Port for the service                                                                         | `8000`                        | `8000`                           |
-   | `CONCURRENCY`          | Number of Uvicorn workers                                                                   | `2`                           | `2`                              |
-   | `TIMEOUT`              | Request timeout in seconds                                                                   | `60`                          | `60`                             |
-   | `SWAGGER_URL`          | Route for the Swagger interface                                                              | `/docs`                       | `/docs`                          |
-   | `SERVICES_BROKER`      | URL for the Redis broker                                                                     | `redis://localhost:6379/0`     | `redis://task-broker-redis:6379/0` |
-   | `BROKER_PASS`          | Password for the Redis broker                                                                | `EMPTY`                       | `password`                       |
+| Variable               | Description                                                                                   | Default                       | Example                          |
+|------------------------|-----------------------------------------------------------------------------------------------|-------------------------------|----------------------------------|
+| `PYTHONUNBUFFERED`     | Ensures Python output is immediately visible                                                 | `1`                           | `1`                              |
+| `SERVICE_NAME`         | Sets the service name                                                                        | `LLM_Gateway`                 | `LLM_Gateway`                    |
+| `OPENAI_API_BASE`      | Base URL for the OpenAI API                                                                  | `http://localhost:9000/v1`     | `http://vllm-backend:8000/v1`    |
+| `OPENAI_API_TOKEN`     | Token for OpenAI API access                                                                  | `EMPTY`                       | `EMPTY`                          |
+| `HTTP_PORT`            | Port for the service                                                                         | `8000`                        | `8000`                           |
+| `CONCURRENCY`          | Number of Uvicorn workers                                                                   | `2`                           | `2`                              |
+| `TIMEOUT`              | Request timeout in seconds                                                                   | `60`                          | `60`                             |
+| `SWAGGER_URL`          | Route for the Swagger interface                                                              | `/docs`                       | `/docs`                          |
+| `SERVICES_BROKER`      | URL for the Redis broker                                                                     | `redis://localhost:6379/0`     | `redis://task-broker-redis:6379/0` |
+| `BROKER_PASS`          | Password for the Redis broker                                                                | `EMPTY`                       | `password`                       |
+| `MAX_RETRIES`          | Max retries when calling OpenAI client                                                      | `6`                           | `6`                              |
+| `MAX_RETRY_DELAY`      | Max delay between retries in seconds                                                         | `10`                          | `10`                             |
+| `MAX_CONCURRENT_INFERENCES` | Max number of concurrent requests to the OpenAI client                                     | `3`                           | `3`                              |
+| `WS_POLLING_INTERVAL`  | Polling interval for WebSocket updates in seconds                                            | `3`                           | `3`                              |
 
 
 2. **Run Docker Compose**: After setting up your `.env` file, start the app using:
