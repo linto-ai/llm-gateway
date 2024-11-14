@@ -7,14 +7,14 @@ from conf import cfg_instance
 cfg = cfg_instance(cfg_name="config")
 
 class OpenAIAdapter:
-    def __init__(self, task: dict):
+    def __init__(self, task_data: dict):
         # Set up OpenAI API client and logging
         self.api_key = cfg.api_params.api_key
         self.api_base = cfg.api_params.api_base
-        self.modelName =  task["backendParams"]["modelName"]
-        self.temperature = task["backendParams"]["temperature"]
-        self.top_p = task["backendParams"]["top_p"]
-        self.maxGenerationLength = task["backendParams"]["maxGenerationLength"]
+        self.modelName =  task_data["backendParams"]["modelName"]
+        self.temperature = task_data["backendParams"]["temperature"]
+        self.top_p = task_data["backendParams"]["top_p"]
+        self.maxGenerationLength = task_data["backendParams"]["maxGenerationLength"]
         self.logger = logging.getLogger("OpenAIAdapter")
         self.client = OpenAI(api_key=self.api_key, base_url=self.api_base)
         self.async_client = AsyncOpenAI(api_key=self.api_key, base_url=self.api_base)

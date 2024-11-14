@@ -24,7 +24,7 @@ class LLMBackend:
     Base class for handling LLM-related backend processes such as prompt loading, tokenization, 
     and chunking. It configures parameters, loads defaults, and sets up necessary components.
     """
-    def __init__(self, task):
+    def __init__(self, task_data):
         """
         Initializes the backend with task-specific parameters and sets up tokenizer and chunker.
         
@@ -36,21 +36,21 @@ class LLMBackend:
         """
         self.logger = logging.getLogger("backend")
         self.logger.setLevel(logging.DEBUG if cfg.debug else logging.INFO)
-        self.logger.info(f"Setting up backend with params: {task['backendParams']} for task: {task['task_id']}")
-        self.task_id = task['task_id']
-        self.content = task['content']
+        self.logger.info(f"Setting up backend with params: {task_data['backendParams']} for task: {task_data['task_id']}")
+        self.task_id = task_data['task_id']
+        self.content = task_data['content']
         try:
             # Load prompt from txt file
-            self.loadPrompt(task["type"], task["fields"])
+            self.loadPrompt(task_data["type"], task_data["fields"])
             
             # Set default values for all attributes
             for key, default_value in cfg.backend_defaults.items():
-                if key not in task["backendParams"]:
+                if key not in task_data["backendParams"]:
                     self.logger.info(f"Setting default value for attribute '{key}': {default_value}")
                     setattr(self, key, default_value)
             
             # Overwrite default values with the provided parameters        
-            for key, value in task["backendParams"].items():
+            for key, value in task_data["backendParams"].items():
                 if hasattr(self, key) and (key not in cfg.backend_defaults):
                     self.logger.info(f"Overwriting existing attribute '{key}' with new value: {value}")
                 setattr(self, key, value)
@@ -89,18 +89,3 @@ class LLMBackend:
         except Exception as e:
             self.logger.error(f"Error loading prompt from {txt_filepath}: {e}")
             raise e
-    
-    def updateTask(self, progress: int):
-        self.logger.info(f"Task {self.task_id} progress : {progress}%")
-        #@TODO: Implement celery task progress update?
-
-    def get_dialogs(self, chunks: List[Tuple[str, str]], max_new_speeches: int = -1) -> List[str]:
-        # implementation here
-        pass
-
-    def get_result(self, prompt, model_name, temperature=1, top_p=0.95, generation_max_tokens=1028):
-        # implementation here
-        pass
-
-    def get_generation(self, turns: List[str]):
-        pass

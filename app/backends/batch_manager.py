@@ -3,11 +3,12 @@ from.openai_adapter import OpenAIAdapter
 import logging
 from itertools import chain
 from conf import cfg_instance
+from celery.result import AsyncResult
 
 cfg = cfg_instance(cfg_name="config")
 
 class BatchManager:
-    def __init__(self, task: dict, tokenizer, prompt: str, prompt_token_count: int):
+    def __init__(self, task_data: dict, tokenizer, prompt: str, prompt_token_count: int, celery_task):
         """
         Initializes the BatchManager with the task, tokenizer, and prompt-related parameters.
 
@@ -18,15 +19,16 @@ class BatchManager:
             prompt_token_count (int): The number of tokens in the prompt.
         """
         self.tokenizer = tokenizer
-        self.totalContextLength = task["backendParams"]['totalContextLength']
-        self.maxGenerationLength = task["backendParams"]["maxGenerationLength"]
+        self.totalContextLength = task_data["backendParams"]['totalContextLength']
+        self.maxGenerationLength = task_data["backendParams"]["maxGenerationLength"]
         self.prompt_token_count = prompt_token_count
-        self.maxNewTurns = task["backendParams"]["maxNewTurns"]
-        self.promptFields = task["fields"]
-        self.summaryTurns = task["backendParams"]["summaryTurns"]
+        self.maxNewTurns = task_data["backendParams"]["maxNewTurns"]
+        self.promptFields = task_data["fields"]
+        self.summaryTurns = task_data["backendParams"]["summaryTurns"]
         self.prompt = prompt
-        self.task_id = task['task_id']
-        self.openai_adapter = OpenAIAdapter(task)
+        self.task_id = task_data['task_id']
+        self.openai_adapter = OpenAIAdapter(task_data)
+        self.celery_task = celery_task
 
         # Semaphore to control concurrent inferences
         self.semaphore = asyncio.Semaphore(cfg.semaphore.max_concurrent_inferences)
@@ -52,7 +54,7 @@ class BatchManager:
         return self.prompt.format('\n'.join(new_turns_to_summarize))
 
 
-    def publish_turns(self, summarized_turns: list, new_turns_to_summarize: list, i: int, turns: list) -> list:
+    def publish_turns(self, summarized_turns: list, new_turns_to_summarize: list) -> list:
         """
         Synchronously publishes a batch of turns by formatting the prompt, sending it to OpenAI, and processing the response.
 
@@ -79,9 +81,8 @@ class BatchManager:
         # Update the progressive summary
         self.progressive_summary.extend(response_turns)
         
-        # calculate and log the progress
-        percentage_handled = round((i / len(turns)) * 100, 2)
-        self.updateTask(percentage_handled)
+        # Update the task progress
+        self.update_task(len(new_turns_to_summarize))
 
         return self.progressive_summary[-self.summaryTurns:]
     
@@ -104,6 +105,9 @@ class BatchManager:
         if response is None:
             return None
         
+        # Update the task progress
+        self.update_task(len(new_turns_to_summarize))
+
         # Split the response into individual turns
         response_turns = [res for res in response.split('\n') if res.strip() != '']
         
@@ -163,6 +167,9 @@ class BatchManager:
         # Create async batches
         batches = self.create_async_batches(turns)
 
+        self.total_turns = len(turns)
+        self.celery_task.update_state(state='PROGRESS', meta={'completed_turns': 0, 'total_turns': self.total_turns})
+
         # Use a semaphore to control the number of concurrent async tasks
         async with self.semaphore:
             tasks = [self.publish_async_turns(batch) for batch in batches]
@@ -188,14 +195,16 @@ class BatchManager:
         summarized_turns = []
         total_token_count=self.prompt_token_count
         i = 0
-
+        
+        self.total_turns = len(turns)
+        self.celery_task.update_state(state='PROGRESS', meta={'completed_turns': 0, 'total_turns': self.total_turns})
         # Process turn batches synchronously            
         while i < len(turns):
             turn = turns[i]
             turn_token_count = len(self.tokenizer(turn))
             if (total_token_count + turn_token_count)*1.15 > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
                 # Process current batch of turns
-                summarized_turns = self.publish_turns(summarized_turns, new_turns_to_summarize, i, turns)
+                summarized_turns = self.publish_turns(summarized_turns, new_turns_to_summarize)
                 
                 # Reset for next batch
                 new_turns_to_summarize = []
@@ -208,7 +217,7 @@ class BatchManager:
 
         # Process remaining turns if any
         if new_turns_to_summarize:
-            summarized_turns  = self.publish_turns(summarized_turns, new_turns_to_summarize, i, turns) 
+            summarized_turns  = self.publish_turns(summarized_turns, new_turns_to_summarize) 
 
         return self.progressive_summary
 
@@ -231,10 +240,12 @@ class BatchManager:
         self.logger.info("Summary reduction input exceeds token limit.")
         return summary
 
+    def update_task(self, nb_turns):
+        result = AsyncResult(self.task_id)
+        completed_turns = result.info['completed_turns'] + nb_turns
+        self.celery_task.update_state(state='PROGRESS', meta={'completed_turns': completed_turns, 'total_turns': self.total_turns})
 
-    def updateTask(self, progress: int):
-        self.logger.info(f"Task {self.task_id} progress : {progress}%")
-        #@TODO: Implement celery task progress update?
+
     
     @staticmethod
     def format_summary(summary: list) -> str:

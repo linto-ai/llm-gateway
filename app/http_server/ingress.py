@@ -107,12 +107,14 @@ async def get_result(result_id: str):
         logger.info("Got get_result request: " + str(result_id))
 
         # Check task status in Celery
-        status, task_result = get_task_status(result_id)
+        status, task_result, progress = get_task_status(result_id)
 
         if status == "PENDING":
             return JSONResponse(status_code=202, content={"status": "queued", "message": "Task is in queue"})
         elif status == "STARTED":
-            return JSONResponse(status_code=202, content={"status": "processing", "message": "Task is in progress"})
+            return JSONResponse(status_code=202, content={"status": "started", "message": "Task started"})
+        elif status == "PROGRESS":
+            return JSONResponse(status_code=202, content={"status": "processing", "message": "Task is in progress", "progress": progress})
         elif status == "SUCCESS":
             # Task completed; return result from Celery or SQLite if Celery result not found
             #summary = task_result.result.get('summary', None)
@@ -129,19 +131,21 @@ async def get_result(result_id: str):
         logger.error("An error occurred: " + str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
-
+# 
 @app.websocket("/ws/results/{result_id}")
 async def websocket_result(websocket: WebSocket, result_id: str):
     await websocket.accept()
     try:
         # Check initial task status
-        status, task_result = get_task_status(result_id)
+        status, task_result, progress = get_task_status(result_id)
         
         # Send initial status
         if status == "PENDING":
             await websocket.send_json({"status": "queued", "message": "Task is in queue"})
         elif status == "STARTED":
-            await websocket.send_json({"status": "processing", "message": "Task is in progress"})
+            await websocket.send_json({"status": "started", "message": "Task started"})
+        elif status == "PROGRESS":
+            await websocket.send_json({"status": "processing", "message": "Task is in progress", "progress": progress})
         elif status == "SUCCESS":
             # Task completed
             await websocket.send_json({"status": "complete", "message": "success", "summarization": task_result.strip()})
@@ -151,12 +155,14 @@ async def websocket_result(websocket: WebSocket, result_id: str):
         # Keep checking the status at intervals if task is not yet complete
         while status not in ["SUCCESS", "FAILURE"]:
             await asyncio.sleep(cfg.api_params.ws_polling_interval)  # Polling interval
-            status, task_result = get_task_status(result_id)
+            status, task_result, progress = get_task_status(result_id)
 
             if status == "PENDING":
                 await websocket.send_json({"status": "queued", "message": "Task is in queue"})
             elif status == "STARTED":
-                await websocket.send_json({"status": "processing", "message": "Task is in progress"})
+                await websocket.send_json({"status": "started", "message": "Task started"})
+            elif status == "PROGRESS":
+                await websocket.send_json({"status": "processing", "message": "Task is in progress", "progress": progress})
             elif status == "SUCCESS":
                 await websocket.send_json({"status": "complete", "message": "success", "summarization": task_result.strip()})
             elif status == "FAILURE":
