@@ -2,6 +2,7 @@
 import logging
 import json
 from fastapi import FastAPI, HTTPException, UploadFile, Form, Depends
+from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from . import FileChangeHandler
@@ -11,6 +12,10 @@ from app.http_server.celery_app import process_task, get_task_status
 import redis
 from conf import cfg_instance
 from urllib.parse import urlparse
+import asyncio
+
+# Get configuration
+cfg = cfg_instance(cfg_name="config")
 
 # Logging Setup
 logging.basicConfig(
@@ -18,14 +23,13 @@ logging.basicConfig(
     datefmt="%d/%m/%Y %H:%M:%S",
 )
 logger = logging.getLogger("http_server")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG if cfg.debug else logging.INFO)
 
-# Get configuration
-cfg = cfg_instance(cfg_name="config")
+
 
 # Initialize Redis client
-services_broker = cfg.services_broker
-broker_pass = cfg.broker_pass
+services_broker = cfg.services_broker.url
+broker_pass = cfg.services_broker.password
 parsed_url = urlparse(services_broker)
 redis_client = redis.Redis(host=parsed_url.hostname,port= parsed_url.port, password=broker_pass)
 
@@ -126,6 +130,42 @@ async def get_result(result_id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.websocket("/ws/results/{result_id}")
+async def websocket_result(websocket: WebSocket, result_id: str):
+    await websocket.accept()
+    try:
+        # Check initial task status
+        status, task_result = get_task_status(result_id)
+        
+        # Send initial status
+        if status == "PENDING":
+            await websocket.send_json({"status": "queued", "message": "Task is in queue"})
+        elif status == "STARTED":
+            await websocket.send_json({"status": "processing", "message": "Task is in progress"})
+        elif status == "SUCCESS":
+            # Task completed
+            await websocket.send_json({"status": "complete", "message": "success", "summarization": task_result.strip()})
+        elif status == "FAILURE":
+            await websocket.send_json({"status": "error", "message": "Task failed", "details": str(task_result)})
+
+        # Keep checking the status at intervals if task is not yet complete
+        while status not in ["SUCCESS", "FAILURE"]:
+            await asyncio.sleep(cfg.api_params.ws_polling_interval)  # Polling interval
+            status, task_result = get_task_status(result_id)
+
+            if status == "PENDING":
+                await websocket.send_json({"status": "queued", "message": "Task is in queue"})
+            elif status == "STARTED":
+                await websocket.send_json({"status": "processing", "message": "Task is in progress"})
+            elif status == "SUCCESS":
+                await websocket.send_json({"status": "complete", "message": "success", "summarization": task_result.strip()})
+            elif status == "FAILURE":
+                await websocket.send_json({"status": "error", "message": "Task failed", "details": str(task_result)})
+
+    except WebSocketDisconnect:
+        logger.info(f"Client disconnected from WebSocket for result_id: {result_id}")
+
+
 @app.get("/healthcheck")
 async def healthcheck():
     return "1"
@@ -156,7 +196,7 @@ def get_services():
 def start():
     logger.info("Starting FastAPI application...")
     import uvicorn
-    uvicorn.run("app.http_server.ingress:app", host="0.0.0.0", port=cfg.service_port, workers=cfg.workers) 
+    uvicorn.run("app.http_server.ingress:app", host="0.0.0.0", port=cfg.api_params.service_port, workers=cfg.api_params.workers) 
 
 if __name__ == "__main__":
     start()

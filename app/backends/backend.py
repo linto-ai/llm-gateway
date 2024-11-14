@@ -35,7 +35,7 @@ class LLMBackend:
             Exception: If any errors occur during setup.
         """
         self.logger = logging.getLogger("backend")
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.DEBUG if cfg.debug else logging.INFO)
         self.logger.info(f"Setting up backend with params: {task['backendParams']} for task: {task['task_id']}")
         self.task_id = task['task_id']
         self.content = task['content']

@@ -1,5 +1,4 @@
 from openai import OpenAI, AsyncOpenAI
-import time
 import logging
 from typing import List
 from tenacity import retry, stop_after_attempt, wait_random_exponential

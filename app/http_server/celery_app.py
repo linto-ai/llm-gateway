@@ -22,14 +22,14 @@ logging.basicConfig(
     datefmt="%d/%m/%Y %H:%M:%S",
 )
 logger = logging.getLogger("celery_worker")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG if cfg.debug else logging.INFO)
 
 # Celery App Setup
 celery_app = Celery("tasks")
 
 # Configure the broker and backend from environment variables with defaults
-services_broker = cfg.services_broker
-broker_pass = cfg.broker_pass
+services_broker = cfg.services_broker.url
+broker_pass = cfg.services_broker.password
 parsed_url = urlparse(services_broker)
 broker_url = f"{parsed_url.scheme}://:{broker_pass}@{parsed_url.hostname}:{parsed_url.port}"
 celery_app.conf.broker_url = f"{broker_url}/0"
