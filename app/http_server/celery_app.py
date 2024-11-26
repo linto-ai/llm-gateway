@@ -52,6 +52,7 @@ def process_task(self, task_data):
     
     except Exception as e:
         logger.error(f"An error occurred in processing tasks : {str(e)}")
+        raise
     
 
 def get_task_status(task_id):
@@ -75,5 +76,5 @@ def get_task_status(task_id):
     # Get progress metadata if task is in progress
     progress = None
     if result.status == 'PROGRESS':
-        progress = f"{round(100 * (result.info['completed_turns'] / result.info['total_turns']))} %"    
+        progress = f"{round(100 * (result.info['completed_turns'] / result.info['total_turns']))} %"
     return result.status, result.result, progress
