@@ -71,9 +71,16 @@ class BatchManager:
         filled_prompt = self.get_prompt(summarized_turns, new_turns_to_summarize)
 
         # Publish the prompt
-        response = self.openai_adapter.publish(filled_prompt)
+        try :
+            response = self.openai_adapter.publish(filled_prompt)
+        
+        except Exception as e:
+            self.logger.error(f"Error publishing: {e}")
+            raise
+        
+        # Handle None response
         if response is None:
-            return None
+            return self.progressive_summary + ['' for i in range(len(new_turns_to_summarize))]
         
         # Split the response into individual turns
         response_turns = [res for res in response.split('\n') if res.strip() != '']
@@ -101,9 +108,16 @@ class BatchManager:
         filled_prompt = self.get_prompt([], new_turns_to_summarize)
 
         # Publish the prompt
-        response = await self.openai_adapter.async_publish(filled_prompt)
+        try :
+            response = await self.openai_adapter.async_publish(filled_prompt)
+        
+        except Exception as e:
+            self.logger.error(f"Error publishing: {e}")
+            raise        
+        
+        # Handle None response
         if response is None:
-            return None
+            return self.progressive_summary + ['' for i in range(len(new_turns_to_summarize))]
         
         # Update the task progress
         self.update_task(len(new_turns_to_summarize))

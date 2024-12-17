@@ -30,21 +30,18 @@ class OpenAIAdapter:
             str: The response content from the chat model if successful.
             None: If an error occurs during the publishing process.
         """
-        try:
-            chat_response = self.client.chat.completions.create(
-                model=self.modelName,
-                
-                messages=[
-                    {"role": "user", "content": content}
-                ],
-                temperature=self.temperature,
-                top_p=self.top_p,
-                max_tokens=self.maxGenerationLength
-            )
-            return chat_response.choices[0].message.content
-        except Exception as e:
-            self.logger.error(f"Error publishing: {e}")
-            return None
+        chat_response = self.client.chat.completions.create(
+            model=self.modelName,
+            
+            messages=[
+                {"role": "user", "content": content}
+            ],
+            temperature=self.temperature,
+            top_p=self.top_p,
+            max_tokens=self.maxGenerationLength
+        )
+        return chat_response.choices[0].message.content
+
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(cfg.api_params.max_retries))
     async def async_publish(self, content: str) -> str:
@@ -56,15 +53,11 @@ class OpenAIAdapter:
             str: The response content from the chat model if successful.
             None: If an error occurs during the publishing process.
         """
-        try:
-            chat_response = await self.async_client.chat.completions.create(
-                model=self.modelName,
-                messages=[{"role": "user", "content": content}],
-                temperature=self.temperature,
-                top_p=self.top_p,
-                max_tokens=self.maxGenerationLength
-            )
-            return chat_response.choices[0].message.content
-        except Exception as e:
-            self.logger.error(f"Error publishing: {e}")
-            return None
+        chat_response = await self.async_client.chat.completions.create(
+            model=self.modelName,
+            messages=[{"role": "user", "content": content}],
+            temperature=self.temperature,
+            top_p=self.top_p,
+            max_tokens=self.maxGenerationLength
+        )
+        return chat_response.choices[0].message.content

@@ -3,17 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      - PYTHONUNBUFFERED=1
-      - SERVICE_NAME=LLM_Gateway
-      - OPENAI_API_BASE
-      - OPENAI_API_TOKEN
-      - HTTP_PORT=8000
-      - CONCURRENCY=2
-      - TIMEOUT=60
-      - SWAGGER_URL=/docs
-      - SERVICES_BROKER=redis://task-broker-redis:6379/0
-      - BROKER_PASS
+    env_file:
+      - .env
     volumes:
       - ./prompts:/usr/src/prompts
       - ./.hydra-conf:/usr/src/.hydra-conf
