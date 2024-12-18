@@ -2,7 +2,7 @@ fr:
   type: summary
   fields: 2
   name: summarize-fr
-  route: summarize/fr
+  route: summarize-fr
   description:
     fr: Résumé français
   backend: vLLM
