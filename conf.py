@@ -122,8 +122,8 @@ class cfg_instance(dict):
         for service_name, service_info in self.services.items():
             try:
                 services.append(service_info)
-                app.add_api_route(os.path.join(base_path, service_name), handle_generation(service_info['name']), methods=["POST"])
-                logger.info(f"Service '{service_info['name']}' loaded successfully")
+                app.add_api_route(os.path.join(base_path, service_info['route']), handle_generation(service_info['name']), methods=["POST"])
+                logger.info(f"Service '{service_info['route']}' loaded successfully")
             except Exception as e:
                 logger.error(f"Failed to load service '{service_name}': {e}")
         return [OmegaConf.to_container(service, resolve=True) for service in services]
