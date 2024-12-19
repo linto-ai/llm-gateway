@@ -183,21 +183,20 @@ async def websocket_all_results(websocket: WebSocket):
         while True:
             # Get all task IDs
             task_ids = get_task_ids()
-            print(f"task_status: {task_status}")
-            print(f"task_progress: {task_progress}")
             for task_id in task_ids:
                 status, result, progress = get_task_status(task_id)
-                print(status, result, progress)
                 # Update the status if it has changed
                 if (task_status.get(task_id) != status) or (task_progress.get(task_id) != progress):
                     if status == "SUCCESS":
-                        await websocket.send_json({"task_id": task_id, "status": "complete", "summarization": result.strip()})
+                        await websocket.send_json({"task_id": task_id, "status": "complete","message": "success", "summarization": result.strip()})
                     elif status == "FAILURE":
-                        await websocket.send_json({"task_id": task_id, "status": "error", "error": result})
+                        await websocket.send_json({"task_id": task_id, "status": "error", "message": "Task failed", "details": str(result)})
+                    elif status == "STARTED":
+                        await websocket.send_json({"task_id": task_id, "status": "started","message": "Task started"})
                     elif status == "PROGRESS":
-                        await websocket.send_json({"task_id": task_id, "status": "processing", "progress": progress})
+                        await websocket.send_json({"task_id": task_id, "status": "processing", "message": "Task is in progress", "progress": progress,})
                     elif status == "PENDING":
-                        await websocket.send_json({"task_id": task_id, "status": "queued"})
+                        await websocket.send_json({"task_id": task_id, "status": "queued","message": "Task is in queue"})
                     elif status == "UNKNOWN":
                         await websocket.send_json({"task_id": task_id, "status": "unknown", "message": "Task does not exist"})
 
