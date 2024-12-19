@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import FileChangeHandler
 from watchdog.observers import Observer
 from conf import cfg_instance
-from app.http_server.celery_app import process_task, get_task_status
+from app.http_server.celery_app import process_task, get_task_status, list_tasks_ids
 import redis
 from conf import cfg_instance
 from urllib.parse import urlparse
@@ -154,9 +154,9 @@ async def websocket_result(websocket: WebSocket, result_id: str):
 
         # Keep checking the status at intervals if task is not yet complete
         while status not in ["SUCCESS", "FAILURE"]:
+            print(f"Get task ids: {get_task_ids()}")
             await asyncio.sleep(cfg.api_params.ws_polling_interval)  # Polling interval
             status, task_result, progress = get_task_status(result_id)
-
             if status == "PENDING":
                 await websocket.send_json({"status": "queued", "message": "Task is in queue"})
             elif status == "STARTED":
@@ -170,6 +170,46 @@ async def websocket_result(websocket: WebSocket, result_id: str):
 
     except WebSocketDisconnect:
         logger.info(f"Client disconnected from WebSocket for result_id: {result_id}")
+
+from fastapi import WebSocket, WebSocketDisconnect
+import asyncio
+
+@app.websocket("/ws/results")
+async def websocket_all_results(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        task_status = {}
+        task_progress = {}
+        while True:
+            # Get all task IDs
+            task_ids = get_task_ids()
+            print(f"task_status: {task_status}")
+            print(f"task_progress: {task_progress}")
+            for task_id in task_ids:
+                status, result, progress = get_task_status(task_id)
+                print(status, result, progress)
+                # Update the status if it has changed
+                if (task_status.get(task_id) != status) or (task_progress.get(task_id) != progress):
+                    if status == "SUCCESS":
+                        await websocket.send_json({"task_id": task_id, "status": "complete", "summarization": result.strip()})
+                    elif status == "FAILURE":
+                        await websocket.send_json({"task_id": task_id, "status": "error", "error": result})
+                    elif status == "PROGRESS":
+                        await websocket.send_json({"task_id": task_id, "status": "processing", "progress": progress})
+                    elif status == "PENDING":
+                        await websocket.send_json({"task_id": task_id, "status": "queued"})
+                    elif status == "UNKNOWN":
+                        await websocket.send_json({"task_id": task_id, "status": "unknown", "message": "Task does not exist"})
+
+                    # Update the task status in the dictionary
+                    task_status[task_id] = status
+                    task_progress[task_id] = progress
+            
+            # Sleep for the polling interval
+            await asyncio.sleep(cfg.api_params.ws_polling_interval)
+
+    except WebSocketDisconnect:
+        logger.info("Client disconnected from WebSocket")
 
 
 @app.get("/healthcheck")
@@ -197,6 +237,9 @@ def get_services():
         services_json = redis_client.get("services_config")
     return json.loads(services_json)
 
+def get_task_ids():
+    task_ids = redis_client.lrange('task_ids', 0, -1) or []
+    return [task.decode('utf-8') for task in task_ids]
 
 
 def start():
