@@ -180,11 +180,21 @@ async def websocket_all_results(websocket: WebSocket):
     try:
         task_status = {}
         task_progress = {}
+        first_connection = True
+
         while True:
             # Get all task IDs
             task_ids = get_task_ids()
             for task_id in task_ids:
                 status, result, progress = get_task_status(task_id)
+                
+                # Ignore old task ("SUCCESS" and "FAILURE") on the first connection
+                if first_connection and status in ["SUCCESS", "FAILURE"]:
+                    # Update the task status in the dictionary
+                    task_status[task_id] = status
+                    task_progress[task_id] = progress
+                    continue
+
                 # Update the status if it has changed
                 if (task_status.get(task_id) != status) or (task_progress.get(task_id) != progress):
                     if status == "SUCCESS":
@@ -203,6 +213,8 @@ async def websocket_all_results(websocket: WebSocket):
                     # Update the task status in the dictionary
                     task_status[task_id] = status
                     task_progress[task_id] = progress
+            
+            first_connection = False
             
             # Sleep for the polling interval
             await asyncio.sleep(cfg.api_params.ws_polling_interval)
