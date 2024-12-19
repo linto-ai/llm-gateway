@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import FileChangeHandler
 from watchdog.observers import Observer
 from conf import cfg_instance
-from app.http_server.celery_app import process_task, get_task_status, list_tasks_ids
+from app.http_server.celery_app import process_task, get_task_status
 import redis
 from conf import cfg_instance
 from urllib.parse import urlparse

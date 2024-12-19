@@ -86,17 +86,3 @@ def get_task_status(task_id):
     if result.status == 'PROGRESS':
         progress = f"{round(100 * (result.info['completed_turns'] / result.info['total_turns']))}"
     return result.status, result.result, progress
-
-def list_tasks_ids():
-    i = celery_app.control.inspect()
-    active_tasks = i.active() or {} # Gets the active tasks
-    scheduled_tasks = i.scheduled() or {}  # Gets the scheduled tasks
-    reserved_tasks = i.reserved() or {} # Gets the reserved tasks
-
-    all_task_ids = (
-        [task['id'] for worker_tasks in active_tasks.values() for task in worker_tasks] +
-        [task['id'] for worker_tasks in reserved_tasks.values() for task in worker_tasks] +
-        [task['id'] for worker_tasks in scheduled_tasks.values() for task in worker_tasks]
-    )
-
-    return all_task_ids
