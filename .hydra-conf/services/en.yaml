@@ -19,3 +19,5 @@ en:
       top_p: 0.7
       reduceSummary: false
       consolidateSummary: false
+      reduce_prompt: null
+      type: abstractive
