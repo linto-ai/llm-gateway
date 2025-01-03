@@ -262,7 +262,7 @@ class BatchManager:
         result = AsyncResult(self.task_id)
         completed_turns = result.info['completed_turns'] + nb_turns
         self.celery_task.update_state(state='PROGRESS', meta={'completed_turns': completed_turns, 'total_turns': self.total_turns})
-
+        self.logger.info(f"Task {self.task_id} progress updated : {round(100 * completed_turns/self.total_turns)} %")
 
     
     @staticmethod

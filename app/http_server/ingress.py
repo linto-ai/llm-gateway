@@ -125,7 +125,7 @@ async def get_result(result_id: str):
         elif status == "SUCCESS":
             # Task completed; return result from Celery or SQLite if Celery result not found
             #summary = task_result.result.get('summary', None)
-            return JSONResponse(status_code=200, content={"status": "complete", "message": "success", "summarization": task_result.strip()})
+            return JSONResponse(status_code=200, content={"status": "complete", "message": "success", "summarization": '' if task_result is None else task_result.strip()})
         elif status == "FAILURE":
             return JSONResponse(status_code=500, content={"status": "error", "message": "Task failed", "details": str(task_result)})
 
