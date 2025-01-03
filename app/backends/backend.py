@@ -59,6 +59,11 @@ class LLMBackend:
             self.tokenizer =  LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
             self.prompt_token_count = len(self.tokenizer(self.prompt)['input_ids'])
             self.chunker = Chunker(self.tokenizer, self.createNewTurnAfter)
+
+            if (task_data["backendParams"]['reduceSummary'] == True) and (task_data["backendParams"]["reduce_prompt"] is not None):
+                self.load_reduce_prompt(task_data["type"], task_data["backendParams"]["reduce_prompt"])
+            else :
+                self.reduce_prompt = None
             
             return True
         
@@ -86,6 +91,21 @@ class LLMBackend:
                 os.fsync(f.fileno())
                 self.prompt = f.read()
                 self.logger.info("Prompt loaded successfully.")
+        except Exception as e:
+            self.logger.error(f"Error loading prompt from {txt_filepath}: {e}")
+            raise e
+
+    def load_reduce_prompt(self, service_name: str, reduce_prompt: str):
+        self.logger.info(f"Loading reduce prompt for service: {service_name}")
+
+        # Construct path to the prompt text file
+        txt_filepath = os.path.join(cfg.prompt_path,f'{reduce_prompt}.txt')
+        try:
+            with open(txt_filepath, 'r') as f:
+                # Prevent file system caching
+                os.fsync(f.fileno())
+                self.reduce_prompt = f.read()
+                self.logger.info("Reduce Prompt loaded successfully.")
         except Exception as e:
             self.logger.error(f"Error loading prompt from {txt_filepath}: {e}")
             raise e

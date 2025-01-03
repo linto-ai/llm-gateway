@@ -18,6 +18,7 @@ backend_defaults :
   top_p: null
   reduceSummary: null
   consolidateSummary: null
+  reduce_prompt: null
   service_name: ${oc.env:SERVICE_NAME,LLM_Gateway}
 
 api_params:

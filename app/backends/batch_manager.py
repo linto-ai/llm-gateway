@@ -8,7 +8,7 @@ from celery.result import AsyncResult
 cfg = cfg_instance(cfg_name="config")
 
 class BatchManager:
-    def __init__(self, task_data: dict, tokenizer, prompt: str, prompt_token_count: int, celery_task):
+    def __init__(self, task_data: dict, tokenizer, prompt: str, prompt_token_count: int, reduce_prompt:str , celery_task):
         """
         Initializes the BatchManager with the task, tokenizer, and prompt-related parameters.
 
@@ -26,6 +26,7 @@ class BatchManager:
         self.promptFields = task_data["fields"]
         self.summaryTurns = task_data["backendParams"]["summaryTurns"]
         self.prompt = prompt
+        self.reduce_prompt = reduce_prompt
         self.task_id = task_data['task_id']
         self.openai_adapter = OpenAIAdapter(task_data)
         self.celery_task = celery_task
@@ -37,7 +38,7 @@ class BatchManager:
         self.logger = logging.getLogger("BatchManager")
 
 
-    def get_prompt(self, summarized_turns: list, new_turns_to_summarize: list) -> str:
+    def get_prompt(self, summarized_turns: list, new_turns_to_summarize: list, reduce_prompt=None) -> str:
         """
         Constructs the prompt by inserting summarized turns and new turns.
 
@@ -48,6 +49,9 @@ class BatchManager:
         Returns:
             str: The formatted prompt with turns inserted.
         """
+        # Use the reduce prompt if provided
+        if reduce_prompt is not None:
+            return reduce_prompt.format('\n'.join(new_turns_to_summarize))
         # Format the prompt based on the number of fields (e.g., two fields or one)
         if self.promptFields == 2:
             return self.prompt.format('\n'.join(summarized_turns), '\n'.join(new_turns_to_summarize))
@@ -94,7 +98,7 @@ class BatchManager:
         return self.progressive_summary[-self.summaryTurns:]
     
 
-    async def publish_async_turns(self, new_turns_to_summarize: list) -> list:
+    async def publish_async_turns(self, new_turns_to_summarize: list, reduce_prompt=None) -> list:
         """
         Asynchronously publishes a batch of new turns to OpenAI.
 
@@ -105,7 +109,7 @@ class BatchManager:
             list: The list of turns returned by OpenAI.
         """
         # Inject new turns into the prompt
-        filled_prompt = self.get_prompt([], new_turns_to_summarize)
+        filled_prompt = self.get_prompt([], new_turns_to_summarize, reduce_prompt)
 
         # Publish the prompt
         try :
@@ -249,7 +253,7 @@ class BatchManager:
 
         total_token_count = self.prompt_token_count + sum(len(self.tokenizer(turn)) for turn in summary)
         if total_token_count < self.totalContextLength - self.maxGenerationLength:
-            return asyncio.run(self.publish_async_turns(summary))
+            return asyncio.run(self.publish_async_turns(summary, self.reduce_prompt))
         
         self.logger.info("Summary reduction input exceeds token limit.")
         return summary
