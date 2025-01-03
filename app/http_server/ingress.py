@@ -217,7 +217,7 @@ async def websocket_all_results(websocket: WebSocket):
             for task_id in task_ids:
                 status, result, progress = get_task_status(task_id)
 
-                if first_connection and status in ["SUCCESS", "FAILURE"]:
+                if first_connection and status in ["SUCCESS", "FAILURE", "UNKNOWN"]:
                     task_status[task_id] = status
                     task_progress[task_id] = progress
                     continue
