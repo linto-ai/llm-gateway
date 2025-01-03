@@ -131,15 +131,14 @@ async def get_result(result_id: str):
         logger.error("An error occurred: " + str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
-#
+# 
 @app.websocket("/ws/results/{result_id}")
 async def websocket_result(websocket: WebSocket, result_id: str):
     await websocket.accept()
     try:
-        logger.info("Client connected to WebSocket for result_id: " + str(result_id))
         # Check initial task status
         status, task_result, progress = get_task_status(result_id)
-
+        
         # Send initial status
         if status == "PENDING":
             await websocket.send_json({"status": "queued", "message": "Task is in queue"})
@@ -168,7 +167,6 @@ async def websocket_result(websocket: WebSocket, result_id: str):
                 await websocket.send_json({"status": "complete", "message": "success", "summarization": task_result.strip()})
             elif status == "FAILURE":
                 await websocket.send_json({"status": "error", "message": "Task failed", "details": str(task_result)})
-        
 
     except WebSocketDisconnect:
         logger.info(f"Client disconnected from WebSocket for result_id: {result_id}")
@@ -179,29 +177,54 @@ import asyncio
 @app.websocket("/ws/results")
 async def websocket_all_results(websocket: WebSocket):
     await websocket.accept()
-    logger.info("Client connected to WebSocket")
     try:
+        
+        # Wait for the client to send a list of task IDs
+        initial_task_ids = list(await websocket.receive_json())
+        #initial_task_ids = message.get('task_ids', [])
+
+        # Send the initial status of all tasks
+        initial_response = []
         task_status = {}
         task_progress = {}
-        first_connection = True
 
+        for task_id in initial_task_ids:
+            status, result, progress = get_task_status(task_id)
+            # Update the status if it has changed
+            if status == "SUCCESS":
+                initial_response.append({"task_id": task_id, "status": "complete","message": "success","progress":"100", "summarization": result.strip()})
+            elif status == "FAILURE":
+                initial_response.append({"task_id": task_id, "status": "error", "message": "Task failed", "details": str(result)})
+            elif status == "STARTED":
+                initial_response.append({"task_id": task_id, "status": "started","message": "Task started"})
+            elif status == "PROGRESS":
+                initial_response.append({"task_id": task_id, "status": "processing", "message": "Task is in progress", "progress": progress,})
+            elif status == "PENDING":
+                initial_response.append({"task_id": task_id, "status": "queued","message": "Task is in queue"})
+            elif status == "UNKNOWN":
+                initial_response.append({"task_id": task_id, "status": "unknown", "message": "Task does not exist"})
+            
+            # Update the task status in the dictionary
+            task_status[task_id] = status
+            task_progress[task_id] = progress
+        
+        await websocket.send_json(initial_response)
+
+        first_connection = True
         while True:
             # Get all task IDs
             task_ids = get_task_ids()
             for task_id in task_ids:
                 status, result, progress = get_task_status(task_id)
 
-                # Ignore old task ("SUCCESS" and "FAILURE") on the first connection
                 if first_connection and status in ["SUCCESS", "FAILURE"]:
-                    # Update the task status in the dictionary
                     task_status[task_id] = status
                     task_progress[task_id] = progress
                     continue
-
                 # Update the status if it has changed
                 if (task_status.get(task_id) != status) or (task_progress.get(task_id) != progress):
                     if status == "SUCCESS":
-                        await websocket.send_json({"task_id": task_id, "status": "complete","message": "success","progress" : "100", "summarization": result.strip()})
+                        await websocket.send_json({"task_id": task_id, "status": "complete","message": "success","progress":"100", "summarization": result.strip()})
                     elif status == "FAILURE":
                         await websocket.send_json({"task_id": task_id, "status": "error", "message": "Task failed", "details": str(result)})
                     elif status == "STARTED":
@@ -216,12 +239,11 @@ async def websocket_all_results(websocket: WebSocket):
                     # Update the task status in the dictionary
                     task_status[task_id] = status
                     task_progress[task_id] = progress
-
+            
             first_connection = False
-
+            
             # Sleep for the polling interval
             await asyncio.sleep(cfg.api_params.ws_polling_interval)
-
 
     except WebSocketDisconnect:
         logger.info("Client disconnected from WebSocket")
@@ -237,11 +259,11 @@ def reload_services(file_name=None):
         logger.info(f"Reloading service routes: {file_name} has been modified")
     cfg = cfg_instance(cfg_name="config")
     services = cfg.reload_services(
-        app=app,
+        app=app, 
         handle_generation=handle_generation,
-        base_path = '/services',
+        base_path = '/services', 
         logger = logger
-        )
+        )    
     redis_client.set("services_config", json.dumps(services))
 
 # Retrieve services from Redis for each request
