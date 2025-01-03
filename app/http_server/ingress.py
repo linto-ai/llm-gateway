@@ -13,6 +13,7 @@ import redis
 from conf import cfg_instance
 from urllib.parse import urlparse
 import asyncio
+import uvicorn
 
 # Get configuration
 cfg = cfg_instance(cfg_name="config")
@@ -25,7 +26,13 @@ logging.basicConfig(
 logger = logging.getLogger("http_server")
 logger.setLevel(logging.DEBUG if cfg.debug else logging.INFO)
 
+# Filter out healthcheck logs from uvicorn
+class EndpointFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.args and len(record.args) >= 3 and record.args[2] != "/healthcheck"
 
+# Add filter to the logger
+logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 # Initialize Redis client
 services_broker = cfg.services_broker.url
@@ -280,7 +287,6 @@ def get_task_ids():
 
 def start():
     logger.info("Starting FastAPI application...")
-    import uvicorn
     uvicorn.run("app.http_server.ingress:app", host="0.0.0.0", port=cfg.api_params.service_port, workers=cfg.api_params.workers) 
 
 if __name__ == "__main__":
