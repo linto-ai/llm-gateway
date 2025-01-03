@@ -62,9 +62,6 @@ def process_task(self, task_data):
         logger.error(f"An error occurred in processing tasks : {str(e)}")
         raise
     
-    finally :
-        redis_client.lrem('task_ids', 1, self.request.id)   
-    
 
 def get_task_status(task_id):
     # First, check if the task ID is valid and exists in the backend

@@ -181,7 +181,6 @@ async def websocket_all_results(websocket: WebSocket):
         
         # Wait for the client to send a list of task IDs
         initial_task_ids = list(await websocket.receive_json())
-        #initial_task_ids = message.get('task_ids', [])
 
         # Send the initial status of all tasks
         initial_response = []
