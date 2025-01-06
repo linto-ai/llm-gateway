@@ -222,8 +222,13 @@ async def websocket_all_results(websocket: WebSocket):
             task_ids = get_task_ids()
             for task_id in task_ids:
                 status, result, progress = get_task_status(task_id)
+                
+                # Skip unknown tasks
+                if status == "UNKNOWN":
+                    task_ids.remove(task_id)
+                    continue
 
-                if first_connection and status in ["SUCCESS", "FAILURE", "UNKNOWN"]:
+                if first_connection and status in ["SUCCESS", "FAILURE"]:
                     task_status[task_id] = status
                     task_progress[task_id] = progress
                     continue
@@ -247,6 +252,9 @@ async def websocket_all_results(websocket: WebSocket):
                     task_progress[task_id] = progress
             
             first_connection = False
+            
+            # Send a heartbeat message
+            await websocket.send_json({"status": "alive"})
             
             # Sleep for the polling interval
             await asyncio.sleep(cfg.api_params.ws_polling_interval)
