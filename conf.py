@@ -85,17 +85,17 @@ class cfg_instance(dict):
 
     def add_prefix(self, prefix:str):
         """
-        Décorateur qui ajoute un préfixe à toutes les clés de configuration qui ne commencent pas déjà par ce préfixe.
+        Decorator that adds a prefix to all configuration keys that do not already start with this prefix.
 
         Args:
-            prefix (str): Le préfixe à ajouter aux clés de configuration.
+            prefix (str): The prefix to add to the configuration keys.
 
         Returns:
-            function: Le décorateur qui enveloppe la fonction originale.
+            function: The decorator that wraps the original function.
 
-        Le décorateur modifie la configuration en ajoutant de nouvelles clés préfixées,
-        tout en préservant les clés originales. Les nouvelles clés préfixées sont ajoutées
-        à la liste `self.prefixes`.
+        The decorator modifies the configuration by adding new prefixed keys 
+        while preserving the original keys. The new prefixed keys are added 
+        to the `self.prefixes` list.
         """
         def decorator(func):
             def wrapper(*args, **kwargs):
