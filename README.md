@@ -103,5 +103,6 @@ summarize/en: # This is the service endpoint that will be generated
       reduceSummary: false  # Option to reduce the summary (can be adjusted based on use case)
       consolidateSummary: false  # Option to consolidate the summary (can be adjusted based on use case)
       reduce_prompt: reduce-file # Specify a custom prompt to be used in the reduce step. Name of the txt file without the extension. File needs to be under the ${prompt_path} directory
+      type: abstractive #  abstractive, extractive or markdown
 ```
 This YAML configuration defines the parameters for the "summarize-en" service, specifying the model, tokenization settings, and output constraints. Each service is customized with its own settings under the `flavor` attribute, where you can configure the model name, context length, summary length, and other options.
