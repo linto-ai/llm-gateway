@@ -1,0 +1,46 @@
+defaults :
+  - _self_
+  - services :
+    - en
+    - fr
+
+prompt_path: ./prompts/
+backend_defaults :
+  name: null
+  modelName: null
+  totalContextLength: null
+  maxGenerationLength: null
+  tokenizerClass: null
+  createNewTurnAfter: null
+  summaryTurns: null
+  maxNewTurns: null
+  temperature: null
+  top_p: null
+  reduceSummary: null
+  consolidateSummary: null
+  reduce_prompt: null
+  service_name: ${oc.env:SERVICE_NAME,LLM_Gateway}
+
+api_params:
+  api_base: ${oc.env:OPENAI_API_BASE,http://localhost:9000/v1}
+  api_key: ${oc.env:OPENAI_API_TOKEN,EMPTY}
+  max_retries: ${oc.decode:${oc.env:MAX_RETRIES,6}}
+  max_retry_delay: ${oc.decode:${oc.env:MAX_RETRY_DELAY,10}}
+  service_port: ${oc.decode:${oc.env:HTTP_PORT,8000}}
+  workers: ${oc.decode:${oc.env:CONCURRENCY,1}}
+  timeout: ${oc.decode:${oc.env:TIMEOUT,60}}
+  ws_polling_interval: ${oc.decode:${oc.env:WS_POLLING_INTERVAL,3}}
+
+semaphore:
+  max_concurrent_inferences: ${oc.decode:${oc.env:MAX_CONCURRENT_INFERENCES,3}}
+
+swagger:
+  url: ${oc.env:SWAGGER_URL,/docs}
+  title: ${oc.env:SWAGGER_TITLE,STT API Documentation}
+  description: ${oc.env:SWAGGER_DESCRIPTION,API to make summary of text using LLMs.}
+
+services_broker:
+  url: ${oc.env:SERVICES_BROKER,redis://localhost:6379}
+  password: ${oc.env:BROKER_PASS,EMPTY}
+
+debug: false

@@ -1,0 +1,23 @@
+en:
+  type: summary
+  fields: 2
+  name: summarize-en
+  route: summarize-en
+  description:
+    fr: English summary
+  backend: vLLM
+  flavor:
+    - name: llama
+      modelName: meta-llama-31-8b-it
+      totalContextLength: 32000
+      maxGenerationLength: 2048
+      tokenizerClass: LlamaTokenizer
+      createNewTurnAfter: 250
+      summaryTurns: 3
+      maxNewTurns: 9
+      temperature: 0.2
+      top_p: 0.7
+      reduceSummary: false
+      consolidateSummary: false
+      reduce_prompt: null
+      type: abstractive

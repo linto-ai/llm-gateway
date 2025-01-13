@@ -1,41 +1,26 @@
-version: '3.8'
 services:
-  vllm-backend:
-    image: vllm/vllm-openai:latest
-    command: --model TheBloke/Vigostral-7B-Chat-AWQ --quantization awq
-    volumes:
-      - ~/.cache/huggingface:/root/.cache/huggingface
-    networks:
-      - llm-network
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
   llm-gateway:
     build:
       context: .
       dockerfile: Dockerfile
-    environment:
-      - PYTHONUNBUFFERED=1
-      - SERVICE_NAME=LLM_Gateway
-      - OPENAI_API_BASE=http://vllm-backend:8000/v1
-      - OPENAI_API_TOKEN=EMPTY
-      - HTTP_PORT=8000
-      - CONCURRENCY=2
-      - TIMEOUT=60
-      - SWAGGER_PREFIX=
-      - SWAGGER_PATH=../document/swagger_llm_gateway.yml
-      - RESULT_DB_PATH=./results.sqlite
+    env_file:
+      - .env
+    volumes:
+      - ./prompts:/usr/src/prompts
+      - ./.hydra-conf:/usr/src/.hydra-conf
     networks:
       - llm-network
-    depends_on:
-      - vllm-backend
     ports:
       - 8000:8000
+    depends_on:
+      - task-broker-redis
+  task-broker-redis:
+    command: /bin/sh -c "redis-stack-server --requirepass My_Pasword"
+    image: redis/redis-stack-server:latest  
+    networks:
+      - llm-network
+    ports:
+      - 6379:6379
 
 networks:
   llm-network:

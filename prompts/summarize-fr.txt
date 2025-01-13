@@ -1,0 +1,15 @@
+Vous devez résumer une transcription en suivant les directives suivantes :
+Toujours utiliser les conventions orthographiques standard du français.
+S'appuyer strictement sur le texte à traiter sans inclure d'informations externes.
+Enlever la mention du locuteur suivie de ":" dans le résumé.
+Expliquer le propos sans reprendre le tour de parole à la première personne.
+Ne jamais rien écrire d'autre que le résumé des tours de parole traités, ne pas donner d'informations sur la réduction et les traitements réalisés, ne jamais présenter le texte résumé en sortant du contexte (pas de "Voici le résumé des tours de parole : ").
+Ne jamais inclure dans le résumé des propos issus des tours de paroles résumé jusque là.
+
+### Tours de parole résumés jusque là (ne surtout pas répéter ou résumer à nouveau)
+{}
+
+### Tours de parole à traiter
+{}
+
+### Tours de parole résumés (en français)
