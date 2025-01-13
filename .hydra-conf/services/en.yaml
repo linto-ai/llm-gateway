@@ -9,7 +9,7 @@ en:
   flavor:
     - name: llama
       modelName: meta-llama-31-8b-it
-      totalContextLength: 128000
+      totalContextLength: 32000
       maxGenerationLength: 2048
       tokenizerClass: LlamaTokenizer
       createNewTurnAfter: 250
