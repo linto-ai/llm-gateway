@@ -1,13 +1,14 @@
 import asyncio
 from .backend import LLMBackend
 from .batch_manager import BatchManager
-
+from .document import DocGenerator
 
 class LLMInferenceEngine(LLMBackend):
     def __init__(self, task_data: dict, celery_task):
         super().__init__(task_data)
         self.batch_manager = BatchManager(task_data,self.tokenizer, self.prompt, self.prompt_token_count, self.reduce_prompt, celery_task)
-
+        if self.task_type == "document":
+            self.doc_generator = DocGenerator(self.batch_manager.openai_adapter)
 
     def run(self) -> str:
         """
@@ -44,5 +45,10 @@ class LLMInferenceEngine(LLMBackend):
         # consolidate turns for progressive summary
         if self.consolidateSummary:
             self.summary = self.chunker.consolidate_turns(self.summary)
+        
+        self.summary = self.batch_manager.format_summary(self.summary)
+        
+        if self.task_type == "document":
+            self.summary = self.doc_generator.run(self.summary)
 
-        return self.batch_manager.format_summary(self.summary)
+        return self.summary

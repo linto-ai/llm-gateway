@@ -1,5 +1,5 @@
 fr:
-  type: summary
+  type: document
   fields: 2
   name: summarize-fr
   route: summarize-fr
@@ -20,4 +20,4 @@ fr:
       reduceSummary: false
       consolidateSummary: false
       reduce_prompt: null
-      type: abstractive
+      type: markdown

@@ -39,9 +39,12 @@ class LLMBackend:
         self.logger.info(f"Setting up backend with params: {task_data['backendParams']} for task: {task_data['task_id']}")
         self.task_id = task_data['task_id']
         self.content = task_data['content']
+        self.name = task_data['name']
+        self.task_type = task_data['type']
+        self.promptFields = task_data['fields']
         try:
             # Load prompt from txt file
-            self.loadPrompt(task_data["type"], task_data["fields"])
+            self.loadPrompt()
             
             # Set default values for all attributes
             for key, default_value in cfg.backend_defaults.items():
@@ -56,12 +59,12 @@ class LLMBackend:
                 setattr(self, key, value)
             
             # Set up tokenizer and chunker
-            self.tokenizer =  LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
+            self.tokenizer =  LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer", legacy=False)
             self.prompt_token_count = len(self.tokenizer(self.prompt)['input_ids'])
             self.chunker = Chunker(self.tokenizer, self.createNewTurnAfter)
 
             if (task_data["backendParams"]['reduceSummary'] == True) and (task_data["backendParams"]["reduce_prompt"] is not None):
-                self.load_reduce_prompt(task_data["type"], task_data["backendParams"]["reduce_prompt"])
+                self.load_reduce_prompt(task_data["name"], task_data["backendParams"]["reduce_prompt"])
             else :
                 self.reduce_prompt = None
             
@@ -71,7 +74,7 @@ class LLMBackend:
             self.logger.error(f"Error setting up backend: {e}")
             raise e
 
-    def loadPrompt(self, service_name: str, fieldCount: int = 0):
+    def loadPrompt(self):
         """
         Loads the prompt from a text file and sets the prompt fields.
         
@@ -79,12 +82,11 @@ class LLMBackend:
             service_name (str): The name of the service to load the prompt for.
             fieldCount (int, optional): The number of prompt fields. Defaults to 0.
         """
-        self.logger.info(f"Loading prompt for service: {service_name}")
-        self.promptFields = fieldCount
+        self.logger.info(f"Loading prompt for service: {self.name}")
         self.logger.info(f"Prompt fields: {self.promptFields}")
 
         # Construct path to the prompt text file
-        txt_filepath = os.path.join(cfg.prompt_path,f'{service_name}.txt')
+        txt_filepath = os.path.join(cfg.prompt_path,f'{self.name}.txt')
         try:
             with open(txt_filepath, 'r') as f:
                 # Prevent file system caching
@@ -95,8 +97,8 @@ class LLMBackend:
             self.logger.error(f"Error loading prompt from {txt_filepath}: {e}")
             raise e
 
-    def load_reduce_prompt(self, service_name: str, reduce_prompt: str):
-        self.logger.info(f"Loading reduce prompt for service: {service_name}")
+    def load_reduce_prompt(self, reduce_prompt: str):
+        self.logger.info(f"Loading reduce prompt for service: {self.name}")
 
         # Construct path to the prompt text file
         txt_filepath = os.path.join(cfg.prompt_path,f'{reduce_prompt}.txt')

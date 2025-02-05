@@ -76,7 +76,8 @@ def handle_generation(service_name: str):
 
             task_data = {
                 "backend": service['backend'],
-                "type": service['name'],
+                "name": service['name'],
+                "type": service['type'],
                 "backendParams": backend_params,
                 "fields": service['fields'],
                 "content": content

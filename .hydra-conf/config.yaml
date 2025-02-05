@@ -43,4 +43,8 @@ services_broker:
   url: ${oc.env:SERVICES_BROKER,redis://localhost:6379}
   password: ${oc.env:BROKER_PASS,EMPTY}
 
+document:
+  template_path: ./templates/template.md
+  max_sentences_title_generation: ${oc.decode:${oc.env:MAX_SENTENCES_TITLE_GENERATION,6}}
+
 debug: false
