@@ -3,9 +3,9 @@ import asyncio
 import jinja2
 from  typing import List, Sequence
 from pathlib import Path
+import os
 
 import logging
-from tqdm import tqdm
 
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -20,17 +20,38 @@ class Chapter(BaseModel):
     content: str
 
 class DocGenerator:
-    def __init__(self, llm_adapter) -> None:
+    def __init__(self, task_data, llm_adapter) -> None:
+        self.document_config = task_data['backendParams']["document"]
         self.llm_adapter = llm_adapter
-        self.chunker = SemanticChunker(HuggingFaceEmbeddings(model_name = "sentence-transformers/all-mpnet-base-v2"), min_chunk_size=cfg.document.min_chunk_size)
-        self.template_path = cfg.document.template_path
+        self.chunker = SemanticChunker(HuggingFaceEmbeddings(model_name = "sentence-transformers/all-mpnet-base-v2"), min_chunk_size=self.document_config["min_chunk_size"])
+        self.template_path = self.document_config["template_path"]
         self.template_file = Path(self.template_path).name
-        self.max_sentences_title_generation = cfg.document.max_sentences_title_generation
+        self.max_sentences_title_generation = self.document_config["max_sentences_title_generation"]
         self.semaphore = asyncio.Semaphore(cfg.semaphore.max_concurrent_inferences)
         self.logger = logging.getLogger("DocGenerator")
         # System prompts
-        self.paragraph_title_prompt = "Please generate a short title for the following text.\n\nBe VERY SUCCINCT. No more than 6 words. Do not include any quotation marks or special characters."
-        self.doc_title_prompt = "Please generate a title for the document using the provided chapter titles.\n\nBe VERY SUCCINCT. No more than 6 words. Do not include any quotation marks or special characters."
+        self.load_prompts(task_data)
+
+    def load_prompts(self, task_data):
+        """
+        Loads the title generation prompts from text files.
+        """
+
+        # Construct path to the prompt text files from task config
+        doc_title_prompt_path = self.document_config["doc_title_prompt"]
+        paragraph_title_prompt_path = self.document_config["paragraph_title_prompt"]
+        try:
+            with open(doc_title_prompt_path, 'r') as f:
+                # Prevent file system caching
+                os.fsync(f.fileno())
+                self.doc_title_prompt = f.read()
+            with open(paragraph_title_prompt_path, 'r') as f:
+                # Prevent file system caching
+                os.fsync(f.fileno())
+                self.paragraph_title_prompt = f.read()
+        except Exception as e:
+            self.logger.error(f"Error loading title generation prompts: {e}")
+            raise e
 
     def split_summary_into_paragraphs(self, summary):
         """

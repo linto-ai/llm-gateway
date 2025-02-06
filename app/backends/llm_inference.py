@@ -8,7 +8,7 @@ class LLMInferenceEngine(LLMBackend):
         super().__init__(task_data)
         self.batch_manager = BatchManager(task_data,self.tokenizer, self.prompt, self.prompt_token_count, self.reduce_prompt, celery_task)
         if self.task_type == "document":
-            self.doc_generator = DocGenerator(self.batch_manager.openai_adapter)
+            self.doc_generator = DocGenerator(task_data, self.batch_manager.openai_adapter)
 
     def run(self) -> str:
         """
