@@ -22,7 +22,7 @@ class Chapter(BaseModel):
 class DocGenerator:
     def __init__(self, llm_adapter) -> None:
         self.llm_adapter = llm_adapter
-        self.chunker = SemanticChunker(HuggingFaceEmbeddings(model_name = "sentence-transformers/all-mpnet-base-v2"))
+        self.chunker = SemanticChunker(HuggingFaceEmbeddings(model_name = "sentence-transformers/all-mpnet-base-v2"), min_chunk_size=cfg.document.min_chunk_size)
         self.template_path = cfg.document.template_path
         self.template_file = Path(self.template_path).name
         self.max_sentences_title_generation = cfg.document.max_sentences_title_generation
@@ -124,3 +124,5 @@ class DocGenerator:
 
         # Render document
         return self.render_document(title, chapters)
+
+#TODO add min_chunk_size to the config and using in the semantic split 
