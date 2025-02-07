@@ -21,3 +21,5 @@ fr:
       consolidateSummary: false
       reduce_prompt: null
       type: abstractive
+      tokenizer: hf-internal-testing/llama-tokenizer
+      token_offset: 20

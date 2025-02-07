@@ -2,10 +2,8 @@ import os
 # Prevents tokenizers from using multiple threads
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
-from transformers import LlamaTokenizerFast
-from typing import List, Tuple
+from transformers import AutoTokenizer
 import logging
-import spacy
 from conf import cfg_instance
 from .chunking import Chunker
 
@@ -16,7 +14,6 @@ logging.basicConfig(
 )
 
 # Load the spaCy model for French NLP processing
-nlp = spacy.load("fr_core_news_sm")
 cfg = cfg_instance(cfg_name="config")
 
 class LLMBackend:
@@ -56,8 +53,10 @@ class LLMBackend:
                 setattr(self, key, value)
             
             # Set up tokenizer and chunker
-            self.tokenizer =  LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
-            self.prompt_token_count = len(self.tokenizer(self.prompt)['input_ids'])
+            self.tokenizer =  AutoTokenizer.from_pretrained(task_data["backendParams"]["tokenizer"])
+            
+            # Initialize token count for prompt and adding token offset to account for special tokens
+            self.prompt_token_count = len(self.tokenizer(self.prompt)["input_ids"]) + task_data["backendParams"]["token_offset"]
             self.chunker = Chunker(self.tokenizer, self.createNewTurnAfter)
 
             if (task_data["backendParams"]['reduceSummary'] == True) and (task_data["backendParams"]["reduce_prompt"] is not None):
