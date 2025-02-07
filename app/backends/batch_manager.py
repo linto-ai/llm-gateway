@@ -149,10 +149,10 @@ class BatchManager:
         # Gather turns for async processing
         while i < len(turns):
             turn = turns[i]
-            turn_token_count = len(self.tokenizer(turn))
+            turn_token_count = len(self.tokenizer(turn)["input_ids"])
 
             # Check if the current batch is full
-            if (total_token_count + turn_token_count) * 1.15 > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
+            if (total_token_count + turn_token_count) > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
                 # Store the current batch
                 if new_turns_to_summarize:
                     batches.append(new_turns_to_summarize.copy())  # Store a copy of the current batch
@@ -219,14 +219,14 @@ class BatchManager:
         # Process turn batches synchronously            
         while i < len(turns):
             turn = turns[i]
-            turn_token_count = len(self.tokenizer(turn))
-            if (total_token_count + turn_token_count)*1.15 > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
+            turn_token_count = len(self.tokenizer(turn)["input_ids"])
+            if (total_token_count + turn_token_count) > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
                 # Process current batch of turns
                 summarized_turns = self.publish_turns(summarized_turns, new_turns_to_summarize)
                 
                 # Reset for next batch
                 new_turns_to_summarize = []
-                total_token_count = self.prompt_token_count + sum(len(self.tokenizer(turn)) for turn in summarized_turns)
+                total_token_count = self.prompt_token_count + sum(len(self.tokenizer(turn)["input_ids"]) for turn in summarized_turns)
             else:
                 # Update current batch
                 new_turns_to_summarize.append(turn)
@@ -251,7 +251,7 @@ class BatchManager:
         """
         self.logger.info("Reducing summary process started.")
 
-        total_token_count = self.prompt_token_count + sum(len(self.tokenizer(turn)) for turn in summary)
+        total_token_count = self.prompt_token_count + sum(len(self.tokenizer(turn)["input_ids"]) for turn in summary)
         if total_token_count < self.totalContextLength - self.maxGenerationLength:
             return asyncio.run(self.publish_async_turns(summary, self.reduce_prompt))
         
