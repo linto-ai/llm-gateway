@@ -14,7 +14,7 @@ from conf import cfg_instance
 
 # Load configuration
 cfg = cfg_instance(cfg_name="config")
-
+semantic_chunker = SemanticChunker(HuggingFaceEmbeddings(model_name = "sentence-transformers/all-mpnet-base-v2"), min_chunk_size=cfg.document.min_chunk_size)
 class Chapter(BaseModel):
     title: str
     content: str
@@ -23,7 +23,7 @@ class DocGenerator:
     def __init__(self, task_data, llm_adapter) -> None:
         self.document_config = task_data['backendParams']["document"]
         self.llm_adapter = llm_adapter
-        self.chunker = SemanticChunker(HuggingFaceEmbeddings(model_name = "sentence-transformers/all-mpnet-base-v2"), min_chunk_size=self.document_config["min_chunk_size"])
+        self.chunker = semantic_chunker
         self.template_path = self.document_config["template_path"]
         self.template_file = Path(self.template_path).name
         self.max_sentences_title_generation = self.document_config["max_sentences_title_generation"]

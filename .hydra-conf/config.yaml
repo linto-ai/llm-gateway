@@ -43,5 +43,7 @@ services_broker:
   url: ${oc.env:SERVICES_BROKER,redis://localhost:6379}
   password: ${oc.env:BROKER_PASS,EMPTY}
 
+document:
+  min_chunk_size: ${oc.decode:${oc.env:MIN_CHUNK_SIZE,null}}
 
 debug: false
