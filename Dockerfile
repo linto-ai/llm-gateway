@@ -6,6 +6,9 @@ ENV SERVICE_TYPE=llm_gateway \
     TEMP=/tmp \
     PYTHONPATH=/usr/src
 
+RUN apt-get update && apt-get install -y --no-install-recommends gosu \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory in the container
 WORKDIR /usr/src/
 
