@@ -92,17 +92,19 @@ summarize/en: # This is the service endpoint that will be generated
   flavor:
     - name: llama
       modelName: meta-llama-31-8b-it  # Ensure the model is available on the inference server or it will cause errors
-      totalContextLength: 128000  # Maximum context length, including prompt, user input, and generated tokens
-      maxGenerationLength: 2048  # Maximum length for model output
+      totalContextLength: 32000  # Maximum context length, including prompt, user input, and generated tokens
+      maxGenerationLength: 8192  # Maximum length for model output
       tokenizerClass: LlamaTokenizer
       createNewTurnAfter: 250  # New "virtual turns" created after this number of tokens
-      summaryTurns: 3  # Number of turns to summarize
-      maxNewTurns: 9  # Maximum number of turns processed; fewer may be used if the token count is too high
+      summaryTurns: 6  # Number of turns to summarize
+      maxNewTurns: 24  # Maximum number of turns processed; fewer may be used if the token count is too high
       temperature: 0.2  # Controls creativity, with a value close to zero for more accurate summaries
       top_p: 0.7  # Controls the variety of word choices in generation
       reduceSummary: false  # Option to reduce the summary (can be adjusted based on use case)
       consolidateSummary: false  # Option to consolidate the summary (can be adjusted based on use case)
       reduce_prompt: reduce-file # Specify a custom prompt to be used in the reduce step. Name of the txt file without the extension. File needs to be under the ${prompt_path} directory
       type: abstractive #  abstractive, extractive or markdown
+      tokenizer: hf-internal-testing/llama-tokenizer
+      token_offset: 20 # Token offset to account for model special tokens and avoid context length errors
 ```
 This YAML configuration defines the parameters for the "summarize-en" service, specifying the model, tokenization settings, and output constraints. Each service is customized with its own settings under the `flavor` attribute, where you can configure the model name, context length, summary length, and other options.
