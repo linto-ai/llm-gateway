@@ -30,6 +30,8 @@ api_params:
   workers: ${oc.decode:${oc.env:CONCURRENCY,1}}
   timeout: ${oc.decode:${oc.env:TIMEOUT,60}}
   ws_polling_interval: ${oc.decode:${oc.env:WS_POLLING_INTERVAL,3}}
+  task_cutoff_seconds: ${oc.decode:${oc.env:TASK_CUTOFF_SECONDS,3600}}
+  task_cleanup_interval: ${oc.decode:${oc.env:TASK_CLEANUP_INTERVAL,3600}}
 
 semaphore:
   max_concurrent_inferences: ${oc.decode:${oc.env:MAX_CONCURRENT_INFERENCES,3}}
@@ -42,5 +44,6 @@ swagger:
 services_broker:
   url: ${oc.env:SERVICES_BROKER,redis://localhost:6379}
   password: ${oc.env:BROKER_PASS,EMPTY}
+  task_expiration: ${oc.decode:${oc.env:TASK_EXPIRATION,86400}}
 
 debug: false

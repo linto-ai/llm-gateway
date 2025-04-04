@@ -8,9 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import FileChangeHandler
 from watchdog.observers import Observer
 from conf import cfg_instance
-from app.http_server.celery_app import process_task, get_task_status
+from app.http_server.celery_app import process_task, get_task_status, get_task_ids, clean_old_task_ids
 import redis
-from conf import cfg_instance
+from contextlib import contextmanager
 from urllib.parse import urlparse
 import asyncio
 import uvicorn
@@ -90,6 +90,19 @@ def handle_generation(service_name: str):
 
     return generate
 
+# lock to make sure the cleanup only runs once at a time
+@contextmanager
+def redis_lock(lock_key, ttl=300):
+    yield redis_client.set(lock_key, "1", nx=True, ex=ttl)
+
+async def periodic_cleanup():
+    while True:
+        await asyncio.sleep(cfg.api_params.task_cleanup_interval)
+        with redis_lock("task_cleanup_lock", ttl=30) as acquired:
+            if acquired:
+                clean_old_task_ids()
+
+
 # Fetch the latest `services` config on startup
 @app.on_event("startup")
 async def startup_event():
@@ -99,6 +112,7 @@ async def startup_event():
     observer.schedule(event_handler, path='../.hydra-conf/services/', recursive=False)
     observer.start()
     reload_services()
+    asyncio.create_task(periodic_cleanup())
 
 @app.get("/services")
 def summarization_info_route():
@@ -116,7 +130,7 @@ async def get_result(result_id: str):
         # Check task status in Celery
         status, task_result, progress = get_task_status(result_id)
 
-        if status == "PENDING":
+        if status == "QUEUED":
             return JSONResponse(status_code=202, content={"status": "queued", "message": "Task is in queue"})
         elif status == "STARTED":
             return JSONResponse(status_code=202, content={"status": "started", "message": "Task started"})
@@ -147,7 +161,7 @@ async def websocket_result(websocket: WebSocket, result_id: str):
         status, task_result, progress = get_task_status(result_id)
         
         # Send initial status
-        if status == "PENDING":
+        if status == "QUEUED":
             await websocket.send_json({"status": "queued", "message": "Task is in queue"})
         elif status == "STARTED":
             await websocket.send_json({"status": "started", "message": "Task started"})
@@ -164,7 +178,7 @@ async def websocket_result(websocket: WebSocket, result_id: str):
             print(f"Get task ids: {get_task_ids()}")
             await asyncio.sleep(cfg.api_params.ws_polling_interval)  # Polling interval
             status, task_result, progress = get_task_status(result_id)
-            if status == "PENDING":
+            if status == "QUEUED":
                 await websocket.send_json({"status": "queued", "message": "Task is in queue"})
             elif status == "STARTED":
                 await websocket.send_json({"status": "started", "message": "Task started"})
@@ -178,8 +192,6 @@ async def websocket_result(websocket: WebSocket, result_id: str):
     except WebSocketDisconnect:
         logger.info(f"Client disconnected from WebSocket for result_id: {result_id}")
 
-from fastapi import WebSocket, WebSocketDisconnect
-import asyncio
 
 @app.websocket("/ws/results")
 async def websocket_all_results(websocket: WebSocket):
@@ -205,7 +217,7 @@ async def websocket_all_results(websocket: WebSocket):
                 initial_response.append({"task_id": task_id, "status": "started","message": "Task started"})
             elif status == "PROGRESS":
                 initial_response.append({"task_id": task_id, "status": "processing", "message": "Task is in progress", "progress": progress,})
-            elif status == "PENDING":
+            elif status == "QUEUED":
                 initial_response.append({"task_id": task_id, "status": "queued","message": "Task is in queue"})
             elif status == "UNKNOWN":
                 initial_response.append({"task_id": task_id, "status": "unknown", "message": "Task does not exist"})
@@ -242,7 +254,7 @@ async def websocket_all_results(websocket: WebSocket):
                         await websocket.send_json({"task_id": task_id, "status": "started","message": "Task started"})
                     elif status == "PROGRESS":
                         await websocket.send_json({"task_id": task_id, "status": "processing", "message": "Task is in progress", "progress": progress,})
-                    elif status == "PENDING":
+                    elif status == "QUEUED":
                         await websocket.send_json({"task_id": task_id, "status": "queued","message": "Task is in queue"})
                     elif status == "UNKNOWN":
                         await websocket.send_json({"task_id": task_id, "status": "unknown", "message": "Task does not exist"})
@@ -287,11 +299,6 @@ def get_services():
         reload_services()  # Ensures services are loaded on startup if not found
         services_json = redis_client.get("services_config")
     return json.loads(services_json)
-
-def get_task_ids():
-    task_ids = redis_client.lrange('task_ids', 0, -1) or []
-    return [task.decode('utf-8') for task in task_ids]
-
 
 def start():
     logger.info("Starting FastAPI application...")
