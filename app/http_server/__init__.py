@@ -1,7 +1,7 @@
-from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import os
 import time
+
 
 class FileChangeHandler(FileSystemEventHandler):
     def __init__(self, file_extension, callback, debounce_period=1.0):

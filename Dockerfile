@@ -6,6 +6,9 @@ ENV SERVICE_TYPE=llm_gateway \
     TEMP=/tmp \
     PYTHONPATH=/usr/src
 
+RUN apt-get update && apt-get install -y --no-install-recommends gosu \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory in the container
 WORKDIR /usr/src/
 
@@ -14,13 +17,15 @@ WORKDIR /usr/src/
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install spacy model
+RUN python3 -m spacy download fr_core_news_sm
 # Copy the code of your application
 COPY . /usr/src
 
 # Make sure scripts are executable
 RUN chmod +x ./scripts/healthcheck.sh \
-    && chmod +x ./scripts/wait-for-it.sh
-
+    && chmod +x ./scripts/wait-for-it.sh\
+    && chmod +x ./scripts/docker-entrypoint.sh 
 # Extract version from RELEASE.md and set it as an environment variable
 RUN VERSION=$(grep '^#' RELEASE.md | head -1 | cut -d '#' -f 2 | xargs) \
     && echo "VERSION=$VERSION" > .env
@@ -30,5 +35,4 @@ RUN VERSION=$(grep '^#' RELEASE.md | head -1 | cut -d '#' -f 2 | xargs) \
 HEALTHCHECK CMD ./scripts/healthcheck.sh
 
 # Define the entry point
-ENTRYPOINT ["python"]
-CMD ["-m", "app"]
+ENTRYPOINT ["scripts/docker-entrypoint.sh"]
