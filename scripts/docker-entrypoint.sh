@@ -56,5 +56,5 @@ setup_user
 # Start FastAPI
 gosu "$USER_NAME" python -m app &
 # Start Celery
-gosu "$USER_NAME" celery -A app.http_server.celery_app.celery_app worker --loglevel=info -c ${CONCURRENCY:-1}
+gosu "$USER_NAME" celery -A app.http_server.celery_app.celery_app worker --loglevel=info -c ${CELERY_CONCURRENCY:-1}
 wait

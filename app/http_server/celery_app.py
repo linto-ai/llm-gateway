@@ -1,13 +1,13 @@
 from celery import Celery
 from celery.result import AsyncResult
-import os
 from urllib.parse import urlparse
 import logging
-from asgiref.sync import async_to_sync
 from celery.app import trace
 from conf import cfg_instance
 from app.backends.llm_inference import LLMInferenceEngine
 import redis
+from celery.signals import after_task_publish
+import time
 
 # Edit the celery logs format
 trace.LOG_SUCCESS = """\
@@ -46,7 +46,7 @@ def process_task(self, task_data):
     task_data['task_id'] = self.request.id
 
     # Add the task ID to the list of task IDs
-    redis_client.lpush('task_ids', self.request.id)
+    add_task_id(self.request.id)
 
     # Run the task
     try:
@@ -61,7 +61,21 @@ def process_task(self, task_data):
     except Exception as e:
         logger.error(f"An error occurred in processing tasks : {str(e)}")
         raise
-    
+
+# Set publish tasked status to QUEUED
+@after_task_publish.connect
+def update_sent_state(sender=None, headers=None, **kwargs):
+    # the task may not exist if sent using `send_task` which
+    # sends tasks by name, so fall back to the default result backend
+    # if that is the case.
+    task = celery_app.tasks.get(sender)
+    backend = task.backend if task else celery_app.backend
+    backend.store_result(headers['id'], None, "QUEUED")
+
+def get_task_ids(cutoff_seconds=cfg.api_params.task_cutoff_seconds):
+    now = int(time.time())
+    min_score = now - cutoff_seconds
+    return [task.decode('utf-8') for task in redis_client.zrangebyscore("task_ids", min_score, now)]
 
 def get_task_status(task_id):
     # First, check if the task ID is valid and exists in the backend
@@ -69,20 +83,20 @@ def get_task_status(task_id):
 
     # If the result is None, it means it doesn't exist
     if result.result is None and result.status == 'PENDING':
-        # Check if the task ID is known to any worker
-        i = celery_app.control.inspect()
-        active_tasks = i.active()  # Gets the active tasks
-        
-        # Flatten the list of active task IDs
-        active_task_ids = [task['id'] for worker_tasks in active_tasks.values() for task in worker_tasks]
-        
-        if task_id not in active_task_ids:
-            # If the task_id is not found in active tasks, it likely doesn't exist
-        
-            return "UNKNOWN", None, None
-        
+        return "UNKNOWN", None, None
+
     # Get progress metadata if task is in progress
     progress = None
     if result.status == 'PROGRESS':
         progress = f"{round(100 * (result.info['completed_turns'] / result.info['total_turns']))}"
     return result.status, result.result, progress
+
+def add_task_id(task_id):
+    timestamp = int(time.time())
+    redis_client.zadd("task_ids", {task_id: timestamp})
+
+def clean_old_task_ids(older_than_seconds=cfg.services_broker.task_expiration):
+    now = int(time.time())
+    cutoff = now - older_than_seconds
+    removed = redis_client.zremrangebyscore("task_ids", 0, cutoff)
+    logger.info(f"🧹 Cleaned up {removed} old task_ids")
