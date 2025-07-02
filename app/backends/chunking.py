@@ -40,14 +40,14 @@ class Chunker:
             tokenCount = 0
             # Get speaker name
             line, speaker = self.get_speaker(line, speaker)
-            tokens = self.tokenizer(line)['input_ids']
+            tokens = self.tokenizer(line)["input_ids"]
             tokenCount = len(tokens)
 
             if tokenCount > self.createNewTurnAfter:
                 doc = nlp(line[len(speaker):].strip())  # Process the remaining line with spaCy (without speaker)
                 # initialize new turn and token count
                 currentTurn = speaker
-                speaker_tokens = self.tokenizer(currentTurn)['input_ids']
+                speaker_tokens = self.tokenizer(currentTurn)["input_ids"]
                 tokenCount = len(speaker_tokens)
                 # Segment the line into sentences using spaCy
                 for i,sentence in enumerate(doc.sents):
@@ -55,7 +55,7 @@ class Chunker:
                     if sentence_text.strip() == "":
                         continue
                     # Tokenize the sentence to count tokens                   
-                    tokens = self.tokenizer(sentence_text)['input_ids']   
+                    tokens = self.tokenizer(sentence_text)["input_ids"]
 
                     if tokenCount + len(tokens) > self.createNewTurnAfter:
                         # If token count exceeds the limit, add the sentence and reset token count

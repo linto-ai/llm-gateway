@@ -10,17 +10,19 @@ fr:
     - name: llama
       modelName: meta-llama-31-8b-it
       totalContextLength: 32000
-      maxGenerationLength: 2048
+      maxGenerationLength: 8192
       tokenizerClass: LlamaTokenizer
       createNewTurnAfter: 250
-      summaryTurns: 3
-      maxNewTurns: 9
+      summaryTurns: 6
+      maxNewTurns: 24
       temperature: 0.2
       top_p: 0.7
       reduceSummary: false
       consolidateSummary: false
       reduce_prompt: null
       type: markdown
+      tokenizer: hf-internal-testing/llama-tokenizer
+      token_offset: 20
       document:
         template_path: ./templates/template.md
         max_sentences_title_generation: ${oc.decode:${oc.env:MAX_SENTENCES_TITLE_GENERATION,6}}
