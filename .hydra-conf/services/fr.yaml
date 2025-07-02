@@ -1,5 +1,5 @@
 fr:
-  type: summary
+  type: document
   fields: 2
   name: summarize-fr
   route: summarize-fr
@@ -20,6 +20,11 @@ fr:
       reduceSummary: false
       consolidateSummary: false
       reduce_prompt: null
-      type: abstractive
+      type: markdown
       tokenizer: hf-internal-testing/llama-tokenizer
       token_offset: 20
+      document:
+        template_path: ./templates/template.md
+        max_sentences_title_generation: ${oc.decode:${oc.env:MAX_SENTENCES_TITLE_GENERATION,6}}
+        doc_title_prompt: ./prompts/doc_title_prompt.txt
+        paragraph_title_prompt: ./prompts/paragraph_title_prompt.txt

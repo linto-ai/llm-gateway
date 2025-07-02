@@ -19,8 +19,6 @@ services:
     image: redis/redis-stack-server:latest  
     networks:
       - llm-network
-    ports:
-      - 6379:6379
 
 networks:
   llm-network:

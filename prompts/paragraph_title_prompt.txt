@@ -1,0 +1,3 @@
+Please generate a short title for the following text.
+Be VERY SUCCINCT. No more than 6 words. 
+Do not include any quotation marks or special characters.
