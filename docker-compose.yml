@@ -1,11 +1,25 @@
 # Production configuration (default)
 # Usage: docker compose up -d
 # For development with hot-reload: docker compose -f docker-compose.dev.yml up
+#
+# All environment variables have working defaults - no .env file required.
+# To customize, either:
+#   1. Set environment variables before running docker compose
+#   2. Create a .env file (copy from .env.example)
+
+x-common-env: &common-env
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-llm_gateway}:${POSTGRES_PASSWORD:-llm_gateway_password}@postgres:5432/${POSTGRES_DB:-llm_gateway}
+  CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-changeme}@task-broker-redis:6379/0
+  CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-changeme}@task-broker-redis:6379/0
+  SERVICES_BROKER: redis://task-broker-redis:6379
+  SERVICES_BROKER_PASSWORD: ${REDIS_PASSWORD:-changeme}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:-MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=}
+
 services:
   llm-gateway:
     image: lintoai/llm-gateway:latest
-    env_file:
-      - .env
+    environment:
+      <<: *common-env
     volumes:
       - tokenizers_data:/var/www/data/tokenizers
       - templates_data:/var/www/data/templates
@@ -22,8 +36,8 @@ services:
   celery-worker:
     image: lintoai/llm-gateway:latest
     command: celery -A app.http_server.celery_app.celery_app worker --loglevel=info --concurrency=1
-    env_file:
-      - .env
+    environment:
+      <<: *common-env
     volumes:
       - tokenizers_data:/var/www/data/tokenizers
       - templates_data:/var/www/data/templates
@@ -56,7 +70,6 @@ services:
       - "8001:3000"
     depends_on:
       - llm-gateway
-    # No volume mounts - uses built image
 
   task-broker-redis:
     command: /bin/sh -c "redis-stack-server --requirepass ${REDIS_PASSWORD:-changeme}"
