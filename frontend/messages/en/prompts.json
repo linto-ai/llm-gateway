@@ -1,0 +1,107 @@
+{
+  "title": "Prompts",
+  "subtitle": "Manage prompt templates",
+  "createNew": "Create Prompt",
+  "newPromptTitle": "New Prompt",
+  "editPrompt": "Edit Prompt",
+  "viewPrompt": "View Prompt",
+  "deletePrompt": "Delete Prompt",
+  "deleteConfirm": "Are you sure you want to delete this prompt?",
+  "deleteWarning": "This prompt may be referenced by service flavors.",
+  "createSuccess": "Prompt created successfully",
+  "updateSuccess": "Prompt updated successfully",
+  "deleteSuccess": "Prompt deleted successfully",
+  "deleteError": "Failed to delete prompt",
+  "emptyStateDescription": "No prompts found. Create one to get started.",
+  "duplicate": "Duplicate Prompt",
+  "duplicating": "Duplicating prompt...",
+  "duplicateSuccess": "Prompt duplicated successfully",
+  "global": "Global",
+  "organization": "Organization",
+  "serviceType": "Service Type",
+  "serviceTypeHelp": "Select the service type this prompt is designed for.",
+  "selectServiceType": "Select service type",
+  "universal": "Universal",
+  "categoryHelp": "How this prompt is used in LLM calls (System: instructions, User: main prompt)",
+  "promptTypeHelp": "What this prompt does (standard, reduce, or custom)",
+  "promptTypePlaceholder": "Select a prompt type...",
+  "promptTypeNone": "None",
+  "fields": {
+    "name": "Prompt Name",
+    "content": "Content",
+    "language": "Language",
+    "description": "Description",
+    "descriptionEn": "Description (English)",
+    "descriptionFr": "Description (French)",
+    "organizationId": "Organization ID",
+    "category": "Category",
+    "promptType": "Prompt Type"
+  },
+  "category": {
+    "system": "System",
+    "user": "User",
+    "undefined": "-",
+    "null": "-"
+  },
+  "promptType": {
+    "standard": "Standard",
+    "reduce": "Reduce"
+  },
+  "placeholders": {
+    "name": "Enter prompt name",
+    "content": "Enter prompt content",
+    "newName": "Copy of {name}"
+  },
+  "filters": {
+    "serviceType": "Service Type",
+    "templateCategory": "Category",
+    "allServiceTypes": "All service types",
+    "allCategories": "All categories",
+    "allPromptTypes": "All prompt types"
+  },
+  "templates": {
+    "title": "Service Templates",
+    "subtitle": "Pre-configured service blueprints",
+    "viewTemplate": "View Template",
+    "useTemplate": "Use Template",
+    "public": "Public",
+    "private": "Private",
+    "browse": "Browse Templates",
+    "search": "Search templates...",
+    "select": "Select",
+    "preview": "Preview",
+    "language": "Language",
+    "created": "Created",
+    "noTemplates": "No templates found",
+    "loadMore": "Load More",
+    "category": {
+      "label": "Template Category",
+      "select": "Select category",
+      "system": "System",
+      "user": "User",
+      "reduce": "Reduce",
+      "categorization": "Categorization",
+      "extraction": "Extraction"
+    }
+  },
+  "saveAsTemplate": {
+    "title": "Save as Template",
+    "templateName": "Template Name",
+    "category": "Category",
+    "promptType": "Prompt Type",
+    "promptTypePlaceholder": "Select a prompt type (optional)",
+    "promptTypeNone": "None",
+    "descriptionEn": "Description (English)",
+    "descriptionFr": "Description (French)",
+    "save": "Save Template",
+    "saving": "Saving...",
+    "success": "Template saved successfully",
+    "error": "Failed to save template"
+  },
+  "processingMode": "Processing Mode",
+  "modes": {
+    "singlePass": "Single Pass",
+    "iterative": "Iterative",
+    "noPlaceholder": "No placeholder"
+  }
+}

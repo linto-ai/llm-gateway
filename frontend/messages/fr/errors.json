@@ -1,0 +1,10 @@
+{
+  "generic": "Une erreur s'est produite. Veuillez réessayer.",
+  "network": "Erreur reseau. Veuillez vérifiér votre connexion.",
+  "validation": "Erreur de validation. Veuillez vérifiér votre saisie.",
+  "notFound": "Ressource introuvable.",
+  "unauthorized": "Non autorise. Veuillez vous connecter.",
+  "forbidden": "Acces interdit.",
+  "conflict": "Conflit. La ressource existe deja.",
+  "serverError": "Erreur serveur. Veuillez réessayer plus tard."
+}

@@ -1,0 +1,21 @@
+{
+  "name": "summarize",
+  "description": {
+    "en": "Summarization prompts for transcript processing",
+    "fr": "Prompts de resume pour le traitement de transcriptions"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "summarize"
+    },
+    "reduce.md": {
+      "prompt_category": "user",
+      "prompt_type": "reduce",
+      "prompt_name": "summarize-reduce"
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "title": "Presets de saveurs",
+  "subtitle": "Gérer les configurations de saveurs preconfigurés",
+  "create": "Créer un preset",
+  "createTitle": "Créer un nouveau preset",
+  "editTitle": "Modifier le preset",
+  "deleteTitle": "Supprimer le preset",
+  "deleteConfirm": "Êtes-vous sur de vouloir supprimer ce preset?",
+  "createSuccess": "Preset créé avec succès",
+  "updateSuccess": "Preset mis à jour avec succès",
+  "deleteSuccess": "Preset supprimé avec succès",
+  "cannotDeleteSystem": "Les presets système ne peuvent pas etre supprimés",
+  "emptyState": "Aucun preset trouvé",
+  "emptyStateDescription": "Créez un preset pour sauvegarder des configurations reutilisables",
+  "system": "Systeme",
+  "startFromPreset": "Partir d'un preset",
+  "serviceTypeWarning": "Certaines options de preset peuvent ne pas etre disponibles pour ce type de service.",
+  "validation": {
+    "reduceNotSupported": "Le mode Map-Reduce n'est pas pris en charge pour ce type de service",
+    "chunkingNotSupported": "Le mode itératif n'est pas pris en charge pour ce type de service",
+    "incompatibleServiceType": "Ce preset n'est pas compatible avec le type de service sélectionné"
+  },
+  "fields": {
+    "name": "Nom du preset",
+    "serviceType": "Type de service",
+    "description": "Description",
+    "descriptionEn": "Description (Anglais)",
+    "descriptionFr": "Description (Français)",
+    "processingMode": "Mode de traitement",
+    "temperature": "Température",
+    "topP": "Top P",
+    "createNewTurnAfter": "Nouveau tour après",
+    "maxNewTurns": "Max nouveaux tours",
+    "summaryTurns": "Tours de résumé",
+    "reduceSummary": "Réduire le résumé",
+    "autoFallback": "Basculement auto"
+  },
+  "modes": {
+    "singlePass": "Passe unique",
+    "iterative": "Itératif",
+    "mapReduce": "Map-Reduce"
+  }
+}

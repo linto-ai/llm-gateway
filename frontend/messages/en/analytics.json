@@ -1,0 +1,51 @@
+{
+  "dashboard": {
+    "title": "System Health",
+    "subtitle": "Last 24 hours",
+    "totalJobs": "Total Jobs",
+    "successRate": "Success Rate",
+    "totalTokens": "Total Tokens",
+    "totalCost": "Total Cost",
+    "avgLatency": "Avg Latency",
+    "activeServices": "Active Services",
+    "serviceHealth": "Service Health",
+    "recentFailures": "Recent Failures",
+    "noFailures": "No recent failures",
+    "noServices": "No active services",
+    "viewAll": "View all",
+    "ago": "{time} ago",
+    "loading": "Loading analytics...",
+    "error": "Failed to load analytics"
+  },
+  "service": {
+    "title": "Service Analytics",
+    "totalRequests": "Total Requests",
+    "successRate": "Success Rate",
+    "totalTokens": "Total Tokens",
+    "totalCost": "Total Cost",
+    "avgLatency": "Avg Latency",
+    "flavorsUsed": "Flavors Used",
+    "mostUsedFlavor": "Most Used",
+    "flavorBreakdown": "Flavor Usage Breakdown",
+    "usageOverTime": "Usage Over Time",
+    "noData": "No analytics data available for this period",
+    "loading": "Loading service analytics..."
+  },
+  "status": {
+    "healthy": "Healthy",
+    "degraded": "Degraded",
+    "unhealthy": "Unhealthy",
+    "inactive": "Inactive"
+  },
+  "periods": {
+    "24h": "Last 24 hours",
+    "7d": "Last 7 days",
+    "30d": "Last 30 days",
+    "all": "All time"
+  },
+  "chart": {
+    "requests": "Requests",
+    "tokens": "Tokens",
+    "cost": "Cost"
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "title": "LinTO.ai/LLM Gateway - Documentation",
+    "description": "Orchestration layer exposing high-level API services (summarization, extraction, etc.) on top of LLM inference engines."
+  },
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "architecture": "Architecture",
+    "api": "API",
+    "github": "GitHub",
+    "switchLang": "FR"
+  },
+  "footer": {
+    "copyright": "Copyright (c) 2024-2025 LINAGORA",
+    "lintoAi": "LinTO.ai",
+    "license": "AGPL-3.0 License"
+  },
+  "home": {
+    "tagline": "High-level API Services for LLM",
+    "subtitle": "Define Services (summarization, extraction, reformulation...) once. Call them from any application via a unified REST API. The gateway handles chunking, jobs, retries, and cost tracking.",
+    "getStarted": "Get Started",
+    "viewOnGithub": "View on GitHub",
+    "whatIsTitle": "What is LLM Gateway?",
+    "whatIsDescription": "An orchestration layer that exposes high-level API services on top of LLM inference engines (OpenAI, vLLM, Ollama...). Instead of each application implementing its own LLM integration, they call pre-configured Services through a unified API.",
+    "problemTitle": "The Problem",
+    "problemSubtitle": "Each application builds its own LLM integration",
+    "problemIntro": "When multiple applications need LLM capabilities, each team typically integrates directly with LLM APIs. This leads to duplicated infrastructure code across every application.",
+    "problem1": {
+      "title": "Duplicated code",
+      "description": "Every app implements retry logic, token counting, long document handling, job tracking"
+    },
+    "problem2": {
+      "title": "Context window failures",
+      "description": "Document too long? The API call fails. Each team must implement their own chunking strategy"
+    },
+    "problem3": {
+      "title": "No visibility",
+      "description": "Jobs fail silently on rate limits. Costs only known at end of month. No progress tracking"
+    },
+    "solutionTitle": "The Solution",
+    "solutionSubtitle": "Centralized Services via LLM Gateway",
+    "solutionIntro": "Define Services once (email response, document summary, meeting notes...). Applications call the gateway API. All infrastructure concerns are handled by the gateway.",
+    "solution1": {
+      "title": "Define Services",
+      "description": "Configure prompt, model, processing mode. Each Service is a reusable, versioned API endpoint"
+    },
+    "solution2": {
+      "title": "Unified API",
+      "description": "POST /services/{id}/execute - same interface for all services, all providers, all document sizes"
+    },
+    "solution3": {
+      "title": "Gateway handles the rest",
+      "description": "Auto chunking, job queue, WebSocket progress, retries, token tracking, DOCX/PDF export"
+    },
+    "quickStartTitle": "Quick Start",
+    "quickStartDescription": "Get LLM Gateway running in minutes with Docker Compose",
+    "frontendTitle": "Admin Interface",
+    "frontendDescription": "Configure services, monitor jobs, and manage prompts through a modern web interface.",
+    "productionTitle": "In Production",
+    "productionDescription": "LinTO.ai/LLM Gateway powers the summarization system of the LinTO platform, notably used by:"
+  },
+  "features": {
+    "title": "Features",
+    "subtitle": "Everything you need to build production-ready LLM applications",
+    "autoChunking": {
+      "title": "Auto Chunking",
+      "description": "Universal sentence segmentation works with all languages. Long documents are automatically split into manageable chunks."
+    },
+    "processingModes": {
+      "title": "Processing Modes",
+      "description": "Choose single_pass for short documents or iterative for long content. Enable reduce_summary for final consolidation."
+    },
+    "jobQueue": {
+      "title": "Job Queue",
+      "description": "Celery + Redis powered job queue with priority support and real-time WebSocket progress updates."
+    },
+    "multiProvider": {
+      "title": "Multi-Provider Support",
+      "description": "Same API interface for OpenAI, vLLM, Ollama, and other providers. Switch models without code changes."
+    },
+    "tokenTracking": {
+      "title": "Token Tracking",
+      "description": "Integrated tokenizer management (tiktoken + HuggingFace). Accurate token counting for any model."
+    },
+    "documentExport": {
+      "title": "Document Export",
+      "description": "Export results to DOCX or PDF with customizable templates. Dynamic placeholder extraction via LLM."
+    },
+    "flavorPresets": {
+      "title": "Flavor Presets",
+      "description": "Pre-configured settings like quick_summary or detailed_report for common use cases."
+    },
+    "versioning": {
+      "title": "Result Versioning",
+      "description": "Snapshot job results with full version history and rollback support."
+    },
+    "placeholderExtraction": {
+      "title": "Placeholder Extraction",
+      "description": "Dynamic LLM-based extraction of metadata fields from results to populate document templates."
+    }
+  },
+  "architecture": {
+    "title": "Architecture",
+    "subtitle": "How LLM Gateway processes your requests",
+    "componentsTitle": "System Components",
+    "componentsDescription": "LLM Gateway uses a service-oriented architecture with async job processing",
+    "frontend": "Next.js Frontend",
+    "frontendDesc": "Admin UI for service configuration",
+    "fastapi": "FastAPI Backend",
+    "fastapiDesc": "REST API + WebSocket endpoints",
+    "celery": "Celery Workers",
+    "celeryDesc": "Async job execution",
+    "postgres": "PostgreSQL",
+    "postgresDesc": "Services, jobs, results storage",
+    "redis": "Redis",
+    "redisDesc": "Task broker + caching",
+    "processingFlowTitle": "Processing Flow",
+    "processingFlowDescription": "From request to result in 7 steps",
+    "step1": "Input validation",
+    "step2": "Token estimation",
+    "step3": "Chunking (if needed)",
+    "step4": "Job creation",
+    "step5": "Celery task dispatch",
+    "step6": "WebSocket progress updates",
+    "step7": "Result aggregation",
+    "modesTitle": "Processing Modes",
+    "modesDescription": "The gateway supports different modes for documents of varying lengths",
+    "turnsTitle": "What is a turn?",
+    "turnsDescription": "A turn is a line or paragraph separated by newline. In ASR context, turns can have a speaker prefix (Speaker : text). The gateway handles both formats.",
+    "modeSinglePass": {
+      "name": "Single Pass",
+      "description": "Process entire document in one LLM call",
+      "useCase": "Short documents that fit in context window"
+    },
+    "modeIterative": {
+      "name": "Iterative",
+      "description": "Process in batches with rolling context",
+      "useCase": "Long documents (ASR transcriptions), progressive output"
+    },
+    "modeReduceSummary": {
+      "name": "Reduce Summary",
+      "description": "Option to add a final consolidation step after iterative processing",
+      "useCase": "Long documents requiring final summary"
+    }
+  },
+  "api": {
+    "title": "API Reference",
+    "subtitle": "Integrate LLM Gateway into your applications",
+    "mainEndpointsTitle": "Main Endpoints",
+    "listServices": "List all available services",
+    "executeService": "Execute a service with input",
+    "getJobStatus": "Get job status and result",
+    "websocketUpdates": "Real-time job progress updates",
+    "curlExampleTitle": "cURL Example",
+    "pythonExampleTitle": "Python Example",
+    "swaggerTitle": "Full API Documentation",
+    "swaggerDescription": "Interactive Swagger UI available at",
+    "responseFormatTitle": "Response Format",
+    "responseFormatDescription": "All API responses follow a consistent JSON structure"
+  },
+  "common": {
+    "mode": "Mode",
+    "description": "Description",
+    "useCase": "Use Case"
+  }
+}

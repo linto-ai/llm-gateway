@@ -1,0 +1,48 @@
+FROM node:20-slim
+
+# Build arguments for UID/GID
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+WORKDIR /app
+
+# Install system dependencies as root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Handle user creation for non-root operation
+# The node image already has node:node (1000:1000), so we check if we need to modify
+RUN if [ "${USER_ID}" = "1000" ] && [ "${GROUP_ID}" = "1000" ]; then \
+        echo "Using existing node user (1000:1000)"; \
+        chown -R node:node /app; \
+    else \
+        echo "Creating custom user (${USER_ID}:${GROUP_ID})"; \
+        userdel -r node 2>/dev/null || true; \
+        groupdel node 2>/dev/null || true; \
+        groupadd -g ${GROUP_ID} appgroup 2>/dev/null || true; \
+        useradd -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash appuser; \
+        chown -R ${USER_ID}:${GROUP_ID} /app; \
+    fi
+
+# Create .next directory with correct ownership (for named volume mount)
+RUN mkdir -p /app/.next && chown -R ${USER_ID}:${GROUP_ID} /app/.next
+
+# Copy package files with correct ownership
+COPY --chown=${USER_ID}:${GROUP_ID} package.json package-lock.json* ./
+
+# Switch to non-root user
+USER ${USER_ID}
+
+# Install dependencies as non-root user
+RUN npm ci
+
+# Copy application code (will be overwritten by volume mount in dev)
+COPY --chown=${USER_ID}:${GROUP_ID} . .
+
+EXPOSE 3000
+ENV PORT=3000 \
+    HOSTNAME="0.0.0.0" \
+    NODE_ENV=development
+
+CMD ["npm", "run", "dev"]

@@ -1,0 +1,177 @@
+# Massive Test Scenarios Configuration
+# Predefined test execution scenarios
+
+scenarios:
+  # Minimal - Quick smoke test
+  minimal:
+    description: "Quick smoke test with minimal resources"
+    jobs: 5
+    parallel: 2
+    services:
+      - mt-summary-en
+    flavors:
+      - mt-default
+    test_files:
+      - en_perfect.txt
+    expected_duration_minutes: 2
+
+  # Standard - Balanced testing
+  standard:
+    description: "Standard test suite for regular testing"
+    jobs: 20
+    parallel: 5
+    services:
+      - mt-summary-en
+      - mt-summary-fr
+      - mt-diarization
+    flavors:
+      - mt-default
+      - mt-precise
+      - mt-creative
+    test_files:
+      - en_perfect.txt
+      - fr_perfect.txt
+      - mixed_perfect.txt
+    expected_duration_minutes: 10
+
+  # Comprehensive - Full feature coverage
+  comprehensive:
+    description: "Comprehensive test covering all features"
+    jobs: 50
+    parallel: 10
+    services:
+      - mt-summary-en
+      - mt-summary-fr
+      - mt-summary-multilang
+      - mt-diarization
+      - mt-categorize
+    flavors:
+      - mt-default
+      - mt-precise
+      - mt-creative
+      - mt-single-pass
+      - mt-map-reduce
+      - mt-fast
+      - mt-detailed
+    test_files:
+      - en_perfect.txt
+      - en_diarization_errors.txt
+      - en_full_errors.txt
+      - fr_perfect.txt
+      - fr_diarization_errors.txt
+      - fr_full_errors.txt
+      - mixed_perfect.txt
+      - mixed_diarization_errors.txt
+      - mixed_full_errors.txt
+    expected_duration_minutes: 30
+
+  # Stress - High load testing
+  stress:
+    description: "High-load stress testing"
+    jobs: 200
+    parallel: 20
+    services:
+      - mt-stress-test
+    flavors:
+      - mt-stress-low
+      - mt-stress-mid
+      - mt-stress-high
+    test_files:
+      - en_perfect.txt
+      - fr_perfect.txt
+    expected_duration_minutes: 60
+    notes:
+      - "Monitor system resources during execution"
+      - "May cause rate limiting on some providers"
+      - "Recommended to run during off-peak hours"
+
+  # Error handling - Focus on error scenarios
+  error-handling:
+    description: "Test error handling with problematic inputs"
+    jobs: 30
+    parallel: 5
+    services:
+      - mt-summary-en
+      - mt-diarization
+    flavors:
+      - mt-default
+    test_files:
+      - en_full_errors.txt
+      - en_diarization_errors.txt
+      - fr_full_errors.txt
+      - fr_diarization_errors.txt
+    expected_duration_minutes: 15
+
+  # Language coverage - Multi-language testing
+  language-coverage:
+    description: "Test language handling across English and French"
+    jobs: 30
+    parallel: 5
+    services:
+      - mt-summary-en
+      - mt-summary-fr
+      - mt-summary-multilang
+    flavors:
+      - mt-default
+      - mt-detailed
+    test_files:
+      - en_perfect.txt
+      - fr_perfect.txt
+      - mixed_perfect.txt
+    expected_duration_minutes: 15
+
+  # Temperature sweep - Test different temperature settings
+  temperature-sweep:
+    description: "Test behavior across temperature spectrum"
+    jobs: 40
+    parallel: 5
+    services:
+      - mt-summary-en
+    flavors:
+      - mt-precise      # 0.1
+      - mt-default      # 0.7
+      - mt-creative     # 0.9
+    test_files:
+      - en_perfect.txt
+    expected_duration_minutes: 20
+
+  # Processing modes - Test different processing approaches
+  processing-modes:
+    description: "Test single-pass, iterative, and map-reduce modes"
+    jobs: 30
+    parallel: 5
+    services:
+      - mt-summary-en
+    flavors:
+      - mt-single-pass
+      - mt-default      # iterative
+      - mt-map-reduce
+    test_files:
+      - en_perfect.txt
+      - en_full_errors.txt
+    expected_duration_minutes: 20
+
+# Default scenario selection based on use case
+defaults:
+  development: minimal
+  ci_cd: standard
+  pre_release: comprehensive
+  load_test: stress
+
+# Reporting configuration
+reporting:
+  formats:
+    - console
+    - json
+    - csv
+  metrics:
+    - total_jobs
+    - success_rate
+    - average_duration
+    - min_duration
+    - max_duration
+    - p95_duration
+    - tokens_used
+    - estimated_cost
+  save_results: true
+  results_dir: "./test_results"

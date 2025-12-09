@@ -1,0 +1,73 @@
+{
+  "analytics": {
+    "title": "Analytiques",
+    "noData": "Aucune donnee analytique disponible",
+    "period": {
+      "24h": "Dernieres 24 heures",
+      "7d": "7 derniers jours",
+      "30d": "30 derniers jours",
+      "all": "Tout le temps"
+    },
+    "totalRequests": "Total des requêtes",
+    "successRate": "Taux de succès",
+    "avgLatency": "Latence moy.",
+    "totalCost": "Coût total",
+    "perRequest": "par requete",
+    "usageOverTime": "Utilisation dans le temps",
+    "tokenStatistics": "Statistiques des tokens",
+    "totalTokens": "Total des tokens",
+    "inputTokens": "Tokens d'entree",
+    "outputTokens": "Tokens de sortie",
+    "avgInputTokens": "Tokens d'entree moy.",
+    "avgOutputTokens": "Tokens de sortie moy.",
+    "latencyPercentiles": "Percentiles de latence",
+    "minLatency": "Min",
+    "maxLatency": "Max"
+  },
+  "fields": {
+    "stopSequences": "Sequences d'arret",
+    "stopSequencesDescription": "Sequences ou le modèle arrete de générer (max 4)",
+    "stopSequencePlaceholder": "Entrez une sequence d'arret",
+    "customParams": "Paramètres personnalisés",
+    "customParamsDescription": "Paramètres supplementaires spécifiques au modèle au format JSON",
+    "customParamsError": "Format JSON invalide"
+  },
+  "actions": {
+    "addStopSequence": "Ajouter une sequence d'arret"
+  },
+  "placeholders": {
+    "selectModel": "Sélectionnez un modèle"
+  },
+  "placeholderExtraction": {
+    "title": "Extraction des variables",
+    "description": "Configurer l'extraction automatique des valeurs pour les modèles de documents",
+    "prompt": "Prompt d'extraction",
+    "promptHelp": "Sélectionnez un prompt qui extrait les valeurs des variables du resultat du job"
+  },
+  "categorization": {
+    "title": "Categorisation de documents",
+    "description": "Configurer la categorisation par tags en utilisant les donnees de contexte fournies a l'execution",
+    "prompt": "Prompt de categorisation",
+    "promptHelp": "Sélectionnez un prompt qui associe les documents aux tags fournis dans le contexte d'execution"
+  },
+  "test": {
+    "title": "Tester le Flavor",
+    "prompt": "Prompt de test",
+    "promptPlaceholder": "Entrez un prompt pour tester la configuration du flavor...",
+    "maxTokensOverride": "Limite de tokens (optionnel)",
+    "run": "Lancer le test",
+    "running": "Test en cours...",
+    "success": "Test termine avec succès",
+    "error": "Le test a échoué",
+    "model": "Model",
+    "request": "Requete",
+    "response": "Reponse",
+    "metadata": "Metadonnees",
+    "finishReason": "Raison de fin",
+    "inputTokens": "Tokens d'entree",
+    "outputTokens": "Tokens de sortie",
+    "totalTokens": "Total tokens",
+    "latency": "Latence",
+    "cost": "Coût estime"
+  }
+}

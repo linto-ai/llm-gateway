@@ -1,0 +1,51 @@
+{
+  "dashboard": {
+    "title": "Sante du système",
+    "subtitle": "Dernieres 24 heures",
+    "totalJobs": "Total des taches",
+    "successRate": "Taux de succès",
+    "totalTokens": "Total des tokens",
+    "totalCost": "Coût total",
+    "avgLatency": "Latence moyenne",
+    "activeServices": "Services actifs",
+    "serviceHealth": "Sante des services",
+    "recentFailures": "Échecs recents",
+    "noFailures": "Aucun echec recent",
+    "noServices": "Aucun service actif",
+    "viewAll": "Voir tout",
+    "ago": "il y a {time}",
+    "loading": "Chargément des analytiques...",
+    "error": "Échec du chargement des analytiques"
+  },
+  "service": {
+    "title": "Analytiques du service",
+    "totalRequests": "Total des requêtes",
+    "successRate": "Taux de succès",
+    "totalTokens": "Total des tokens",
+    "totalCost": "Coût total",
+    "avgLatency": "Latence moyenne",
+    "flavorsUsed": "Variantes utilisees",
+    "mostUsedFlavor": "Plus utilisee",
+    "flavorBreakdown": "Repartition par variante",
+    "usageOverTime": "Utilisation dans le temps",
+    "noData": "Aucune donnee analytique disponible pour cette periode",
+    "loading": "Chargément des analytiques du service..."
+  },
+  "status": {
+    "healthy": "Sain",
+    "degraded": "Degrade",
+    "unhealthy": "En panne",
+    "inactive": "Inactif"
+  },
+  "periods": {
+    "24h": "Dernieres 24 heures",
+    "7d": "7 derniers jours",
+    "30d": "30 derniers jours",
+    "all": "Tout le temps"
+  },
+  "chart": {
+    "requests": "Requêtes",
+    "tokens": "Tokens",
+    "cost": "Coût"
+  }
+}

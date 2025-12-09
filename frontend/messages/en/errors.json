@@ -1,0 +1,10 @@
+{
+  "generic": "An error occurred. Please try again.",
+  "network": "Network error. Please check your connection.",
+  "validation": "Validation error. Please check your input.",
+  "notFound": "Resource not found.",
+  "unauthorized": "Unauthorized. Please log in.",
+  "forbidden": "Access forbidden.",
+  "conflict": "Conflict. Resource already exists.",
+  "serverError": "Server error. Please try again later."
+}

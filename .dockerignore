@@ -1,0 +1,53 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude
+.claude/
+CLAUDE.md
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Frontend build artifacts (if building separately)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Documentation site artifacts
+docs-site/node_modules/
+docs-site/.astro/
+docs-site/dist/
+
+# Misc
+*.md
+!README.md
+docs/
+Jenkinsfile

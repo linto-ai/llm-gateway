@@ -1,0 +1,21 @@
+---
+interface Props {
+  code: string;
+  lang?: string;
+  filename?: string;
+}
+
+const { code, lang = 'text', filename } = Astro.props;
+---
+
+<div class="my-4">
+  {filename && (
+    <div class="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-t-lg text-sm font-mono text-gray-700 dark:text-gray-300 border-b border-light-border dark:border-dark-border">
+      {filename}
+    </div>
+  )}
+  <pre class:list={[
+    'overflow-x-auto',
+    filename ? 'rounded-t-none' : ''
+  ]}><code class={`language-${lang}`}>{code}</code></pre>
+</div>

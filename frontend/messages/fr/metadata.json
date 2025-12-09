@@ -1,0 +1,30 @@
+{
+  "title": "Titre",
+  "summary": "Resume",
+  "participants": "Participants",
+  "date": "Date",
+  "topics": "Sujets",
+  "actionItems": "Actions a faire",
+  "action_items": "Actions a faire",
+  "sentiment": "Sentiment",
+  "language": "Langue",
+  "wordCount": "Nombre de mots",
+  "word_count": "Nombre de mots",
+  "keyPoints": "Points cles",
+  "key_points": "Points cles",
+  "decisions": "Decisions",
+  "nextSteps": "Prochaines étapes",
+  "output": "Sortie",
+  "jobDate": "Date du job",
+  "generatedAt": "Généré le",
+  "serviceName": "Nom du service",
+  "sentimentValues": {
+    "positive": "Positif",
+    "negative": "Négatif",
+    "neutral": "Neutre",
+    "mixed": "Mixte",
+    "constructive": "Constructif"
+  },
+  "noMetadata": "Aucune métadonnée disponible",
+  "extractedAt": "Extrait le"
+}

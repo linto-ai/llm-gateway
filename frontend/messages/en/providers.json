@@ -1,0 +1,61 @@
+{
+  "title": "Providers",
+  "subtitle": "Manage LLM provider configurations",
+  "createNew": "Create Provider",
+  "editProvider": "Edit Provider",
+  "viewProvider": "View Provider",
+  "deleteProvider": "Delete Provider",
+  "deleteConfirm": "Are you sure you want to delete this provider?",
+  "deleteWarning": "This action cannot be undone. All models associated with this provider will also be deleted.",
+  "createSuccess": "Provider created successfully",
+  "updateSuccess": "Provider updated successfully",
+  "deleteSuccess": "Provider deleted successfully",
+  "deleteError": "Failed to delete provider",
+  "emptyStateDescription": "No providers found. Create one to get started.",
+  "verifyModels": "Verify Models",
+  "verifying": "Verifying models...",
+  "verificationSuccess": "Models verified successfully",
+  "verificationFailed": "Model verification failed",
+  "fields": {
+    "name": "Provider Name",
+    "providerType": "Provider Type",
+    "apiBaseUrl": "API Base URL",
+    "apiKey": "API Key",
+    "securityLevel": "Security Level",
+    "metadata": "Metadata"
+  },
+  "types": {
+    "openai": "OpenAI",
+    "openai_compatible": "OpenAI Compatible",
+    "anthropic": "Anthropic",
+    "cohere": "Cohere",
+    "openrouter": "OpenRouter",
+    "custom": "Custom"
+  },
+  "securityLevels": {
+    "secure": "Secure",
+    "sensitive": "Sensitive",
+    "insecure": "Insecure"
+  },
+  "placeholders": {
+    "name": "Enter provider name",
+    "apiBaseUrl": "https://api.example.com",
+    "apiKey": "Enter API key"
+  },
+  "discovery": {
+    "title": "Model Discovery",
+    "hint": "Discover available models from this provider",
+    "discoverModels": "Discover Models",
+    "discovering": "Discovering models...",
+    "discoveredModels": "Discovered Models",
+    "selectModels": "Select models to import",
+    "importSelected": "Import Selected ({count})",
+    "importing": "Importing models...",
+    "importSuccess": "{count, plural, =1 {Successfully imported 1 model} other {Successfully imported # models}}",
+    "importPartial": "Imported {success} of {total} models",
+    "importError": "Failed to import models",
+    "importConflict": "Some models already exist and were skipped",
+    "noModelsFound": "No models found",
+    "discoveryFailed": "Failed to discover models"
+  }
+}

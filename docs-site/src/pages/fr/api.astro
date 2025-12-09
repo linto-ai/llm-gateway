@@ -1,0 +1,288 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+import fr from '../../i18n/fr.json';
+
+const t = fr;
+const lang = 'fr';
+const currentPath = Astro.url.pathname;
+
+const curlExample = `# Executer un service (JSON - texte simple)
+curl -X POST "http://localhost:8000/api/v1/services/{service_id}/execute" \\
+  -H "Content-Type: application/json" \\
+  -d '{"input": "Texte a traiter...", "flavor_name": "default"}'
+
+# Lancer un service (multipart - upload de fichier)
+curl -X POST "http://localhost:8000/api/v1/services/{service_id}/run" \\
+  -F "flavor_id={flavor_uuid}" \\
+  -F "file=@document.txt"
+
+# Obtenir le statut d'un job
+curl "http://localhost:8000/api/v1/jobs/{job_id}"
+
+# Surveiller le job via WebSocket
+wscat -c "ws://localhost:8000/ws/jobs/{job_id}"`;
+
+const pythonExample = `import requests
+import websocket
+import json
+
+# Executer un service
+response = requests.post(
+    "http://localhost:8000/api/v1/services/{service_id}/execute",
+    json={
+        "input": "Texte a traiter...",
+        "flavor_name": "default"
+    }
+)
+job_id = response.json()["job_id"]
+
+# Surveiller via WebSocket
+def on_message(ws, message):
+    data = json.loads(message)
+    print(f"Statut: {data['status']}")
+    if data['status'] == 'completed':
+        print(f"Resultat: {data['result']}")
+        ws.close()
+
+ws = websocket.WebSocketApp(
+    f"ws://localhost:8000/ws/jobs/{job_id}",
+    on_message=on_message
+)
+ws.run_forever()`;
+
+const responseExample = `{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "result": "Sortie traitee...",
+  "metadata": {
+    "tokens_used": 1250,
+    "processing_time_ms": 2340,
+    "cost_estimate": 0.0025
+  }
+}`;
+
+const endpoints = [
+  {
+    method: 'GET',
+    path: '/api/v1/services',
+    description: t.api.listServices
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/services/{service_id}/execute',
+    description: 'Executer un service avec JSON'
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/services/{service_id}/run',
+    description: 'Lancer un service avec upload de fichier'
+  },
+  {
+    method: 'GET',
+    path: '/api/v1/jobs/{job_id}',
+    description: t.api.getJobStatus
+  },
+  {
+    method: 'WS',
+    path: '/ws/jobs/{job_id}',
+    description: t.api.websocketUpdates
+  }
+];
+---
+
+<Base title={`${t.api.title} | LLM Gateway`} description={t.api.subtitle} lang={lang}>
+  <Header lang={lang} currentPath={currentPath} />
+
+  <main class="flex-1">
+    <!-- Hero Section -->
+    <section class="section bg-gradient-to-b from-gray-50 to-white dark:from-dark-code-bg dark:to-dark-bg">
+      <div class="container text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+          {t.api.title}
+        </h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          {t.api.subtitle}
+        </p>
+      </div>
+    </section>
+
+    <!-- Main Endpoints -->
+    <section class="section">
+      <div class="container">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center">
+          {t.api.mainEndpointsTitle}
+        </h2>
+
+        <div class="max-w-4xl mx-auto">
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse bg-white dark:bg-dark-bg rounded-lg overflow-hidden shadow">
+              <thead>
+                <tr class="bg-gray-100 dark:bg-dark-code-bg">
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">Methode</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">Endpoint</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">Description</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm">
+                {endpoints.map((endpoint) => (
+                  <tr>
+                    <td class="px-6 py-4 border-b border-light-border dark:border-dark-border">
+                      <span class:list={[
+                        'px-2 py-1 rounded text-xs font-semibold',
+                        endpoint.method === 'GET' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                        endpoint.method === 'POST' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                        'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                      ]}>
+                        {endpoint.method}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 border-b border-light-border dark:border-dark-border font-mono text-sm text-gray-700 dark:text-gray-300">
+                      {endpoint.path}
+                    </td>
+                    <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-600 dark:text-gray-400">
+                      {endpoint.description}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- cURL Examples -->
+    <section class="section bg-gray-50 dark:bg-dark-code-bg">
+      <div class="container">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            {t.api.curlExampleTitle}
+          </h2>
+          <CodeBlock code={curlExample} lang="bash" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Python Example -->
+    <section class="section">
+      <div class="container">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            {t.api.pythonExampleTitle}
+          </h2>
+          <CodeBlock code={pythonExample} lang="python" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Response Format -->
+    <section class="section bg-gray-50 dark:bg-dark-code-bg">
+      <div class="container">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            {t.api.responseFormatTitle}
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            {t.api.responseFormatDescription}
+          </p>
+          <CodeBlock code={responseExample} lang="json" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Swagger Link -->
+    <section class="section">
+      <div class="container">
+        <div class="max-w-4xl mx-auto text-center">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            {t.api.swaggerTitle}
+          </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            {t.api.swaggerDescription}
+          </p>
+          <a
+            href="http://localhost:8000/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary inline-flex items-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+            http://localhost:8000/docs
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Additional Endpoints Summary -->
+    <section class="section bg-gray-50 dark:bg-dark-code-bg">
+      <div class="container">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center">
+          Tous les endpoints API
+        </h2>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div class="card">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Providers</h3>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li>Operations CRUD</li>
+              <li>Decouverte de modeles</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Modeles</h3>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li>Operations CRUD</li>
+              <li>Verification de sante</li>
+              <li>Configuration des limites</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Services</h3>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li>Operations CRUD</li>
+              <li>Execution</li>
+              <li>Validation</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Service Flavors</h3>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li>Operations CRUD</li>
+              <li>Tests</li>
+              <li>Analytique</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Jobs</h3>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li>Suivi de statut</li>
+              <li>Annulation</li>
+              <li>Export (DOCX/PDF)</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">WebSocket</h3>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li>Surveillance globale des jobs</li>
+              <li>Mises a jour par job</li>
+              <li>Progression en temps reel</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer lang={lang} />
+</Base>

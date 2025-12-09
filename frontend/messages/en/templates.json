@@ -1,0 +1,66 @@
+{
+  "title": "Document Templates",
+  "subtitle": "Manage DOCX templates for exporting job results",
+  "upload": "Upload Template",
+  "importFromLibrary": "Import from Library",
+  "uploadDescription": "Upload a DOCX template with '{{placeholders}}' for automatic substitution",
+  "name": "Template Name",
+  "namePlaceholder": "Enter template name",
+  "description": "Description",
+  "descriptionPlaceholder": "Optional description of this template",
+  "setDefault": "Set as Default",
+  "isDefault": "Default Template",
+  "placeholders": "Available Placeholders",
+  "noPlaceholders": "No placeholders detected",
+  "download": "Download",
+  "delete": "Delete",
+  "deleteConfirm": "Are you sure you want to delete this template?",
+  "deleteSuccess": "Template deleted successfully",
+  "deleteError": "Failed to delete template",
+  "noTemplates": "No templates uploaded yet",
+  "noTemplatesDescription": "Upload a DOCX template to get started with document exports",
+  "uploadSuccess": "Template uploaded successfully",
+  "uploadError": "Failed to upload template",
+  "setDefaultSuccess": "Default template updated",
+  "setDefaultError": "Failed to set default template",
+  "fileValidation": {
+    "invalidType": "Only DOCX files are allowed",
+    "tooLarge": "File size must be less than 10MB",
+    "required": "Please select a file"
+  },
+  "dropzone": {
+    "title": "Drag & drop your DOCX file here",
+    "subtitle": "or click to browse",
+    "selectedFile": "Selected file",
+    "removeFile": "Remove"
+  },
+  "table": {
+    "name": "Name",
+    "fileName": "File",
+    "size": "Size",
+    "placeholders": "Placeholders",
+    "default": "Default",
+    "actions": "Actions",
+    "createdAt": "Created"
+  },
+  "placeholderInfo": {
+    "title": "Template Placeholders",
+    "description": "Use these placeholders in your DOCX template. They will be replaced with actual values when exporting.",
+    "standard": "Standard Placeholders",
+    "metadata": "Metadata Placeholders (from extraction)",
+    "standardDescription": "Always available for all jobs",
+    "metadataDescription": "Available when metadata extraction is configured. You can use any placeholder name and add a description to guide the LLM extraction.",
+    "metadataNote": "Examples: {{title}}, {{summary}}, {{custom_field: describe what to extract}}"
+  },
+  "library": {
+    "title": "Template Library",
+    "subtitle": "Browse and import pre-configured templates",
+    "empty": "No global templates available",
+    "emptyDescription": "Contact your administrator to add templates to the library",
+    "import": "Import",
+    "importing": "Importing...",
+    "importSuccess": "Template imported successfully",
+    "importError": "Failed to import template",
+    "global": "Global Template"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "field-extraction",
+  "description": {
+    "en": "Multilingual field extraction for document template placeholders",
+    "fr": "Extraction multilingue de champs pour les placeholders de templates"
+  },
+  "service_type": "summary",
+  "prompt_type": "field_extraction",
+  "languages": ["*"],
+  "version": "2.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "field-extraction"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "single-pass",
+  "description": {
+    "en": "Single pass processing - processes entire document in one LLM call",
+    "fr": "Traitement en une passe - traite le document entier en un seul appel LLM"
+  },
+  "version": "1.0.0",
+  "is_system": true,
+  "config": {
+    "temperature": 0.2,
+    "top_p": 0.8,
+    "output_type": "text",
+    "processing_mode": "single_pass",
+    "auto_fallback_to_iterative": true
+  }
+}

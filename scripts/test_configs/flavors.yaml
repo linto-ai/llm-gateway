@@ -1,0 +1,140 @@
+# Massive Test Flavors Configuration
+# Flavor templates applied to each created service
+# All flavors use mt- prefix for easy identification and cleanup
+
+# Temperature presets for testing different creativity levels
+temperature_presets:
+  precise: 0.1     # Very deterministic
+  balanced: 0.5    # Moderate creativity
+  creative: 0.9    # High creativity
+  random: 1.5      # Very high variance
+
+# Processing mode options
+processing_modes:
+  - single_pass    # For short content
+  - iterative      # For long content with batching
+  - map_reduce     # For very long content with consolidation
+
+# Flavor templates - each service gets these flavors
+# Note: Iterative mode requires 2 {} placeholders (previous_summary, new_content)
+#       Single pass requires 1 {} placeholder (input)
+flavor_templates:
+  # Default balanced flavor - iterative mode
+  - name: mt-default
+    temperature: 0.7
+    top_p: 0.9
+    processing_mode: iterative
+    is_default: true
+    prompt_system_content: |
+      You are a helpful assistant that processes text accurately and efficiently.
+    prompt_user_content: |
+      Previous context:
+      {}
+
+      New content to process:
+      {}
+
+  # Low temperature - precise output
+  - name: mt-precise
+    temperature: 0.1
+    top_p: 0.8
+    processing_mode: iterative
+    is_default: false
+    prompt_system_content: |
+      You are a precise text processor. Focus on accuracy and consistency.
+      Avoid creative interpretations. Stick to the facts.
+    prompt_user_content: |
+      Previous summary:
+      {}
+
+      Analyze with precision:
+      {}
+
+  # High temperature - creative output
+  - name: mt-creative
+    temperature: 0.9
+    top_p: 0.95
+    processing_mode: iterative
+    is_default: false
+    prompt_system_content: |
+      You are a creative analyst. Provide insightful and nuanced interpretations.
+      Feel free to make connections and draw broader conclusions.
+    prompt_user_content: |
+      Context so far:
+      {}
+
+      Provide creative analysis:
+      {}
+
+  # Single-pass mode for short content
+  - name: mt-single-pass
+    temperature: 0.5
+    top_p: 0.9
+    processing_mode: single_pass
+    is_default: false
+    prompt_system_content: |
+      Process the entire input in a single comprehensive pass.
+    prompt_user_content: |
+      Process this content:
+      {}
+
+  # Map-reduce mode for long content
+  - name: mt-map-reduce
+    temperature: 0.5
+    top_p: 0.9
+    processing_mode: map_reduce
+    is_default: false
+    prompt_system_content: |
+      You are processing content in a map-reduce pattern.
+      Each section should be summarized independently, then consolidated.
+    prompt_user_content: |
+      Summarize this section:
+      {}
+
+  # Fast processing - lower quality but quicker (single pass)
+  - name: mt-fast
+    temperature: 0.3
+    top_p: 0.7
+    processing_mode: single_pass
+    is_default: false
+    prompt_system_content: |
+      Provide concise, rapid responses. Prioritize speed over detail.
+    prompt_user_content: |
+      Quickly summarize:
+      {}
+
+  # Detailed processing - higher quality (iterative)
+  - name: mt-detailed
+    temperature: 0.6
+    top_p: 0.9
+    processing_mode: iterative
+    is_default: false
+    prompt_system_content: |
+      Provide thorough, detailed analysis. Take your time to be comprehensive.
+      Include nuances and supporting details.
+    prompt_user_content: |
+      Previous analysis:
+      {}
+
+      Continue detailed analysis:
+      {}
+
+# Stress test specific flavors
+stress_flavors:
+  - name: mt-stress-low
+    temperature: 0.3
+    top_p: 0.8
+    processing_mode: iterative
+    is_default: true
+
+  - name: mt-stress-mid
+    temperature: 0.6
+    top_p: 0.9
+    processing_mode: iterative
+    is_default: false
+
+  - name: mt-stress-high
+    temperature: 0.9
+    top_p: 0.95
+    processing_mode: iterative
+    is_default: false

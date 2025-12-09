@@ -1,0 +1,58 @@
+---
+interface Props {
+  lang: 'en' | 'fr';
+}
+
+const { lang } = Astro.props;
+
+const t = {
+  en: {
+    copyright: 'Copyright (c) 2024-2025 LINAGORA',
+    license: 'AGPL-3.0 License'
+  },
+  fr: {
+    copyright: 'Copyright (c) 2024-2025 LINAGORA',
+    license: 'Licence AGPL-3.0'
+  }
+};
+
+const texts = t[lang];
+---
+
+<footer class="mt-auto py-8 border-t border-light-border dark:border-dark-border bg-gray-50 dark:bg-dark-code-bg">
+  <div class="container">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <span>{texts.copyright}</span>
+        <span class="hidden md:inline">-</span>
+        <a
+          href="https://linto.ai"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:text-accent dark:hover:text-accent-dark"
+        >
+          LinTO.ai
+        </a>
+      </div>
+
+      <div class="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+        <a
+          href="https://github.com/linto-ai/llm-gateway"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:text-accent dark:hover:text-accent-dark"
+        >
+          GitHub
+        </a>
+        <a
+          href="https://github.com/linto-ai/llm-gateway/blob/main/LICENSE"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hover:text-accent dark:hover:text-accent-dark"
+        >
+          {texts.license}
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>

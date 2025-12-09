@@ -1,0 +1,254 @@
+---
+import Base from '../../layouts/Base.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import FeatureCard from '../../components/FeatureCard.astro';
+
+import fr from '../../i18n/fr.json';
+
+const t = fr;
+const lang = 'fr';
+const currentPath = Astro.url.pathname;
+
+const features = [
+  {
+    icon: '✂️',
+    title: t.features.autoChunking.title,
+    description: t.features.autoChunking.description,
+    code: `# Segmentation universelle (toutes langues)
+create_new_turn_after: 200  # seuil de tokens
+max_new_turns: 10           # turns par lot`
+  },
+  {
+    icon: '📚',
+    title: t.features.processingModes.title,
+    description: t.features.processingModes.description,
+    code: `processing_mode: "single_pass"  # ou "iterative"
+reduce_summary: true  # consolidation finale optionnelle`
+  },
+  {
+    icon: '⏰',
+    title: t.features.jobQueue.title,
+    description: t.features.jobQueue.description,
+    code: `# Mises a jour WebSocket en temps reel
+wscat -c "ws://localhost:8000/ws/jobs/{job_id}"`
+  },
+  {
+    icon: '🔌',
+    title: t.features.multiProvider.title,
+    description: t.features.multiProvider.description,
+    code: `# Meme API, differents fournisseurs
+POST /api/v1/services/{id}/execute`
+  },
+  {
+    icon: '💰',
+    title: t.features.tokenTracking.title,
+    description: t.features.tokenTracking.description,
+    code: `# Tokenizers tiktoken + HuggingFace
+tokenizer_override: "mistralai/Mistral-7B-v0.1"`
+  },
+  {
+    icon: '📄',
+    title: t.features.documentExport.title,
+    description: t.features.documentExport.description,
+    code: `# Export en DOCX ou PDF
+GET /api/v1/jobs/{id}/export?format=docx
+GET /api/v1/jobs/{id}/export?format=pdf`
+  },
+  {
+    icon: '🎛️',
+    title: t.features.flavorPresets.title,
+    description: t.features.flavorPresets.description,
+    code: `# Presets pre-configures
+flavor_name: "quick_summary"
+flavor_name: "detailed_report"`
+  },
+  {
+    icon: '🔀',
+    title: t.features.versioning.title,
+    description: t.features.versioning.description,
+    code: `# Retour a une version precedente
+POST /api/v1/jobs/{id}/rollback?version_id={version}`
+  },
+  {
+    icon: '🏷️',
+    title: t.features.placeholderExtraction.title,
+    description: t.features.placeholderExtraction.description,
+    code: `# Le LLM extrait les metadonnees pour les templates
+placeholder_extraction_prompt_id: "..."
+# Remplit: {{title}}, {{summary}}, {{date}}...`
+  }
+];
+---
+
+<Base title={`${t.features.title} | LLM Gateway`} description={t.features.subtitle} lang={lang}>
+  <Header lang={lang} currentPath={currentPath} />
+
+  <main class="flex-1">
+    <!-- Hero Section -->
+    <section class="section bg-gradient-to-b from-gray-50 to-white dark:from-dark-code-bg dark:to-dark-bg">
+      <div class="container text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+          {t.features.title}
+        </h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          {t.features.subtitle}
+        </p>
+      </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section class="section">
+      <div class="container">
+        <div class="grid md:grid-cols-2 gap-6">
+          {features.map((feature) => (
+            <FeatureCard
+              icon={feature.icon}
+              title={feature.title}
+              description={feature.description}
+              code={feature.code}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison: Naive vs Gateway -->
+    <section class="section bg-gray-50 dark:bg-dark-code-bg">
+      <div class="container">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            API OpenAI directe vs. LLM Gateway
+          </h2>
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            Ce que vous devriez implementer vous-meme vs. ce que LLM Gateway gere
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse bg-white dark:bg-dark-bg rounded-lg overflow-hidden shadow">
+            <thead>
+              <tr class="bg-gray-100 dark:bg-dark-code-bg">
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">Besoin</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">API OpenAI directe</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">LLM Gateway</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Gestion des longs documents</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Ecrire son propre decoupage</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Automatique</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Comptage de tokens</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Installer et gerer les tokenizers</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Integre (tiktoken + HF)</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Gestion des limites de debit</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Implementer la logique de retry</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Backoff exponentiel integre</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Suivi des jobs</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Construire sa propre file</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Celery + WebSocket</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Suivi des couts</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Parser les reponses API</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Suivi par requete</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Export de documents</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Non supporte</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">DOCX/PDF avec templates</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-gray-700 dark:text-gray-300">Versioning des resultats</td>
+                <td class="px-6 py-4 text-red-600 dark:text-red-400">Construire soi-meme</td>
+                <td class="px-6 py-4 text-green-600 dark:text-green-400">Integre avec rollback</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison Table: vs other solutions -->
+    <section class="section">
+      <div class="container">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            LLM Gateway vs. Solutions de routage
+          </h2>
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            LiteLLM, Portkey, etc. sont des proxies/routeurs. LLM Gateway gere le traitement des documents.
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse bg-white dark:bg-dark-bg rounded-lg overflow-hidden shadow">
+            <thead>
+              <tr class="bg-gray-100 dark:bg-dark-code-bg">
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">Fonctionnalite</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">LiteLLM / Portkey</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">LLM Gateway</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Routage multi-fournisseurs</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Suivi des couts & cache</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Traitement iteratif</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Non</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui (decoupage, contexte glissant)</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">File de jobs asynchrone</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-yellow-600 dark:text-yellow-400">Limite</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui (Celery, priorites)</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Longs documents</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-yellow-600 dark:text-yellow-400">Gestion cote client</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Gestion cote passerelle</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Versioning des resultats</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Non</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Export DOCX/PDF</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Non</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui (avec templates)</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Extraction dynamique de placeholders</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-red-600 dark:text-red-400">Non</td>
+                <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-green-600 dark:text-green-400">Oui (via LLM)</td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 text-gray-700 dark:text-gray-300">Controle de granularite de sortie</td>
+                <td class="px-6 py-4 text-red-600 dark:text-red-400">Non</td>
+                <td class="px-6 py-4 text-green-600 dark:text-green-400">Oui (taille du lot = niveau de detail)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer lang={lang} />
+</Base>

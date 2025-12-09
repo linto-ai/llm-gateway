@@ -1,0 +1,71 @@
+# Massive Test Services Configuration
+# All services use mt- prefix for easy identification and cleanup
+
+services:
+  # Summary services
+  - name: mt-summary-en
+    route: mt-summary-en
+    service_type: summary
+    is_active: true
+    description:
+      en: "English conversation summarization service"
+      fr: "Service de synthese de conversations en anglais"
+    metadata:
+      test_service: true
+      language: en
+
+  - name: mt-summary-fr
+    route: mt-summary-fr
+    service_type: summary
+    is_active: true
+    description:
+      en: "French conversation summarization service"
+      fr: "Service de synthese de conversations en francais"
+    metadata:
+      test_service: true
+      language: fr
+
+  - name: mt-summary-multilang
+    route: mt-summary-multilang
+    service_type: summary
+    is_active: true
+    description:
+      en: "Multilingual conversation summarization"
+      fr: "Synthese de conversations multilingue"
+    metadata:
+      test_service: true
+      language: multi
+
+  # Diarization correction service
+  - name: mt-diarization
+    route: mt-diarization
+    service_type: diarization_correction
+    is_active: true
+    description:
+      en: "Speaker diarization correction service"
+      fr: "Service de correction de diarisation"
+    metadata:
+      test_service: true
+
+  # Categorization service
+  - name: mt-categorize
+    route: mt-categorize
+    service_type: categorization
+    is_active: true
+    description:
+      en: "Content categorization and tagging service"
+      fr: "Service de categorisation et balisage de contenu"
+    metadata:
+      test_service: true
+
+  # High-volume test service (for stress testing)
+  - name: mt-stress-test
+    route: mt-stress-test
+    service_type: summary
+    is_active: true
+    description:
+      en: "High-volume stress testing service"
+      fr: "Service de test de charge intensif"
+    metadata:
+      test_service: true
+      stress_test: true

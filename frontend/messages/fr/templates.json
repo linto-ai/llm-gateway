@@ -1,0 +1,66 @@
+{
+  "title": "Modèles de documents",
+  "subtitle": "Gèrez les modèles DOCX pour l'export des resultats",
+  "upload": "Televerser un modèle",
+  "importFromLibrary": "Importer de la bibliothèque",
+  "uploadDescription": "Televersez un modèle DOCX avec des '{{placeholders}}' pour la substitution automatique",
+  "name": "Nom du modèle",
+  "namePlaceholder": "Entrez le nom du modèle",
+  "description": "Description",
+  "descriptionPlaceholder": "Description optionnelle de ce modèle",
+  "setDefault": "Définir par défaut",
+  "isDefault": "Modele par défaut",
+  "placeholders": "Placeholders disponibles",
+  "noPlaceholders": "Aucun placeholder detecte",
+  "download": "Telecharger",
+  "delete": "Supprimer",
+  "deleteConfirm": "Voulez-vous vraiment supprimer ce modèle ?",
+  "deleteSuccess": "Modele supprimé avec succès",
+  "deleteError": "Échec de la suppression du modèle",
+  "noTemplates": "Aucun modèle téléversé",
+  "noTemplatesDescription": "Televersez un modèle DOCX pour commencer les exports de documents",
+  "uploadSuccess": "Modele téléversé avec succès",
+  "uploadError": "Échec du téléchargement du modèle",
+  "setDefaultSuccess": "Modele par défaut mis à jour",
+  "setDefaultError": "Échec de la mise à jour du modèle par défaut",
+  "fileValidation": {
+    "invalidType": "Seuls les fichiers DOCX sont autorises",
+    "tooLarge": "La taille du fichier doit etre inférieure a 10 Mo",
+    "required": "Veuillez sélectionner un fichier"
+  },
+  "dropzone": {
+    "title": "Glissez-deposez votre fichier DOCX ici",
+    "subtitle": "ou cliquez pour parcourir",
+    "selectedFile": "Fichier sélectionné",
+    "removeFile": "Supprimer"
+  },
+  "table": {
+    "name": "Nom",
+    "fileName": "Fichier",
+    "size": "Taille",
+    "placeholders": "Placeholders",
+    "default": "Defaut",
+    "actions": "Actions",
+    "createdAt": "Cree"
+  },
+  "placeholderInfo": {
+    "title": "Placeholders de modèle",
+    "description": "Utilisez ces placeholders dans votre modèle DOCX. Ils seront remplacés par les valeurs réelles lors de l'export.",
+    "standard": "Placeholders standard",
+    "metadata": "Placeholders de métadonnées (depuis l'extraction)",
+    "standardDescription": "Toujours disponibles pour tous les jobs",
+    "metadataDescription": "Disponibles lorsque l'extraction de métadonnées est configurée. Vous pouvez utiliser n'importe quel nom de placeholder et ajouter une description pour guider l'extraction LLM.",
+    "metadataNote": "Exemples : {{title}}, {{summary}}, {{champ_perso: décrivez ce qu'il faut extraire}}"
+  },
+  "library": {
+    "title": "Bibliothèque de modèles",
+    "subtitle": "Parcourez et importez des modèles préconfigurés",
+    "empty": "Aucun modèle global disponible",
+    "emptyDescription": "Contactez votre administrateur pour ajouter des modèles à la bibliothèque",
+    "import": "Importer",
+    "importing": "Importation...",
+    "importSuccess": "Modèle importé avec succès",
+    "importError": "Échec de l'importation du modèle",
+    "global": "Modèle global"
+  }
+}

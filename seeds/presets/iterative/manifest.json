@@ -1,0 +1,20 @@
+{
+  "name": "iterative",
+  "description": {
+    "en": "Iterative processing - processes document in batches with rolling context for long documents",
+    "fr": "Traitement iteratif - traite le document par lots avec contexte glissant pour les longs documents"
+  },
+  "version": "1.0.0",
+  "is_system": true,
+  "config": {
+    "temperature": 0.2,
+    "top_p": 0.7,
+    "output_type": "text",
+    "processing_mode": "iterative",
+    "reduce_summary": true,
+    "consolidate_summary": true,
+    "create_new_turn_after": 150,
+    "summary_turns": 3,
+    "max_new_turns": 12
+  }
+}

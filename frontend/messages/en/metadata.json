@@ -1,0 +1,30 @@
+{
+  "title": "Title",
+  "summary": "Summary",
+  "participants": "Participants",
+  "date": "Date",
+  "topics": "Topics",
+  "actionItems": "Action Items",
+  "action_items": "Action Items",
+  "sentiment": "Sentiment",
+  "language": "Language",
+  "wordCount": "Word Count",
+  "word_count": "Word Count",
+  "keyPoints": "Key Points",
+  "key_points": "Key Points",
+  "decisions": "Decisions",
+  "nextSteps": "Next Steps",
+  "output": "Output",
+  "jobDate": "Job Date",
+  "generatedAt": "Generated At",
+  "serviceName": "Service Name",
+  "sentimentValues": {
+    "positive": "Positive",
+    "negative": "Negative",
+    "neutral": "Neutral",
+    "mixed": "Mixed",
+    "constructive": "Constructive"
+  },
+  "noMetadata": "No metadata available",
+  "extractedAt": "Extracted at"
+}

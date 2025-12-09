@@ -1,0 +1,100 @@
+# Production configuration (default)
+# Usage: docker compose up -d
+# For development with hot-reload: docker compose -f docker-compose.dev.yml up
+services:
+  llm-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./seeds:/usr/src/seeds:ro
+      - ./templates:/usr/src/templates:ro
+      - ${TOKENIZER_STORAGE_PATH:-./tokenizers}:/var/www/data/tokenizers
+      - templates_data:/var/www/data/templates
+    networks:
+      - llm-network
+    ports:
+      - 8000:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      task-broker-redis:
+        condition: service_started
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A app.http_server.celery_app.celery_app worker --loglevel=info --concurrency=1
+    env_file:
+      - .env
+    volumes:
+      - ./seeds:/usr/src/seeds:ro
+      - ./templates:/usr/src/templates:ro
+      - ${TOKENIZER_STORAGE_PATH:-./tokenizers}:/var/www/data/tokenizers
+      - templates_data:/var/www/data/templates
+    networks:
+      - llm-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      task-broker-redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "./scripts/celery-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      replicas: ${CELERY_WORKERS:-1}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000
+      - NEXT_PUBLIC_APP_NAME=LLM Gateway
+      - NEXT_PUBLIC_DEFAULT_LOCALE=en
+    networks:
+      - llm-network
+    ports:
+      - "8001:3000"
+    depends_on:
+      - llm-gateway
+    # No volume mounts - uses built image
+
+  task-broker-redis:
+    command: /bin/sh -c "redis-stack-server --requirepass ${REDIS_PASSWORD:-changeme}"
+    image: redis/redis-stack-server:latest
+    networks:
+      - llm-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-llm_gateway}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-llm_gateway_password}
+      POSTGRES_DB: ${POSTGRES_DB:-llm_gateway}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - llm-network
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-llm_gateway}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  templates_data:
+
+networks:
+  llm-network:

@@ -1,0 +1,11 @@
+{
+  "required": "This field is required",
+  "minLength": "Minimum length is {min} characters",
+  "maxLength": "Maximum length is {max} characters",
+  "invalidUrl": "Invalid URL format",
+  "invalidEmail": "Invalid email format",
+  "invalidUuid": "Invalid UUID format",
+  "min": "Minimum value is {min}",
+  "max": "Maximum value is {max}",
+  "between": "Value must be between {min} and {max}"
+}

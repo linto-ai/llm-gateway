@@ -1,0 +1,254 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import AsciiDiagram from '../components/AsciiDiagram.astro';
+
+import en from '../i18n/en.json';
+
+const t = en;
+const lang = 'en';
+const currentPath = Astro.url.pathname;
+
+const architectureDiagram = `┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Frontend   │────▶│  FastAPI    │────▶│  Celery     │
+│  (Next.js)  │     │  (REST/WS)  │     │  (Workers)  │
+└─────────────┘     └─────────────┘     └─────────────┘
+                           │                   │
+                    ┌──────┴──────┐     ┌──────┴──────┐
+                    │ PostgreSQL  │     │   Redis     │
+                    │ (Services,  │     │  (Tasks,    │
+                    │  Jobs, etc) │     │   Broker)   │
+                    └─────────────┘     └─────────────┘`;
+
+const processingSteps = [
+  t.architecture.step1,
+  t.architecture.step2,
+  t.architecture.step3,
+  t.architecture.step4,
+  t.architecture.step5,
+  t.architecture.step6,
+  t.architecture.step7
+];
+
+const processingModes = [
+  t.architecture.modeSinglePass,
+  t.architecture.modeIterative,
+  t.architecture.modeReduceSummary
+];
+---
+
+<Base title={`${t.architecture.title} | LLM Gateway`} description={t.architecture.subtitle} lang={lang}>
+  <Header lang={lang} currentPath={currentPath} />
+
+  <main class="flex-1">
+    <!-- Hero Section -->
+    <section class="section bg-gradient-to-b from-gray-50 to-white dark:from-dark-code-bg dark:to-dark-bg">
+      <div class="container text-center">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+          {t.architecture.title}
+        </h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          {t.architecture.subtitle}
+        </p>
+      </div>
+    </section>
+
+    <!-- System Components -->
+    <section class="section">
+      <div class="container">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            {t.architecture.componentsTitle}
+          </h2>
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            {t.architecture.componentsDescription}
+          </p>
+        </div>
+
+        <AsciiDiagram content={architectureDiagram} />
+
+        <!-- Component Cards -->
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+          <div class="card">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{t.architecture.frontend}</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{t.architecture.frontendDesc}</p>
+          </div>
+
+          <div class="card">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{t.architecture.fastapi}</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{t.architecture.fastapiDesc}</p>
+          </div>
+
+          <div class="card">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{t.architecture.celery}</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{t.architecture.celeryDesc}</p>
+          </div>
+
+          <div class="card">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{t.architecture.postgres}</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{t.architecture.postgresDesc}</p>
+          </div>
+
+          <div class="card">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              </div>
+              <h3 class="font-semibold text-gray-900 dark:text-white">{t.architecture.redis}</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{t.architecture.redisDesc}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Processing Flow -->
+    <section class="section bg-gray-50 dark:bg-dark-code-bg">
+      <div class="container">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            {t.architecture.processingFlowTitle}
+          </h2>
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            {t.architecture.processingFlowDescription}
+          </p>
+        </div>
+
+        <div class="max-w-2xl mx-auto">
+          <ol class="relative border-l border-gray-300 dark:border-gray-600">
+            {processingSteps.map((step, index) => (
+              <li class="mb-8 ml-6 last:mb-0">
+                <span class="absolute flex items-center justify-center w-8 h-8 bg-accent dark:bg-accent-dark rounded-full -left-4 ring-4 ring-white dark:ring-dark-bg text-white text-sm font-medium">
+                  {index + 1}
+                </span>
+                <p class="text-gray-700 dark:text-gray-300 ml-2">{step}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- Processing Modes -->
+    <section class="section">
+      <div class="container">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            {t.architecture.modesTitle}
+          </h2>
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            {t.architecture.modesDescription}
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse bg-white dark:bg-dark-bg rounded-lg overflow-hidden shadow">
+            <thead>
+              <tr class="bg-gray-100 dark:bg-dark-code-bg">
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">{t.common.mode}</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">{t.common.description}</th>
+                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">{t.common.useCase}</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              {processingModes.map((mode) => (
+                <tr>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border font-mono text-accent dark:text-accent-dark">{mode.name}</td>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">{mode.description}</td>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-600 dark:text-gray-400">{mode.useCase}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- What is a Turn? -->
+        <div class="mt-12 max-w-3xl mx-auto">
+          <div class="card bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              {t.architecture.turnsTitle}
+            </h3>
+            <p class="text-gray-700 dark:text-gray-300 mb-4">
+              {t.architecture.turnsDescription}
+            </p>
+            <pre class="bg-white dark:bg-dark-bg p-4 rounded-lg text-sm overflow-x-auto"><code class="text-gray-800 dark:text-gray-200"># Generic text (lines/paragraphs)
+This is a paragraph.
+This is another paragraph.
+
+# ASR format (with speaker prefix)
+Speaker A : Hello, welcome to the meeting.
+Speaker B : Thank you for having me.</code></pre>
+          </div>
+        </div>
+
+        <!-- Iterative Parameters -->
+        <div class="mt-12 max-w-3xl mx-auto">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
+            Iterative Processing Parameters
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse bg-white dark:bg-dark-bg rounded-lg overflow-hidden shadow">
+              <thead>
+                <tr class="bg-gray-100 dark:bg-dark-code-bg">
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">Parameter</th>
+                  <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 dark:text-white border-b border-light-border dark:border-dark-border">Description</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm">
+                <tr>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border font-mono text-accent dark:text-accent-dark">create_new_turn_after</td>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Token threshold for splitting long turns into smaller chunks</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border font-mono text-accent dark:text-accent-dark">max_new_turns</td>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Turns per batch - controls output granularity</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border font-mono text-accent dark:text-accent-dark">summary_turns</td>
+                  <td class="px-6 py-4 border-b border-light-border dark:border-dark-border text-gray-700 dark:text-gray-300">Previous summary turns kept in rolling context</td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 font-mono text-accent dark:text-accent-dark">reduce_summary</td>
+                  <td class="px-6 py-4 text-gray-700 dark:text-gray-300">Enable final consolidation step after iterative processing</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer lang={lang} />
+</Base>

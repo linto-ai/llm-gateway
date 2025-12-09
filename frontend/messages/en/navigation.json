@@ -1,0 +1,26 @@
+{
+  "app": {
+    "title": "LLM Gateway",
+    "subtitle": "Manage LLM Providers, Models, and Services",
+    "language": "Language",
+    "connectionStatus": "Connection Status",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "version": "Version"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "providers": "Providers",
+    "models": "Models",
+    "services": "Services",
+    "prompts": "Prompts",
+    "jobs": "Jobs",
+    "presets": "Presets",
+    "settings": "Settings",
+    "dashboardSubtitle": "LLM Gateway Management Dashboard",
+    "activeProviders": "Active providers",
+    "availableModels": "Available models",
+    "configuredServices": "Configured services",
+    "promptTemplates": "Prompt templates"
+  }
+}

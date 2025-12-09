@@ -1,0 +1,16 @@
+{
+  "name": "categorization",
+  "description": {
+    "en": "Document categorization and tagging prompts",
+    "fr": "Prompts de categorisation et d'etiquetage de documents"
+  },
+  "service_type": "categorization",
+  "prompt_type": "standard",
+  "version": "1.0.0",
+  "files": {
+    "document.md": {
+      "prompt_category": "user",
+      "prompt_name": "document-categorization"
+    }
+  }
+}

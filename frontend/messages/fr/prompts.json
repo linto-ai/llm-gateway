@@ -1,0 +1,107 @@
+{
+  "title": "Prompts",
+  "subtitle": "Gerer les modeles de prompt",
+  "createNew": "Creer un prompt",
+  "newPromptTitle": "Nouveau prompt",
+  "editPrompt": "Modifier le prompt",
+  "viewPrompt": "Voir le prompt",
+  "deletePrompt": "Supprimer le prompt",
+  "deleteConfirm": "Etes-vous sur de vouloir supprimer ce prompt ?",
+  "deleteWarning": "Ce prompt peut etre reference par des variantes de service.",
+  "createSuccess": "Prompt cree avec succes",
+  "updateSuccess": "Prompt mis a jour avec succes",
+  "deleteSuccess": "Prompt supprime avec succes",
+  "deleteError": "Echec de la suppression du prompt",
+  "emptyStateDescription": "Aucun prompt trouve. Creez-en un pour commencer.",
+  "duplicate": "Dupliquer le prompt",
+  "duplicating": "Duplication du prompt...",
+  "duplicateSuccess": "Prompt duplique avec succes",
+  "global": "Global",
+  "organization": "Organisation",
+  "serviceType": "Type de service",
+  "serviceTypeHelp": "Selectionnez le type de service pour lequel ce prompt est concu.",
+  "selectServiceType": "Selectionner le type de service",
+  "universal": "Universel",
+  "categoryHelp": "Comment ce prompt est utilise dans les appels LLM (Systeme: instructions, Utilisateur: prompt principal)",
+  "promptTypeHelp": "Ce que fait ce prompt (standard, reduction, ou personnalise)",
+  "promptTypePlaceholder": "Selectionnez un type de prompt...",
+  "promptTypeNone": "Aucun",
+  "fields": {
+    "name": "Nom du prompt",
+    "content": "Contenu",
+    "language": "Langue",
+    "description": "Description",
+    "descriptionEn": "Description (anglais)",
+    "descriptionFr": "Description (francais)",
+    "organizationId": "ID d'organisation",
+    "category": "Categorie",
+    "promptType": "Type de prompt"
+  },
+  "category": {
+    "system": "Systeme",
+    "user": "Utilisateur",
+    "undefined": "-",
+    "null": "-"
+  },
+  "promptType": {
+    "standard": "Standard",
+    "reduce": "Reduction"
+  },
+  "placeholders": {
+    "name": "Entrer le nom du prompt",
+    "content": "Entrer le contenu du prompt",
+    "newName": "Copie de {name}"
+  },
+  "filters": {
+    "serviceType": "Type de service",
+    "templateCategory": "Categorie",
+    "allServiceTypes": "Tous les types de services",
+    "allCategories": "Toutes les categories",
+    "allPromptTypes": "Tous les types de prompts"
+  },
+  "templates": {
+    "title": "Modeles de service",
+    "subtitle": "Modeles de service preconfigures",
+    "viewTemplate": "Voir le modele",
+    "useTemplate": "Utiliser le modele",
+    "public": "Public",
+    "private": "Prive",
+    "browse": "Parcourir les modeles",
+    "search": "Rechercher des modeles...",
+    "select": "Selectionner",
+    "preview": "Apercu",
+    "language": "Langue",
+    "created": "Cree",
+    "noTemplates": "Aucun modele trouve",
+    "loadMore": "Charger plus",
+    "category": {
+      "label": "Categorie de modele",
+      "select": "Selectionner la categorie",
+      "system": "Systeme",
+      "user": "Utilisateur",
+      "reduce": "Reduction",
+      "categorization": "Categorisation",
+      "extraction": "Extraction"
+    }
+  },
+  "saveAsTemplate": {
+    "title": "Sauvegarder comme modele",
+    "templateName": "Nom du modele",
+    "category": "Categorie",
+    "promptType": "Type de prompt",
+    "promptTypePlaceholder": "Selectionner un type de prompt (optionnel)",
+    "promptTypeNone": "Aucun",
+    "descriptionEn": "Description (anglais)",
+    "descriptionFr": "Description (francais)",
+    "save": "Sauvegarder le modele",
+    "saving": "Sauvegarde...",
+    "success": "Modele sauvegarde avec succes",
+    "error": "Echec de la sauvegarde du modele"
+  },
+  "processingMode": "Mode de traitement",
+  "modes": {
+    "singlePass": "Passe unique",
+    "iterative": "Iteratif",
+    "noPlaceholder": "Aucun placeholder"
+  }
+}

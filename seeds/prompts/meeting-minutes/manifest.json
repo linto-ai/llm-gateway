@@ -1,0 +1,16 @@
+{
+  "name": "meeting-minutes",
+  "description": {
+    "en": "Professional meeting minutes generator",
+    "fr": "Generateur de comptes-rendus de reunion professionnels"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "meeting-minutes"
+    }
+  }
+}

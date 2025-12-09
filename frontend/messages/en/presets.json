@@ -1,0 +1,43 @@
+{
+  "title": "Flavor Presets",
+  "subtitle": "Manage pre-configured flavor settings",
+  "create": "Create Preset",
+  "createTitle": "Create New Preset",
+  "editTitle": "Edit Preset",
+  "deleteTitle": "Delete Preset",
+  "deleteConfirm": "Are you sure you want to delete this preset?",
+  "createSuccess": "Preset created successfully",
+  "updateSuccess": "Preset updated successfully",
+  "deleteSuccess": "Preset deleted successfully",
+  "cannotDeleteSystem": "System presets cannot be deleted",
+  "emptyState": "No presets found",
+  "emptyStateDescription": "Create a preset to save reusable flavor configurations",
+  "system": "System",
+  "startFromPreset": "Start from preset",
+  "serviceTypeWarning": "Some preset options may be unavailable for this service type.",
+  "validation": {
+    "reduceNotSupported": "Map-Reduce mode is not supported for this service type",
+    "chunkingNotSupported": "Iterative mode is not supported for this service type",
+    "incompatibleServiceType": "This preset is not compatible with the selected service type"
+  },
+  "fields": {
+    "name": "Preset Name",
+    "serviceType": "Service Type",
+    "description": "Description",
+    "descriptionEn": "Description (English)",
+    "descriptionFr": "Description (French)",
+    "processingMode": "Processing Mode",
+    "temperature": "Temperature",
+    "topP": "Top P",
+    "createNewTurnAfter": "Create New Turn After",
+    "maxNewTurns": "Max New Turns",
+    "summaryTurns": "Summary Turns",
+    "reduceSummary": "Reduce Summary",
+    "autoFallback": "Auto-fallback"
+  },
+  "modes": {
+    "singlePass": "Single Pass",
+    "iterative": "Iterative",
+    "mapReduce": "Map-Reduce"
+  }
+}

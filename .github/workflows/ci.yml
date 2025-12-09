@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+    branches: [main, v2]
+
+jobs:
+  lint:
+    name: Lint Python Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install linter
+        run: pip install ruff
+
+      - name: Run linting
+        run: ruff check app/
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+          REDIS_URL: redis://localhost:6379
+          ENCRYPTION_KEY: test-key-for-ci-only-32-chars!!
+          PYTHONPATH: ${{ github.workspace }}
+          TEMPLATES_DIR: /tmp/templates
+        run: |
+          pytest tests/ -v --tb=short \
+            --ignore=tests/test_prompts.py \
+            --ignore=tests/test_service_types.py \
+            --ignore=tests/test_services.py \
+            --ignore=tests/test_service_flavors.py \
+            --ignore=tests/test_integration.py \
+            --ignore=tests/test_prompt_types.py \
+            --ignore=tests/test_providers.py \
+            --ignore=tests/test_validation.py \
+            --ignore=tests/test_database_constraints.py \
+            --ignore=tests/test_edge_cases.py \
+            --ignore=tests/test_encryption.py \
+            --ignore=tests/test_health.py \
+            --ignore=tests/test_models.py
+
+  frontend-build:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_WS_URL: ws://localhost:8000
+        run: npm run build
+
+  docker-build:
+    name: Docker Build Verification
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: llm-gateway-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          tags: llm-gateway-frontend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

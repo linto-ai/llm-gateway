@@ -1,0 +1,73 @@
+{
+  "analytics": {
+    "title": "Analytics",
+    "noData": "No analytics data available",
+    "period": {
+      "24h": "Last 24 hours",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "all": "All time"
+    },
+    "totalRequests": "Total Requests",
+    "successRate": "Success Rate",
+    "avgLatency": "Avg Latency",
+    "totalCost": "Total Cost",
+    "perRequest": "per request",
+    "usageOverTime": "Usage Over Time",
+    "tokenStatistics": "Token Statistics",
+    "totalTokens": "Total Tokens",
+    "inputTokens": "Input Tokens",
+    "outputTokens": "Output Tokens",
+    "avgInputTokens": "Avg Input Tokens",
+    "avgOutputTokens": "Avg Output Tokens",
+    "latencyPercentiles": "Latency Percentiles",
+    "minLatency": "Min",
+    "maxLatency": "Max"
+  },
+  "fields": {
+    "stopSequences": "Stop Sequences",
+    "stopSequencesDescription": "Sequences where the model will stop generating (max 4)",
+    "stopSequencePlaceholder": "Enter stop sequence",
+    "customParams": "Custom Parameters",
+    "customParamsDescription": "Additional model-specific parameters in JSON format",
+    "customParamsError": "Invalid JSON format"
+  },
+  "actions": {
+    "addStopSequence": "Add Stop Sequence"
+  },
+  "placeholders": {
+    "selectModel": "Select a model"
+  },
+  "placeholderExtraction": {
+    "title": "Placeholder Extraction",
+    "description": "Configure automatic extraction of placeholder values for document templates",
+    "prompt": "Extraction Prompt",
+    "promptHelp": "Select a prompt that extracts values for template placeholders from job results"
+  },
+  "categorization": {
+    "title": "Document Categorization",
+    "description": "Configure tag-based categorization using context data provided at execution time",
+    "prompt": "Categorization Prompt",
+    "promptHelp": "Select a prompt that matches documents against tags provided in the execution context"
+  },
+  "test": {
+    "title": "Test Flavor",
+    "prompt": "Test Prompt",
+    "promptPlaceholder": "Enter a prompt to test the flavor configuration...",
+    "maxTokensOverride": "Max Tokens Override (optional)",
+    "run": "Run Test",
+    "running": "Testing...",
+    "success": "Test completed successfully",
+    "error": "Test failed",
+    "model": "Model",
+    "request": "Request",
+    "response": "Response",
+    "metadata": "Metadata",
+    "finishReason": "Finish Reason",
+    "inputTokens": "Input Tokens",
+    "outputTokens": "Output Tokens",
+    "totalTokens": "Total Tokens",
+    "latency": "Latency",
+    "cost": "Estimated Cost"
+  }
+}

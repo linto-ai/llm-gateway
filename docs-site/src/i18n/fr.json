@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "title": "LinTO.ai/LLM Gateway - Documentation",
+    "description": "Couche d'orchestration exposant des Services API de haut niveau (résumé, extraction, etc.) au-dessus des moteurs d'inférence LLM."
+  },
+  "nav": {
+    "home": "Accueil",
+    "features": "Fonctionnalités",
+    "architecture": "Architecture",
+    "api": "API",
+    "github": "GitHub",
+    "switchLang": "EN"
+  },
+  "footer": {
+    "copyright": "Copyright (c) 2024-2025 LINAGORA",
+    "lintoAi": "LinTO.ai",
+    "license": "Licence AGPL-3.0"
+  },
+  "home": {
+    "tagline": "Services API de haut niveau pour LLM",
+    "subtitle": "Définissez des Services (résumé, extraction, reformulation...) une seule fois. Appelez-les depuis n'importe quelle application via une API REST unifiée. La passerelle gère le découpage, les jobs, les reprises et le suivi des coûts.",
+    "getStarted": "Démarrer",
+    "viewOnGithub": "Voir sur GitHub",
+    "whatIsTitle": "Qu'est-ce que LLM Gateway ?",
+    "whatIsDescription": "Une couche d'orchestration qui expose des Services API de haut niveau au-dessus des moteurs d'inférence LLM (OpenAI, vLLM, Ollama...). Au lieu que chaque application implémente sa propre intégration LLM, elles appellent des Services pré-configurés via une API unifiée.",
+    "problemTitle": "Le Problème",
+    "problemSubtitle": "Chaque application construit sa propre intégration LLM",
+    "problemIntro": "Quand plusieurs applications ont besoin de capacités LLM, chaque équipe intègre typiquement les API LLM directement. Cela entraîne une duplication du code d'infrastructure dans chaque application.",
+    "problem1": {
+      "title": "Code dupliqué",
+      "description": "Chaque app implémente la logique de retry, le comptage de tokens, la gestion des longs documents, le suivi des jobs"
+    },
+    "problem2": {
+      "title": "Échecs de fenêtre de contexte",
+      "description": "Document trop long ? L'appel API échoue. Chaque équipe doit implémenter sa propre stratégie de découpage"
+    },
+    "problem3": {
+      "title": "Aucune visibilité",
+      "description": "Les jobs échouent silencieusement sur les limites de débit. Coûts connus en fin de mois. Pas de suivi de progression"
+    },
+    "solutionTitle": "La Solution",
+    "solutionSubtitle": "Des Services centralisés via LLM Gateway",
+    "solutionIntro": "Définissez des Services une seule fois (réponse email, résumé de document, notes de réunion...). Les applications appellent l'API de la passerelle. Toutes les préoccupations d'infrastructure sont gérées par la passerelle.",
+    "solution1": {
+      "title": "Définir des Services",
+      "description": "Configurez prompt, modèle, mode de traitement. Chaque Service est un endpoint API réutilisable et versionné"
+    },
+    "solution2": {
+      "title": "API unifiée",
+      "description": "POST /services/{id}/execute - même interface pour tous les services, tous les fournisseurs, toutes les tailles de documents"
+    },
+    "solution3": {
+      "title": "La passerelle gère le reste",
+      "description": "Découpage auto, file de jobs, progression WebSocket, reprises, suivi des tokens, export DOCX/PDF"
+    },
+    "quickStartTitle": "Démarrage rapide",
+    "quickStartDescription": "Lancez LLM Gateway en quelques minutes avec Docker Compose",
+    "frontendTitle": "Interface d'administration",
+    "frontendDescription": "Configurez les services, suivez les jobs et gérez les prompts via une interface web moderne.",
+    "productionTitle": "En Production",
+    "productionDescription": "LinTO.ai/LLM Gateway est le système de résumé de la plateforme LinTO, notamment utilisée par :"
+  },
+  "features": {
+    "title": "Fonctionnalités",
+    "subtitle": "Tout ce dont vous avez besoin pour construire des applications LLM en production",
+    "autoChunking": {
+      "title": "Découpage automatique",
+      "description": "Segmentation universelle des phrases compatible avec toutes les langues. Les documents longs sont automatiquement découpés."
+    },
+    "processingModes": {
+      "title": "Modes de traitement",
+      "description": "Choisissez single_pass pour les courts documents ou iterative pour le contenu long. Activez reduce_summary pour une consolidation finale."
+    },
+    "jobQueue": {
+      "title": "File de jobs",
+      "description": "File de jobs alimentée par Celery + Redis avec support des priorités et mises à jour en temps réel via WebSocket."
+    },
+    "multiProvider": {
+      "title": "Support multi-fournisseurs",
+      "description": "Même interface API pour OpenAI, vLLM, Ollama et autres. Changez de modèle sans modifier le code."
+    },
+    "tokenTracking": {
+      "title": "Suivi des tokens",
+      "description": "Gestion intégrée des tokenizers (tiktoken + HuggingFace). Comptage précis des tokens pour tout modèle."
+    },
+    "documentExport": {
+      "title": "Export de documents",
+      "description": "Exportez les résultats en DOCX ou PDF avec des modèles personnalisables. Extraction dynamique des placeholders via LLM."
+    },
+    "flavorPresets": {
+      "title": "Presets de configuration",
+      "description": "Configurations pré-établies comme quick_summary ou detailed_report pour les cas d'usage courants."
+    },
+    "versioning": {
+      "title": "Versioning des résultats",
+      "description": "Instantanés des résultats de jobs avec historique complet et support de rollback."
+    },
+    "placeholderExtraction": {
+      "title": "Extraction de placeholders",
+      "description": "Extraction dynamique via LLM des champs de métadonnées pour remplir les templates de documents."
+    }
+  },
+  "architecture": {
+    "title": "Architecture",
+    "subtitle": "Comment LLM Gateway traite vos requêtes",
+    "componentsTitle": "Composants système",
+    "componentsDescription": "LLM Gateway utilise une architecture orientée services avec traitement asynchrone des jobs",
+    "frontend": "Frontend Next.js",
+    "frontendDesc": "Interface d'administration pour la configuration des services",
+    "fastapi": "Backend FastAPI",
+    "fastapiDesc": "API REST + endpoints WebSocket",
+    "celery": "Workers Celery",
+    "celeryDesc": "Exécution asynchrone des jobs",
+    "postgres": "PostgreSQL",
+    "postgresDesc": "Stockage des services, jobs et résultats",
+    "redis": "Redis",
+    "redisDesc": "Broker de tâches + cache",
+    "processingFlowTitle": "Flux de traitement",
+    "processingFlowDescription": "De la requête au résultat en 7 étapes",
+    "step1": "Validation de l'entrée",
+    "step2": "Estimation des tokens",
+    "step3": "Découpage (si nécessaire)",
+    "step4": "Création du job",
+    "step5": "Dispatch de la tâche Celery",
+    "step6": "Mises à jour WebSocket",
+    "step7": "Agrégation des résultats",
+    "modesTitle": "Modes de traitement",
+    "modesDescription": "La passerelle supporte différents modes pour des documents de tailles variées",
+    "turnsTitle": "Qu'est-ce qu'un turn ?",
+    "turnsDescription": "Un turn est une ligne ou paragraphe séparé par un saut de ligne. En contexte ASR, les turns peuvent avoir un préfixe de locuteur (Locuteur : texte). La passerelle gère les deux formats.",
+    "modeSinglePass": {
+      "name": "Single Pass",
+      "description": "Traite le document entier en un seul appel LLM",
+      "useCase": "Documents courts qui tiennent dans la fenêtre de contexte"
+    },
+    "modeIterative": {
+      "name": "Itératif",
+      "description": "Traitement par lots avec contexte glissant",
+      "useCase": "Documents longs (transcriptions ASR), sortie progressive"
+    },
+    "modeReduceSummary": {
+      "name": "Reduce Summary",
+      "description": "Option pour ajouter une étape de consolidation finale après le traitement itératif",
+      "useCase": "Documents longs nécessitant un résumé final"
+    }
+  },
+  "api": {
+    "title": "Référence API",
+    "subtitle": "Intégrez LLM Gateway dans vos applications",
+    "mainEndpointsTitle": "Endpoints principaux",
+    "listServices": "Liste tous les services disponibles",
+    "executeService": "Exécute un service avec une entrée",
+    "getJobStatus": "Obtient le statut et le résultat d'un job",
+    "websocketUpdates": "Mises à jour en temps réel de la progression du job",
+    "curlExampleTitle": "Exemple cURL",
+    "pythonExampleTitle": "Exemple Python",
+    "swaggerTitle": "Documentation API complète",
+    "swaggerDescription": "Interface Swagger interactive disponible à",
+    "responseFormatTitle": "Format de réponse",
+    "responseFormatDescription": "Toutes les réponses API suivent une structure JSON cohérente"
+  },
+  "common": {
+    "mode": "Mode",
+    "description": "Description",
+    "useCase": "Cas d'usage"
+  }
+}

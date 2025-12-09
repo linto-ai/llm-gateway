@@ -1,0 +1,61 @@
+{
+  "title": "Fournisseurs",
+  "subtitle": "Gérer les configurations des fournisseurs LLM",
+  "createNew": "Créer un fournisseur",
+  "editProvider": "Modifier le fournisseur",
+  "viewProvider": "Voir le fournisseur",
+  "deleteProvider": "Supprimer le fournisseur",
+  "deleteConfirm": "Êtes-vous sur de vouloir supprimer ce fournisseur ?",
+  "deleteWarning": "Cette action est irreversible. Tous les modèles associes a ce fournisseur seront egalement supprimés.",
+  "createSuccess": "Fournisseur créé avec succès",
+  "updateSuccess": "Fournisseur mis à jour avec succès",
+  "deleteSuccess": "Fournisseur supprimé avec succès",
+  "deleteError": "Échec de la suppression du fournisseur",
+  "emptyStateDescription": "Aucun fournisseur trouvé. Créez-en un pour commencer.",
+  "verifyModels": "Vérifiér les modèles",
+  "verifying": "Verification des modèles...",
+  "verificationSuccess": "Modèles vérifiés avec succès",
+  "verificationFailed": "Échec de la vérification des modèles",
+  "fields": {
+    "name": "Nom du fournisseur",
+    "providerType": "Type de fournisseur",
+    "apiBaseUrl": "URL de base de l'API",
+    "apiKey": "Cle API",
+    "securityLevel": "Niveau de sécurité",
+    "metadata": "Metadonnees"
+  },
+  "types": {
+    "openai": "OpenAI",
+    "openai_compatible": "Compatible OpenAI",
+    "anthropic": "Anthropic",
+    "cohere": "Cohere",
+    "openrouter": "OpenRouter",
+    "custom": "Personnalise"
+  },
+  "securityLevels": {
+    "secure": "Securise",
+    "sensitive": "Sensible",
+    "insecure": "Non securise"
+  },
+  "placeholders": {
+    "name": "Entrer le nom du fournisseur",
+    "apiBaseUrl": "https://api.exemple.com",
+    "apiKey": "Entrer la cle API"
+  },
+  "discovery": {
+    "title": "Decouverte de modèles",
+    "hint": "Decouvrir les modèles disponibles depuis ce fournisseur",
+    "discoverModels": "Decouvrir les modèles",
+    "discovering": "Decouverte des modèles...",
+    "discoveredModels": "Modèles decouverts",
+    "selectModels": "Sélectionner les modèles a importer",
+    "importSelected": "Importer la selection ({count})",
+    "importing": "Importation des modèles...",
+    "importSuccess": "{count, plural, =1 {1 modèle importe avec succès} other {# modèles importes avec succès}}",
+    "importPartial": "{succèss} modèles importes sur {total}",
+    "importError": "Échec de l'importation des modèles",
+    "importConflict": "Certains modèles existent deja et ont ete ignores",
+    "noModelsFound": "Aucun modèle trouvé",
+    "discoveryFailed": "Échec de la decouverte des modèles"
+  }
+}

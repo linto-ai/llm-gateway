@@ -1,0 +1,141 @@
+# Massive Test Prompts Configuration
+# All prompts use mt- prefix for easy identification and cleanup
+
+prompts:
+  # System prompts for conversation summarization
+  - name: mt-system-summarizer-en
+    content: |
+      You are an expert conversation analyst and summarizer.
+      Analyze the provided conversation transcript and create a comprehensive summary.
+      Focus on: key topics discussed, main conclusions, action items, and participant contributions.
+      Be concise but thorough. Use professional language.
+    language: en
+    service_type: summary
+    description:
+      en: "System prompt for English conversation summarization"
+      fr: "Prompt systeme pour la synthese de conversations en anglais"
+
+  - name: mt-system-summarizer-fr
+    content: |
+      Vous etes un expert en analyse et synthese de conversations.
+      Analysez la transcription de conversation fournie et creez un resume complet.
+      Concentrez-vous sur: les sujets cles discutes, les conclusions principales, les actions a entreprendre, et les contributions des participants.
+      Soyez concis mais complet. Utilisez un langage professionnel.
+    language: fr
+    service_type: summary
+    description:
+      en: "System prompt for French conversation summarization"
+      fr: "Prompt systeme pour la synthese de conversations en francais"
+
+  # User prompts for processing
+  - name: mt-user-summary-detailed
+    content: |
+      Please analyze the following conversation and provide:
+      1. Executive Summary (2-3 sentences)
+      2. Key Discussion Points (bullet list)
+      3. Decisions Made
+      4. Action Items with Owners
+      5. Open Questions
+
+      Conversation:
+      {{input}}
+    language: en
+    service_type: summary
+    description:
+      en: "Detailed summary user prompt with structured output"
+      fr: "Prompt utilisateur pour resume detaille avec sortie structuree"
+
+  - name: mt-user-summary-brief
+    content: |
+      Summarize this conversation in 3-5 bullet points, capturing the essential information:
+
+      {{input}}
+    language: en
+    service_type: summary
+    description:
+      en: "Brief summary user prompt"
+      fr: "Prompt utilisateur pour resume bref"
+
+  - name: mt-user-summary-fr
+    content: |
+      Analysez la conversation suivante et fournissez:
+      1. Resume executif (2-3 phrases)
+      2. Points de discussion cles (liste a puces)
+      3. Decisions prises
+      4. Actions a entreprendre avec responsables
+
+      Conversation:
+      {{input}}
+    language: fr
+    service_type: summary
+    description:
+      en: "French detailed summary user prompt"
+      fr: "Prompt utilisateur pour resume detaille en francais"
+
+  # Reduce prompts for map-reduce processing
+  - name: mt-reduce-consolidate
+    content: |
+      You have received multiple partial summaries from different sections of a conversation.
+      Consolidate these into a single, coherent final summary.
+      Remove redundancies, maintain key information, and ensure logical flow.
+
+      Partial summaries:
+      {{input}}
+    language: en
+    service_type: summary
+    description:
+      en: "Reduce prompt for consolidating partial summaries"
+      fr: "Prompt de reduction pour consolider les resumes partiels"
+
+  # Diarization correction prompts
+  - name: mt-system-diarization
+    content: |
+      You are a transcript correction specialist.
+      Your task is to identify and correct speaker attribution errors in conversation transcripts.
+      Preserve the original content while ensuring speakers are correctly identified based on context, speaking patterns, and topic continuity.
+    language: en
+    service_type: diarization_correction
+    description:
+      en: "System prompt for diarization correction"
+      fr: "Prompt systeme pour correction de diarisation"
+
+  - name: mt-user-diarization
+    content: |
+      Review this conversation transcript and correct any speaker attribution errors.
+      Output the corrected transcript with accurate speaker labels:
+
+      {{input}}
+    language: en
+    service_type: diarization_correction
+    description:
+      en: "User prompt for diarization correction"
+      fr: "Prompt utilisateur pour correction de diarisation"
+
+  # Categorization prompts
+  - name: mt-system-categorize
+    content: |
+      You are a content categorization expert.
+      Analyze conversations and assign relevant categories, tags, and metadata.
+      Use consistent taxonomy and provide confidence scores when possible.
+    language: en
+    service_type: categorization
+    description:
+      en: "System prompt for content categorization"
+      fr: "Prompt systeme pour categorisation de contenu"
+
+  - name: mt-user-categorize
+    content: |
+      Analyze this conversation and provide:
+      1. Primary Category
+      2. Secondary Categories (up to 3)
+      3. Key Topics/Tags
+      4. Sentiment (positive/neutral/negative)
+      5. Urgency Level (low/medium/high)
+
+      Conversation:
+      {{input}}
+    language: en
+    service_type: categorization
+    description:
+      en: "User prompt for conversation categorization"
+      fr: "Prompt utilisateur pour categorisation de conversation"

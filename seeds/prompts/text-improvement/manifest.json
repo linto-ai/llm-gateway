@@ -1,0 +1,14 @@
+{
+  "service_type": "generic",
+  "prompt_type": "standard",
+  "description": {
+    "en": "Improve text quality: fix spelling, grammar, and enhance clarity",
+    "fr": "Améliorer la qualité du texte : corriger l'orthographe, la grammaire et améliorer la clarté"
+  },
+  "files": {
+    "user.md": {
+      "prompt_name": "text-improvement",
+      "prompt_category": "user"
+    }
+  }
+}
