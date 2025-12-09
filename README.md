@@ -141,33 +141,21 @@ These are primarily **proxies/routers** - they forward requests to LLMs with add
 ```bash
 git clone https://github.com/linto-ai/llm-gateway.git
 cd llm-gateway
-cp .env.example .env
-
-# Production (default)
-docker compose up --build
-
-# Development (with hot-reload)
-docker compose -f docker-compose.dev.yml up --build
+docker compose up -d
 
 # API: http://localhost:8000/docs
 # Frontend: http://localhost:8001
 ```
 
-### Example Data
+That's it! The default configuration works out-of-the-box. Database migrations and seed data (prompts, presets, document templates) are applied automatically on first start.
 
-This software comes with example prompts, presets, and document templates:
+To customize settings, copy `.env.example` to `.env` and edit as needed.
 
-- `seeds/prompts/` - Prompt templates for various use cases
-- `seeds/presets/` - Flavor presets (single-pass, iterative)
-- `templates/default/` - DOCX templates for export (basic-report, meeting-summary)
-
-Seed the database with:
-
+For development with hot-reload:
 ```bash
-docker exec llm-gateway python -m app.seeds.base_seed
+cp .env.example .env  # Required for dev mode
+docker compose -f docker-compose.dev.yml up --build
 ```
-
-See `seeds/README.md` for creating custom seeds.
 
 ## Architecture
 
@@ -320,23 +308,19 @@ wscat -c "ws://localhost:8000/ws/jobs/{job_id}"
 
 Two Docker Compose configurations are available:
 
-| File | Use Case | Frontend |
-|------|----------|----------|
-| `docker-compose.yml` | Production (default) | Optimized build, no source mounts |
-| `docker-compose.dev.yml` | Development | Hot-reload, volume mounts |
+| File | Use Case | Description |
+|------|----------|-------------|
+| `docker-compose.yml` | Production (default) | Works out-of-the-box, uses published images |
+| `docker-compose.dev.yml` | Development | Hot-reload, volume mounts, requires `.env` |
 
 ```bash
-# Copy environment template
+# Quick start (works immediately with defaults)
+docker compose up -d
+
+# Or with custom configuration
 cp .env.example .env
-
-# Edit configuration for production
-vim .env
-
-# Start in production mode (default)
-docker compose up -d --build
-
-# Or development mode (with hot-reload)
-docker compose -f docker-compose.dev.yml up -d --build
+vim .env  # Edit settings
+docker compose up -d
 ```
 
 ### Environment Configuration
