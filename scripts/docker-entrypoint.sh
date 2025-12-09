@@ -38,10 +38,13 @@ if [ -n "$CELERY_BROKER_URL" ]; then
     ./scripts/wait-for-it.sh "$REDIS_HOST:$REDIS_PORT" -t 60 -q
 fi
 
-# Run database migrations (only for API server, not celery workers)
+# Run database migrations and seeds (only for API server, not celery workers)
 if [[ "$1" != "celery" && "$1" != *"celery"* ]]; then
     echo "Running database migrations..."
     alembic upgrade head
+
+    echo "Running database seeds..."
+    python -m app.seeds.base_seed
 fi
 
 # Execute command passed as argument
