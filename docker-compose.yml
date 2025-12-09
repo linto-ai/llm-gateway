@@ -3,15 +3,11 @@
 # For development with hot-reload: docker compose -f docker-compose.dev.yml up
 services:
   llm-gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: lintoai/llm-gateway:latest
     env_file:
       - .env
     volumes:
-      - ./seeds:/usr/src/seeds:ro
-      - ./templates:/usr/src/templates:ro
-      - ${TOKENIZER_STORAGE_PATH:-./tokenizers}:/var/www/data/tokenizers
+      - tokenizers_data:/var/www/data/tokenizers
       - templates_data:/var/www/data/templates
     networks:
       - llm-network
@@ -24,16 +20,12 @@ services:
         condition: service_started
 
   celery-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: lintoai/llm-gateway:latest
     command: celery -A app.http_server.celery_app.celery_app worker --loglevel=info --concurrency=1
     env_file:
       - .env
     volumes:
-      - ./seeds:/usr/src/seeds:ro
-      - ./templates:/usr/src/templates:ro
-      - ${TOKENIZER_STORAGE_PATH:-./tokenizers}:/var/www/data/tokenizers
+      - tokenizers_data:/var/www/data/tokenizers
       - templates_data:/var/www/data/templates
     networks:
       - llm-network
@@ -52,9 +44,7 @@ services:
       replicas: ${CELERY_WORKERS:-1}
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: lintoai/llm-gateway-frontend:latest
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_WS_URL=ws://localhost:8000
@@ -95,6 +85,7 @@ services:
 volumes:
   postgres_data:
   templates_data:
+  tokenizers_data:
 
 networks:
   llm-network:
