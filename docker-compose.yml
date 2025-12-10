@@ -17,7 +17,7 @@ x-common-env: &common-env
 
 services:
   llm-gateway:
-    image: lintoai/llm-gateway:latest
+    image: lintoai/llm-gateway:latest-unstable
     environment:
       <<: *common-env
     volumes:
@@ -34,7 +34,7 @@ services:
         condition: service_started
 
   celery-worker:
-    image: lintoai/llm-gateway:latest
+    image: lintoai/llm-gateway:latest-unstable
     command: celery -A app.http_server.celery_app.celery_app worker --loglevel=info --concurrency=1
     environment:
       <<: *common-env
@@ -58,7 +58,7 @@ services:
       replicas: ${CELERY_WORKERS:-1}
 
   frontend:
-    image: lintoai/llm-gateway-frontend:latest
+    image: lintoai/llm-gateway-frontend:latest-unstable
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_WS_URL=ws://localhost:8000

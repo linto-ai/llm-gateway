@@ -139,7 +139,7 @@ These are primarily **proxies/routers** - they forward requests to LLMs with add
 ## Quick Start
 
 ```bash
-git clone https://github.com/linto-ai/llm-gateway.git
+git clone -b next https://github.com/linto-ai/llm-gateway.git
 cd llm-gateway
 docker compose up -d
 
