@@ -6,7 +6,6 @@ __pycache__/
 
 .env
 .claude/
-CLAUDE.md
 
 # Tokenizers (downloaded from HuggingFace)
 tokenizers/*
