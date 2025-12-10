@@ -1,5 +1,13 @@
 # LLM Gateway
 
+> **WARNING: This branch is deprecated.**
+>
+> Development has moved to the [**next**](https://github.com/linto-ai/llm-gateway/tree/next) branch. This `main` branch is kept only to maintain CI and will no longer receive updates.
+>
+> Please switch to the `next` branch for the latest features and bug fixes.
+
+---
+
 To test the app locally, use Docker Compose, which will also start the required services :  
 
 * Celery for managing tasks that run LLM inference in the backend (run in the app docker entrypoint)  
