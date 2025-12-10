@@ -1,11 +1,11 @@
-"""initial_schema - v2.0.0 Release Schema (Consolidated)
+"""initial_schema - LLM Gateway Complete Schema
 
 Revision ID: 001
 Revises:
-Create Date: 2025-12-07 00:00:00.000000
+Create Date: 2025-12-14 00:00:00.000000
 
-This migration creates the complete database schema for LLM Gateway v2.0.0.
-All tables are created with their final structure for public release.
+This migration creates the complete database schema for LLM Gateway.
+All tables are created with their final structure.
 
 Schema includes:
 - organizations: Multi-tenancy support
@@ -19,11 +19,11 @@ Schema includes:
 - jobs: Job execution tracking with versioning
 - flavor_usage: Usage analytics
 - flavor_presets: Pre-configured flavor settings
-- document_templates: DOCX template management
+- document_templates: DOCX template management with i18n and hierarchical scoping
 - service_templates: Service blueprints
 
-Note: organization_id is a free-form VARCHAR(100), not a UUID with FK constraint.
-This allows flexible multi-tenancy integration with external identity systems.
+Note: organization_id and user_id in document_templates are VARCHAR(100) for
+flexible integration with external identity systems (MongoDB ObjectIds, etc.)
 """
 from typing import Sequence, Union
 
@@ -317,20 +317,26 @@ def upgrade() -> None:
     """)
 
     # ==========================================================================
-    # 8. document_templates - Document generation templates
-    #    Note: Created BEFORE services because services references document_templates
-    #    Note: organization_id is VARCHAR(100), not UUID FK
+    # 8. document_templates - Document generation templates with i18n and scoping
+    #    Note: organization_id and user_id are VARCHAR(100) for external system compatibility
     # ==========================================================================
     op.create_table(
         'document_templates',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text('gen_random_uuid()')),
-        sa.Column('name', sa.String(255), nullable=False),
-        sa.Column('description', sa.Text, nullable=True),
-        sa.Column('service_id', postgresql.UUID(as_uuid=True), nullable=True),  # FK added after services table
+        # i18n name fields
+        sa.Column('name_fr', sa.String(255), nullable=False),
+        sa.Column('name_en', sa.String(255), nullable=True),
+        # i18n description fields
+        sa.Column('description_fr', sa.Text, nullable=True),
+        sa.Column('description_en', sa.Text, nullable=True),
+        # Hierarchical scoping (VARCHAR for external system compatibility)
         sa.Column('organization_id', sa.String(100), nullable=True),
+        sa.Column('user_id', sa.String(100), nullable=True),
+        # File information
         sa.Column('file_path', sa.String(500), nullable=False),
         sa.Column('file_name', sa.String(255), nullable=False),
         sa.Column('file_size', sa.Integer, nullable=False),
+        sa.Column('file_hash', sa.String(64), nullable=True),
         sa.Column('mime_type', sa.String(100), default='application/vnd.openxmlformats-officedocument.wordprocessingml.document', nullable=False),
         sa.Column('placeholders', postgresql.JSONB, nullable=True),
         sa.Column('is_default', sa.Boolean, default=False, nullable=False),
@@ -338,6 +344,16 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
     )
     op.create_index('idx_templates_org_id', 'document_templates', ['organization_id'])
+    op.create_index('idx_templates_user_id', 'document_templates', ['user_id'])
+    op.create_index('idx_templates_scope', 'document_templates', ['organization_id', 'user_id'])
+    op.create_index('idx_templates_file_hash', 'document_templates', ['file_hash'])
+
+    # Add check constraint: user_id requires organization_id
+    op.execute("""
+        ALTER TABLE document_templates
+        ADD CONSTRAINT check_user_requires_org
+        CHECK ((user_id IS NULL) OR (organization_id IS NOT NULL))
+    """)
 
     op.execute("""
         CREATE TRIGGER update_document_templates_updated_at
@@ -382,15 +398,6 @@ def upgrade() -> None:
             FOR EACH ROW
             EXECUTE FUNCTION update_updated_at_column();
     """)
-
-    # Now add the FK from document_templates to services
-    op.create_foreign_key(
-        'fk_document_templates_service_id',
-        'document_templates', 'services',
-        ['service_id'], ['id'],
-        ondelete='CASCADE'
-    )
-    op.create_index('idx_templates_service_id', 'document_templates', ['service_id'])
 
     # ==========================================================================
     # 10. service_flavors - Model-specific configurations for services
@@ -662,11 +669,8 @@ def downgrade() -> None:
 
     # Drop self-referencing FK before dropping service_flavors
     op.drop_constraint('fk_service_flavors_fallback', 'service_flavors', type_='foreignkey')
+    op.drop_constraint('fk_service_flavors_failover', 'service_flavors', type_='foreignkey')
     op.drop_table('service_flavors')
-
-    # Remove FK from document_templates before dropping services
-    op.drop_constraint('fk_document_templates_service_id', 'document_templates', type_='foreignkey')
-    op.drop_index('idx_templates_service_id', table_name='document_templates')
 
     op.drop_table('services')
     op.drop_table('document_templates')
