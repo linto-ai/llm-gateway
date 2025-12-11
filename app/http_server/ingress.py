@@ -10,6 +10,7 @@ Base Path: /api/v1
 """
 import logging
 import asyncio
+import signal
 from contextlib import asynccontextmanager
 from typing import Optional
 import uvicorn
@@ -39,6 +40,9 @@ logging.basicConfig(
 logger = logging.getLogger("http_server")
 logger.setLevel(logging.DEBUG if pydantic_settings.debug else logging.INFO)
 
+# Shutdown event for clean task cancellation during hot-reload
+shutdown_event = asyncio.Event()
+
 
 # Filter out healthcheck logs from uvicorn
 class EndpointFilter(logging.Filter):
@@ -55,10 +59,28 @@ parsed_url = urlparse(services_broker)
 redis_client = redis.Redis(host=parsed_url.hostname, port=parsed_url.port, password=broker_pass)
 
 
+def _signal_handler(signum, frame):
+    """Handle shutdown signals by setting the shutdown event."""
+    logger.info(f"Received signal {signum}, initiating shutdown")
+    shutdown_event.set()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup and shutdown events."""
     from app.core.database import AsyncSessionLocal
+
+    # Reset shutdown event (in case of hot-reload)
+    shutdown_event.clear()
+
+    # Register signal handlers for graceful shutdown during hot-reload
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(sig, lambda s=sig: shutdown_event.set())
+        except (NotImplementedError, RuntimeError):
+            # Signal handlers may not work on all platforms or in nested event loops
+            signal.signal(sig, _signal_handler)
 
     # Startup: Detect and cleanup orphaned jobs (smarter Celery-based detection)
     async with AsyncSessionLocal() as db:
@@ -98,17 +120,20 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown: Cancel cleanup tasks
+    # Shutdown: Signal tasks to stop and cancel them
+    logger.info("Shutdown: signaling background tasks to stop")
+    shutdown_event.set()
     cleanup_task.cancel()
     orphan_monitor_task.cancel()
     try:
-        await cleanup_task
-    except asyncio.CancelledError:
+        await asyncio.wait_for(cleanup_task, timeout=2.0)
+    except (asyncio.CancelledError, asyncio.TimeoutError):
         pass
     try:
-        await orphan_monitor_task
-    except asyncio.CancelledError:
+        await asyncio.wait_for(orphan_monitor_task, timeout=2.0)
+    except (asyncio.CancelledError, asyncio.TimeoutError):
         pass
+    logger.info("Shutdown: background tasks stopped")
 
 
 # FastAPI App Setup
@@ -180,15 +205,27 @@ async def ws_job_status(websocket: WebSocket, job_id: str):
 async def periodic_cleanup():
     """Periodically clean up old task IDs from Redis."""
     loop = asyncio.get_event_loop()
-    while True:
-        await asyncio.sleep(pydantic_settings.task_cleanup_interval)
-        # Run blocking Redis operations in thread pool
-        acquired = await loop.run_in_executor(
-            None,
-            lambda: redis_client.set("task_cleanup_lock", "1", nx=True, ex=30)
-        )
-        if acquired:
-            await loop.run_in_executor(None, clean_old_task_ids)
+    try:
+        while not shutdown_event.is_set():
+            try:
+                await asyncio.wait_for(
+                    asyncio.sleep(pydantic_settings.task_cleanup_interval),
+                    timeout=pydantic_settings.task_cleanup_interval + 1
+                )
+            except asyncio.TimeoutError:
+                pass
+            if shutdown_event.is_set():
+                break
+            # Run blocking Redis operations in thread pool
+            acquired = await loop.run_in_executor(
+                None,
+                lambda: redis_client.set("task_cleanup_lock", "1", nx=True, ex=30)
+            )
+            if acquired:
+                await loop.run_in_executor(None, clean_old_task_ids)
+    except asyncio.CancelledError:
+        logger.info("Periodic cleanup task cancelled")
+    logger.info("Periodic cleanup task exiting")
 
 
 async def periodic_orphan_monitor():
@@ -199,31 +236,53 @@ async def periodic_orphan_monitor():
     """
     from app.core.database import AsyncSessionLocal
 
-    # Wait a bit before first check (let startup complete)
-    await asyncio.sleep(60)
-
-    while True:
+    try:
+        # Wait a bit before first check (let startup complete)
+        # Use wait_for to allow cancellation during sleep
         try:
-            async with AsyncSessionLocal() as db:
-                # First check if there are any active jobs to monitor
-                active_count = await job_service.get_active_job_count(db)
+            await asyncio.wait_for(asyncio.sleep(60), timeout=65)
+        except asyncio.TimeoutError:
+            pass
+        if shutdown_event.is_set():
+            logger.info("Orphan monitor: shutdown during initial wait")
+            return
 
-                if active_count > 0:
-                    logger.debug(f"Orphan monitor: checking {active_count} active jobs")
-                    cleaned_jobs = await job_service.cleanup_orphaned_jobs(db)
+        while not shutdown_event.is_set():
+            try:
+                async with AsyncSessionLocal() as db:
+                    # First check if there are any active jobs to monitor
+                    active_count = await job_service.get_active_job_count(db)
 
-                    if cleaned_jobs:
-                        logger.warning(f"Orphan monitor: cleaned {len(cleaned_jobs)} orphaned jobs")
-                        for job_info in cleaned_jobs:
-                            logger.info(
-                                f"  - Job {job_info['job_id']}: {job_info['action']} "
-                                f"(celery={job_info['celery_status']})"
-                            )
-        except Exception as e:
-            logger.error(f"Orphan monitor error: {e}")
+                    if active_count > 0:
+                        logger.debug(f"Orphan monitor: checking {active_count} active jobs")
+                        cleaned_jobs = await job_service.cleanup_orphaned_jobs(db)
 
-        # Wait before next check (configurable via env)
-        await asyncio.sleep(pydantic_settings.stale_job_check_interval)
+                        if cleaned_jobs:
+                            logger.warning(f"Orphan monitor: cleaned {len(cleaned_jobs)} orphaned jobs")
+                            for job_info in cleaned_jobs:
+                                logger.info(
+                                    f"  - Job {job_info['job_id']}: {job_info['action']} "
+                                    f"(celery={job_info['celery_status']})"
+                                )
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.error(f"Orphan monitor error: {e}")
+
+            if shutdown_event.is_set():
+                break
+
+            # Wait before next check (configurable via env)
+            try:
+                await asyncio.wait_for(
+                    asyncio.sleep(pydantic_settings.stale_job_check_interval),
+                    timeout=pydantic_settings.stale_job_check_interval + 1
+                )
+            except asyncio.TimeoutError:
+                pass
+    except asyncio.CancelledError:
+        logger.info("Orphan monitor task cancelled")
+    logger.info("Orphan monitor task exiting")
 
 
 def start():

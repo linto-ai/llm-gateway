@@ -363,33 +363,65 @@ class BatchManager:
         self.progressive_summary = []
         new_turns_to_summarize = []
         summarized_turns = []
-        total_token_count=self.prompt_token_count
+        total_token_count = self.prompt_token_count
         i = 0
         batch_number = 0
 
-        self.total_turns = len(turns)
+        # Calculate available space for content (excluding prompt and generation reserve)
+        available_context = self.totalContextLength - self.maxGenerationLength
+        # Maximum size for a single turn (must fit with prompt + buffer for summarized context)
+        # We reserve ~20% of available space for summarized turns context
+        max_single_turn_tokens = int((available_context - self.prompt_token_count) * 0.8)
+
+        # Pre-process: split any turns that are too large to ever fit
+        processed_turns = self._split_oversized_turns(turns, max_single_turn_tokens)
+
+        self.total_turns = len(processed_turns)
         self.celery_task.update_state(state='PROGRESS', meta={'completed_turns': 0, 'total_turns': self.total_turns})
+
         # Process turn batches synchronously
-        while i < len(turns):
+        while i < len(processed_turns):
             # Check for task revocation before processing each batch
             self.check_if_revoked()
 
-            turn = turns[i]
+            turn = processed_turns[i]
             turn_token_count = len(self.tokenizer(turn)["input_ids"])
-            if (total_token_count + turn_token_count) > self.totalContextLength - self.maxGenerationLength or len(new_turns_to_summarize) == self.maxNewTurns:
-                # Determine pass type: first batch is "initial", rest are "continuation"
-                pass_type = "initial" if batch_number == 0 else "continuation"
-                batch_number += 1
 
-                # Process current batch of turns
-                summarized_turns = self.publish_turns(summarized_turns, new_turns_to_summarize, pass_type=pass_type)
+            # Safety check: if turn still can't fit after preprocessing, skip it
+            if turn_token_count > available_context - self.prompt_token_count:
+                self.logger.warning(
+                    f"Skipping oversized turn {i}: {turn_token_count} tokens "
+                    f"(max: {available_context - self.prompt_token_count}). "
+                    f"Turn preview: {turn[:100]}..."
+                )
+                i += 1
+                continue
 
-                # Check for revocation after each LLM call completes
-                self.check_if_revoked()
+            if (total_token_count + turn_token_count) > available_context or len(new_turns_to_summarize) == self.maxNewTurns:
+                # Only process if we have turns to process (avoid empty batch loops)
+                if new_turns_to_summarize:
+                    # Determine pass type: first batch is "initial", rest are "continuation"
+                    pass_type = "initial" if batch_number == 0 else "continuation"
+                    batch_number += 1
 
-                # Reset for next batch
-                new_turns_to_summarize = []
-                total_token_count = self.prompt_token_count + sum(len(self.tokenizer(turn)["input_ids"]) for turn in summarized_turns)
+                    # Process current batch of turns
+                    summarized_turns = self.publish_turns(summarized_turns, new_turns_to_summarize, pass_type=pass_type)
+
+                    # Check for revocation after each LLM call completes
+                    self.check_if_revoked()
+
+                    # Reset for next batch
+                    new_turns_to_summarize = []
+                    total_token_count = self.prompt_token_count + sum(len(self.tokenizer(t)["input_ids"]) for t in summarized_turns)
+                else:
+                    # Empty batch but turn still doesn't fit - this shouldn't happen after preprocessing
+                    # but we handle it to prevent infinite loops
+                    self.logger.error(
+                        f"Turn {i} cannot fit even in empty batch: {turn_token_count} tokens. "
+                        f"This indicates a configuration issue. Skipping turn."
+                    )
+                    i += 1
+                    continue
             else:
                 # Update current batch
                 new_turns_to_summarize.append(turn)
@@ -405,6 +437,116 @@ class BatchManager:
             summarized_turns = self.publish_turns(summarized_turns, new_turns_to_summarize, pass_type=pass_type)
 
         return self.progressive_summary
+
+    def _split_oversized_turns(self, turns: list, max_tokens: int) -> list:
+        """
+        Pre-process turns to split any that exceed max_tokens.
+
+        Uses sentence-based splitting to break down oversized turns while
+        preserving speaker prefixes.
+
+        Args:
+            turns: List of turns to process
+            max_tokens: Maximum allowed tokens per turn
+
+        Returns:
+            List of turns with oversized ones split into smaller chunks
+        """
+        from .chunking import Chunker
+
+        processed = []
+        for turn in turns:
+            turn_tokens = len(self.tokenizer(turn)["input_ids"])
+
+            if turn_tokens <= max_tokens:
+                processed.append(turn)
+                continue
+
+            # Turn is oversized - try to split by sentences
+            self.logger.warning(
+                f"Turn has {turn_tokens} tokens (max: {max_tokens}). Attempting to split."
+            )
+
+            # Extract speaker prefix if present
+            speaker_prefix = ""
+            content = turn
+            speaker_match = Chunker.get_speaker(turn)
+            if speaker_match[1]:  # Has speaker prefix
+                speaker_prefix = speaker_match[1]
+                content = turn[len(speaker_prefix):].strip()
+
+            # Split content by sentences
+            sentences = Chunker.split_sentences(content)
+
+            if not sentences:
+                # No sentence boundaries found - force split by token count
+                self.logger.warning(f"No sentence boundaries found. Force-splitting by character chunks.")
+                sub_turns = self._force_split_turn(turn, speaker_prefix, content, max_tokens)
+                processed.extend(sub_turns)
+                continue
+
+            # Rebuild turns from sentences, respecting token limit
+            current_turn = speaker_prefix
+            current_tokens = len(self.tokenizer(speaker_prefix)["input_ids"]) if speaker_prefix else 0
+
+            for sentence in sentences:
+                sentence_tokens = len(self.tokenizer(sentence)["input_ids"])
+
+                if current_tokens + sentence_tokens > max_tokens:
+                    # Save current turn if non-empty
+                    if current_turn.strip() and current_turn != speaker_prefix:
+                        processed.append(current_turn.strip())
+                    # Start new turn
+                    current_turn = speaker_prefix + sentence
+                    current_tokens = len(self.tokenizer(current_turn)["input_ids"])
+                else:
+                    # Add to current turn
+                    if current_turn and not current_turn.endswith(" "):
+                        current_turn += " "
+                    current_turn += sentence
+                    current_tokens += sentence_tokens
+
+            # Don't forget the last turn
+            if current_turn.strip() and current_turn != speaker_prefix:
+                processed.append(current_turn.strip())
+
+        if len(processed) != len(turns):
+            self.logger.info(f"Split {len(turns)} turns into {len(processed)} turns")
+
+        return processed
+
+    def _force_split_turn(self, turn: str, speaker_prefix: str, content: str, max_tokens: int) -> list:
+        """
+        Force-split a turn that has no sentence boundaries.
+
+        Splits by approximate character count based on token ratio.
+
+        Args:
+            turn: Original turn
+            speaker_prefix: Speaker prefix to prepend to each chunk
+            content: Content without speaker prefix
+            max_tokens: Maximum tokens per chunk
+
+        Returns:
+            List of split turns
+        """
+        result = []
+        prefix_tokens = len(self.tokenizer(speaker_prefix)["input_ids"]) if speaker_prefix else 0
+        available_tokens = max_tokens - prefix_tokens
+
+        # Estimate chars per token (rough approximation)
+        total_tokens = len(self.tokenizer(content)["input_ids"])
+        chars_per_token = len(content) / total_tokens if total_tokens > 0 else 4
+        chunk_size = int(available_tokens * chars_per_token * 0.9)  # 90% to be safe
+
+        # Split content into chunks
+        for start in range(0, len(content), chunk_size):
+            chunk = content[start:start + chunk_size].strip()
+            if chunk:
+                result.append(f"{speaker_prefix}{chunk}" if speaker_prefix else chunk)
+
+        self.logger.info(f"Force-split turn into {len(result)} chunks")
+        return result
 
     def reduce_summary(self, summary: list) -> list:
         """

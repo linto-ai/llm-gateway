@@ -89,13 +89,23 @@ class LLMInferenceEngine(LLMBackend):
         """
         Run placeholder extraction using the extraction prompt.
 
+        Only extracts metadata if extraction_fields is explicitly provided.
+        No default extraction - if no custom placeholders are defined in the template,
+        extraction is skipped entirely.
+
         Args:
             output: The main output to extract metadata from
 
         Returns:
-            Dict of extracted metadata fields
+            Dict of extracted metadata fields, or empty dict if no fields to extract
         """
         try:
+            # Skip extraction entirely if no fields are defined
+            # No default extraction - only extract what the template explicitly defines
+            if not self.extraction_fields:
+                logger.info(f"No extraction fields defined for task {self.task_id}, skipping metadata extraction")
+                return {}
+
             # Check if output fits in context for extraction
             output_tokens = len(self.batch_manager.tokenizer(output)["input_ids"])
             extraction_prompt_tokens = len(self.batch_manager.tokenizer(self.extraction_prompt_content)["input_ids"])
@@ -122,12 +132,9 @@ class LLMInferenceEngine(LLMBackend):
 
             logger.info(f"Starting placeholder extraction for task {self.task_id}")
 
-            # Use extraction fields from templates if available, otherwise use defaults
-            fields_to_extract = self.extraction_fields or [
-                "title", "summary", "participants", "date", "topics",
-                "action_items", "sentiment", "language", "key_points"
-            ]
-            logger.info(f"Extracting fields: {fields_to_extract}")
+            # Use extraction fields from templates (already validated non-empty)
+            fields_to_extract = self.extraction_fields
+            logger.info(f"Extracting {len(fields_to_extract)} fields: {fields_to_extract}")
 
             # Build extraction prompt
             extraction_prompt = self.extraction_prompt_content

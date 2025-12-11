@@ -363,6 +363,40 @@ def _get_sync_db_session():
     return Session()
 
 
+def _get_redis_client():
+    """Get Redis client for pub/sub."""
+    parsed_url = urlparse(settings.services_broker)
+    broker_pass = settings.services_broker_password
+    return redis.Redis(
+        host=parsed_url.hostname,
+        port=parsed_url.port or 6379,
+        password=broker_pass,
+        db=2,  # Use db 2 for pub/sub (0 and 1 are used by Celery)
+        decode_responses=True
+    )
+
+def _publish_job_update(job_id: str, organization_id: str, status: str, progress=None, result=None, error=None):
+    """Publish job update to Redis pub/sub for WebSocket notifications."""
+    try:
+        import json
+        redis_client = _get_redis_client()
+        message = json.dumps({
+            "job_id": job_id,
+            "organization_id": organization_id,
+            "status": status,
+            "progress": progress,
+            "result": result if status in ("completed", "failed") else None,
+            "error": error,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        # Publish to organization-specific channel and global channel
+        if organization_id:
+            redis_client.publish(f"job_updates:{organization_id}", message)
+        redis_client.publish("job_updates:global", message)
+        logger.debug(f"Published job update: job_id={job_id}, status={status}")
+    except Exception as e:
+        logger.warning(f"Failed to publish job update to Redis: {e}")
+
 def _update_job_status_sync(celery_task_id: str, status: str, result=None, error=None, progress=None):
     """Synchronously update job status in PostgreSQL (for Celery signals)."""
     try:
@@ -392,6 +426,16 @@ def _update_job_status_sync(celery_task_id: str, status: str, result=None, error
 
                 session.commit()
                 logger.info(f"Updated job status: celery_task_id={celery_task_id}, status={status}")
+
+                # Publish to Redis pub/sub for WebSocket notifications
+                _publish_job_update(
+                    job_id=str(job.id),
+                    organization_id=job.organization_id,
+                    status=status,
+                    progress=progress,
+                    result=result,
+                    error=error
+                )
             else:
                 logger.warning(f"Job not found for celery_task_id={celery_task_id}")
         finally:
