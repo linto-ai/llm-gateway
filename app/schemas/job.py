@@ -143,6 +143,7 @@ class JobResponse(BaseModel):
     id: UUID4
     service_id: UUID4
     service_name: str
+    flavor_id: Optional[UUID4] = None
     flavor_name: str
     status: str
     created_at: datetime

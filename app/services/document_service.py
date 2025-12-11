@@ -33,11 +33,27 @@ class DocumentService:
         "generated_at",
     ]
 
+    @staticmethod
+    def _clean_trailing_backslashes(content: str) -> str:
+        """
+        Remove trailing backslashes at end of lines.
+
+        LLMs sometimes add backslashes for line breaks in markdown,
+        but these are not needed when using nl2br extension.
+        """
+        if not content:
+            return content
+        import re
+        # Remove single backslash at end of lines (but keep escaped backslashes \\)
+        return re.sub(r'(?<!\\)\\(?=\n|$)', '', content)
+
     async def generate_docx(
         self,
         job: Job,
         template: Optional[DocumentTemplate] = None,
         custom_fields: Optional[Dict[str, Any]] = None,
+        version_content: Optional[str] = None,
+        version_metadata: Optional[Dict[str, Any]] = None,
     ) -> BytesIO:
         """
         Generate DOCX from template with placeholder substitution.
@@ -46,6 +62,8 @@ class DocumentService:
             job: Job with result data
             template: Optional document template to use (uses default if not provided)
             custom_fields: Optional additional fields
+            version_content: Optional content from a specific version (overrides job.result)
+            version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
 
         Returns:
             BytesIO containing the generated DOCX
@@ -66,7 +84,7 @@ class DocumentService:
 
         doc = Document(template_path)
 
-        placeholders = self.get_placeholders(job, custom_fields)
+        placeholders = self.get_placeholders(job, custom_fields, version_content=version_content, version_metadata=version_metadata)
         self.substitute_placeholders(doc, placeholders)
 
         output = BytesIO()
@@ -79,6 +97,8 @@ class DocumentService:
         job: Job,
         template: Optional[DocumentTemplate] = None,
         custom_fields: Optional[Dict[str, Any]] = None,
+        version_content: Optional[str] = None,
+        version_metadata: Optional[Dict[str, Any]] = None,
     ) -> BytesIO:
         """
         Generate PDF from job result.
@@ -89,15 +109,137 @@ class DocumentService:
             job: Job with result data
             template: Optional document template (uses default if not provided)
             custom_fields: Optional additional fields
+            version_content: Optional content from a specific version (overrides job.result)
+            version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
 
         Returns:
             BytesIO containing the generated PDF
         """
         # Generate DOCX first (handles default template)
-        docx_buffer = await self.generate_docx(job, template, custom_fields)
+        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata)
 
         # Convert via LibreOffice
         return await self._convert_docx_to_pdf(docx_buffer, job)
+
+    async def generate_html(
+        self,
+        job: Job,
+        template: Optional[DocumentTemplate] = None,
+        custom_fields: Optional[Dict[str, Any]] = None,
+        version_content: Optional[str] = None,
+        version_metadata: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Generate HTML preview from job result using mammoth.
+
+        Pipeline: DOCX template → placeholder substitution → mammoth → HTML
+
+        This preserves:
+        - Text formatting (bold, italic, headings)
+        - Images (embedded as base64)
+        - Tables
+        - Lists
+
+        Note: Complex layouts (columns, headers/footers) may be simplified.
+
+        Args:
+            job: Job with result data
+            template: Optional document template (uses default if not provided)
+            custom_fields: Optional additional fields
+            version_content: Optional content from a specific version (overrides job.result)
+            version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
+
+        Returns:
+            HTML string with embedded images
+        """
+        try:
+            import mammoth
+        except ImportError:
+            raise ImportError("mammoth is required for HTML preview generation")
+
+        # Generate DOCX first (reuse existing logic)
+        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata)
+
+        # Convert DOCX to HTML using mammoth
+        result = mammoth.convert_to_html(docx_buffer)
+        html_content = result.value
+
+        # Log any conversion warnings
+        if result.messages:
+            for msg in result.messages:
+                logger.warning(f"mammoth conversion warning: {msg}")
+
+        # Wrap in a basic HTML structure with styling
+        html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }}
+        h1, h2, h3, h4, h5, h6 {{
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            color: #222;
+        }}
+        h1 {{ font-size: 1.8em; border-bottom: 2px solid #eee; padding-bottom: 0.3em; }}
+        h2 {{ font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 0.2em; }}
+        p {{ margin: 0.8em 0; }}
+        ul, ol {{ margin: 0.8em 0; padding-left: 2em; }}
+        li {{ margin: 0.3em 0; }}
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+        }}
+        th, td {{
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }}
+        th {{
+            background-color: #f5f5f5;
+            font-weight: 600;
+        }}
+        tr:nth-child(even) {{
+            background-color: #fafafa;
+        }}
+        img {{
+            max-width: 100%;
+            height: auto;
+        }}
+        blockquote {{
+            border-left: 4px solid #ddd;
+            margin: 1em 0;
+            padding-left: 1em;
+            color: #666;
+        }}
+        code {{
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }}
+        pre {{
+            background: #f5f5f5;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }}
+    </style>
+</head>
+<body>
+{html_content}
+</body>
+</html>"""
+
+        return html
 
     async def _convert_docx_to_pdf(self, docx_buffer: BytesIO, job: Job) -> BytesIO:
         """Convert DOCX buffer to PDF using LibreOffice."""
@@ -140,7 +282,9 @@ class DocumentService:
     def get_placeholders(
         self,
         job: Job,
-        custom_fields: Optional[Dict[str, Any]] = None
+        custom_fields: Optional[Dict[str, Any]] = None,
+        version_content: Optional[str] = None,
+        version_metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Get all available placeholders for template substitution.
@@ -148,13 +292,18 @@ class DocumentService:
         Args:
             job: Job with result data
             custom_fields: Optional additional fields
+            version_content: Optional content from a specific version (overrides job.result)
+            version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
 
         Returns:
             Dict mapping placeholder names to values
         """
+        # Use version_content if provided, otherwise extract from job result
+        output_content = version_content if version_content else self._get_result_content(job)
+
         placeholders = {
             # Standard placeholders
-            "output": self._get_result_content(job),
+            "output": output_content,
             "job_id": str(job.id),
             "job_date": job.completed_at.strftime("%Y-%m-%d") if job.completed_at else "",
             "service_name": job.service.name if job.service else "",
@@ -163,9 +312,9 @@ class DocumentService:
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
         }
 
-        # Add extracted metadata fields from job.result.extracted_metadata
-        extracted_metadata = None
-        if job.result and isinstance(job.result, dict):
+        # Add extracted metadata fields - use version_metadata if provided, else job.result.extracted_metadata
+        extracted_metadata = version_metadata
+        if extracted_metadata is None and job.result and isinstance(job.result, dict):
             extracted_metadata = job.result.get('extracted_metadata')
 
         if extracted_metadata and isinstance(extracted_metadata, dict):
@@ -325,9 +474,12 @@ class DocumentService:
             after_para.add_run(markdown_content)
             return
 
+        # Clean trailing backslashes before conversion
+        cleaned_content = self._clean_trailing_backslashes(markdown_content)
+
         # Convert markdown to HTML
         html_content = markdown.markdown(
-            markdown_content,
+            cleaned_content,
             extensions=['tables', 'fenced_code', 'nl2br']
         )
 

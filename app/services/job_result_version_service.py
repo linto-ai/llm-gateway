@@ -9,8 +9,6 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from diff_match_patch import diff_match_patch
-
 from app.models.job import Job
 from app.models.job_result_version import JobResultVersion
 from app.schemas.job import JobVersionSummary, JobVersionDetail
@@ -19,18 +17,13 @@ logger = logging.getLogger(__name__)
 
 # Configuration constants
 MAX_VERSIONS = 10
-FULL_SNAPSHOT_INTERVAL = 5
 
 
 class JobResultVersionService:
     """Service for job result version management.
 
-    Uses diff-match-patch for efficient character-level diffs.
-    Full snapshots are stored at version 1 and every 5th version.
+    Stores full content for each version (no diffs) for simplicity and reliability.
     """
-
-    def __init__(self):
-        self.dmp = diff_match_patch()
 
     def _extract_result_content(self, result) -> str:
         """Extract the text content from a job result.
@@ -47,23 +40,6 @@ class JobResultVersionService:
                 return str(result["output"])
             return json.dumps(result)
         return str(result)
-
-    def _compute_diff(self, old_content: str, new_content: str) -> str:
-        """Compute diff between two versions using diff-match-patch.
-
-        Returns a JSON-encoded patch that can reconstruct new_content from old_content.
-        """
-        patches = self.dmp.patch_make(old_content, new_content)
-        return self.dmp.patch_toText(patches)
-
-    def _apply_diff(self, base_content: str, diff_text: str) -> str:
-        """Apply a diff to reconstruct content.
-
-        Returns the reconstructed content.
-        """
-        patches = self.dmp.patch_fromText(diff_text)
-        result, _ = self.dmp.patch_apply(patches, base_content)
-        return result
 
     async def _get_job_with_versions(
         self, db: AsyncSession, job_id: UUID
@@ -86,13 +62,13 @@ class JobResultVersionService:
     ) -> Optional[JobResultVersion]:
         """Create version 1 for a newly completed job.
 
-        This stores the original result as a full snapshot.
+        Stores the original result as full content.
         """
         version = JobResultVersion(
             job_id=job_id,
             version_number=1,
-            diff="",  # No diff for version 1
-            full_content=content,  # Store full snapshot
+            diff="",  # Not used anymore, kept for DB compatibility
+            full_content=content,
             created_by=created_by,
         )
         db.add(version)
@@ -106,7 +82,7 @@ class JobResultVersionService:
         new_content: str,
         created_by: Optional[str] = None,
     ) -> Optional[JobResultVersion]:
-        """Create a new version with diff storage.
+        """Create a new version with full content storage.
 
         Args:
             db: Database session
@@ -126,9 +102,9 @@ class JobResultVersionService:
         current_version = job.current_version
 
         # If this is the first edit (no versions exist yet), create version 1 first
-        # to preserve the original content as a full snapshot
+        # to preserve the original content
         if not job.versions and current_version == 1:
-            logger.info(f"Creating initial version 1 snapshot for job {job_id}")
+            logger.info(f"Creating initial version 1 for job {job_id}")
             await self.create_initial_version(
                 db, job_id, current_content, created_by="system"
             )
@@ -136,18 +112,12 @@ class JobResultVersionService:
         # Compute next version number
         next_version = current_version + 1
 
-        # Determine if this should be a full snapshot
-        is_snapshot = (next_version % FULL_SNAPSHOT_INTERVAL == 0)
-
-        # Compute diff from current content
-        diff_text = self._compute_diff(current_content, new_content)
-
-        # Create the new version
+        # Create the new version with full content (no diffs)
         version = JobResultVersion(
             job_id=job_id,
             version_number=next_version,
-            diff=diff_text,
-            full_content=new_content if is_snapshot else None,
+            diff="",  # Not used anymore, kept for DB compatibility
+            full_content=new_content,
             created_by=created_by,
         )
         db.add(version)
@@ -214,9 +184,8 @@ class JobResultVersionService:
         if not job:
             return None
 
-        # If no versions exist, return empty list (job hasn't been edited)
+        # If no versions exist, return current state as version 1
         if not job.versions:
-            # Return current state as version 1
             current_content = self._extract_result_content(job.result)
             return [
                 JobVersionSummary(
@@ -229,15 +198,7 @@ class JobResultVersionService:
 
         summaries = []
         for v in sorted(job.versions, key=lambda x: x.version_number):
-            # For versions with full_content, use that length
-            # For diff-only versions, we need to reconstruct to get length
-            if v.full_content is not None:
-                content_length = len(v.full_content)
-            else:
-                # Reconstruct to get length
-                content = await self._reconstruct_version(db, job_id, v.version_number)
-                content_length = len(content) if content else 0
-
+            content_length = len(v.full_content) if v.full_content else 0
             summaries.append(
                 JobVersionSummary(
                     version_number=v.version_number,
@@ -249,62 +210,12 @@ class JobResultVersionService:
 
         return summaries
 
-    async def _reconstruct_version(
-        self, db: AsyncSession, job_id: UUID, version_number: int
-    ) -> Optional[str]:
-        """Reconstruct content for a specific version.
-
-        Finds the nearest snapshot and applies diffs forward.
-        """
-        # Get all versions up to and including the requested version
-        stmt = (
-            select(JobResultVersion)
-            .where(
-                JobResultVersion.job_id == job_id,
-                JobResultVersion.version_number <= version_number,
-            )
-            .order_by(JobResultVersion.version_number.asc())
-        )
-        result = await db.execute(stmt)
-        versions = result.scalars().all()
-
-        if not versions:
-            return None
-
-        # Find the latest snapshot at or before the requested version
-        base_content = None
-        start_version_num = 0
-
-        for v in reversed(versions):
-            if v.full_content is not None:
-                base_content = v.full_content
-                start_version_num = v.version_number
-                break
-
-        # If no snapshot found, we can't reconstruct - this happens for jobs
-        # edited before version 1 snapshot fix was implemented
-        if base_content is None:
-            logger.warning(
-                f"Cannot reconstruct version {version_number} for job {job_id}: "
-                "no base snapshot found. This may be due to data created before "
-                "version 1 snapshot fix."
-            )
-            return None
-
-        # Apply diffs from the snapshot forward
-        for v in versions:
-            if v.version_number > start_version_num and v.version_number <= version_number:
-                if v.diff:
-                    base_content = self._apply_diff(base_content, v.diff)
-
-        return base_content
-
     async def get_version(
         self, db: AsyncSession, job_id: UUID, version_number: int
     ) -> Optional[JobVersionDetail]:
         """Get full details for a specific version.
 
-        Reconstructs the content from snapshots and diffs.
+        Returns the full content directly (no reconstruction needed).
         """
         job = await self._get_job_with_versions(db, job_id)
         if not job:
@@ -330,16 +241,12 @@ class JobResultVersionService:
         if not version:
             return None
 
-        # Reconstruct content
-        content = await self._reconstruct_version(db, job_id, version_number)
-        if content is None:
-            return None
-
+        # Return full content directly
         return JobVersionDetail(
             version_number=version.version_number,
             created_at=version.created_at,
             created_by=version.created_by,
-            content=content,
+            content=version.full_content or "",
         )
 
     async def restore_version(

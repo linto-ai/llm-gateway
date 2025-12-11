@@ -6,13 +6,16 @@ import traceback
 from datetime import datetime
 from typing import Optional, List, Dict, Literal as TypeLiteral
 from uuid import UUID
+from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, Query, status, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
+import redis.asyncio as aioredis
 
 from app.api.dependencies import get_db
 from app.core.database import AsyncSessionLocal
+from app.core.config import settings
 from app.services.job_service import job_service
 from app.services.job_result_version_service import job_result_version_service
 from app.models.job import Job
@@ -27,6 +30,13 @@ from app.schemas.common import ErrorResponse, PaginatedResponse
 from app.http_server.celery_app import get_task_status_async
 
 logger = logging.getLogger(__name__)
+
+
+def _get_redis_url():
+    """Get Redis URL for async client."""
+    parsed_url = urlparse(settings.services_broker)
+    broker_pass = settings.services_broker_password
+    return f"redis://:{broker_pass}@{parsed_url.hostname}:{parsed_url.port or 6379}/2"
 
 # Terminal job states that close WebSocket connection
 TERMINAL_STATES = {'completed', 'failed', 'cancelled'}
@@ -598,6 +608,9 @@ async def websocket_job_status(websocket: WebSocket, job_id: str):
 
     except WebSocketDisconnect:
         logger.info(f"Client disconnected from WebSocket for job_id: {job_id}")
+    except asyncio.CancelledError:
+        logger.info(f"WebSocket for job {job_id} cancelled (server shutdown)")
+        raise
     except Exception as e:
         logger.error(f"WebSocket error for job {job_id}: {e}")
         try:
@@ -606,14 +619,14 @@ async def websocket_job_status(websocket: WebSocket, job_id: str):
             pass  # Connection may already be closed
 
 
-# Global Jobs WebSocket - monitors ALL active jobs
+# Global Jobs WebSocket - monitors ALL active jobs via Redis pub/sub
 async def websocket_jobs_status(websocket: WebSocket, organization_id: Optional[str] = None):
     """
     WebSocket endpoint for monitoring ALL active jobs.
 
     Sends:
     1. Initial jobs_snapshot with all active jobs
-    2. job_update messages when any job changes
+    2. job_update messages when any job changes (via Redis pub/sub)
 
     Query parameters:
     - organization_id: Filter jobs by organization (optional, free-form string)
@@ -622,108 +635,121 @@ async def websocket_jobs_status(websocket: WebSocket, organization_id: Optional[
     """
     await websocket.accept()
     org_filter_msg = f" (organization_id={organization_id})" if organization_id else ""
-    logger.debug(f"Global jobs WebSocket accepted{org_filter_msg}, starting monitoring loop")
+    logger.info(f"Global jobs WebSocket accepted{org_filter_msg}, using Redis pub/sub")
 
-    # Track state to detect changes
-    job_states: Dict[str, tuple] = {}  # job_id -> (status, progress_pct)
-    initial_snapshot_sent = False  # Flag to track if initial snapshot was sent
+    redis_client = None
+    pubsub = None
 
     try:
+        # Send initial snapshot
+        async with AsyncSessionLocal() as db:
+            stmt = (
+                select(Job)
+                .options(joinedload(Job.service), joinedload(Job.flavor))
+                .where(Job.status.in_(ACTIVE_STATES))
+            )
+            if organization_id:
+                stmt = stmt.where(Job.organization_id == organization_id)
+            stmt = stmt.order_by(Job.created_at.desc())
+            result = await db.execute(stmt)
+            jobs = result.unique().scalars().all()
+
+            snapshots = []
+            for job in jobs:
+                celery_task_id = job.celery_task_id
+                update = await _build_job_update_async(job, celery_task_id)
+                snapshots.append(ActiveJobSnapshot(
+                    job_id=str(job.id),
+                    status=update.status,
+                    progress=update.progress,
+                    service_name=job.service.name if job.service else None,
+                    flavor_name=job.flavor.name if job.flavor else None,
+                    created_at=job.created_at,
+                ))
+
+            logger.debug(f"Global WS: sending initial snapshot with {len(snapshots)} active jobs")
+            await websocket.send_json(JobsSnapshotMessage(
+                jobs=snapshots,
+                timestamp=datetime.utcnow(),
+            ).model_dump(mode='json'))
+
+        # Subscribe to Redis pub/sub for job updates
+        redis_client = aioredis.from_url(_get_redis_url())
+        pubsub = redis_client.pubsub()
+
+        # Subscribe to organization-specific channel or global channel
+        if organization_id:
+            channel = f"job_updates:{organization_id}"
+        else:
+            channel = "job_updates:global"
+
+        await pubsub.subscribe(channel)
+        logger.info(f"Global WS: subscribed to Redis channel '{channel}'")
+
+        # Listen for messages from Redis pub/sub with timeout for clean shutdown
         while True:
-            async with AsyncSessionLocal() as db:
-                # Query all active jobs (optionally filtered by organization)
-                stmt = (
-                    select(Job)
-                    .options(joinedload(Job.service), joinedload(Job.flavor))
-                    .where(Job.status.in_(ACTIVE_STATES))
+            try:
+                # Use get_message with timeout instead of blocking listen()
+                # This allows the loop to be interrupted during shutdown
+                message = await asyncio.wait_for(
+                    pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0),
+                    timeout=5.0
                 )
-                # Apply organization filter if provided
-                if organization_id:
-                    stmt = stmt.where(Job.organization_id == organization_id)
-                stmt = stmt.order_by(Job.created_at.desc())
-                result = await db.execute(stmt)
-                jobs = result.unique().scalars().all()
 
-                # First iteration: send snapshot (even if empty)
-                if not initial_snapshot_sent:
-                    snapshots = []
-                    for job in jobs:
-                        celery_task_id = job.celery_task_id
-                        update = await _build_job_update_async(job, celery_task_id)
-                        snapshots.append(ActiveJobSnapshot(
-                            job_id=str(job.id),
-                            status=update.status,
-                            progress=update.progress,
-                            service_name=job.service.name if job.service else None,
-                            flavor_name=job.flavor.name if job.flavor else None,
-                            created_at=job.created_at,
-                        ))
-                        # Track state
-                        progress_pct = update.progress.percentage if update.progress else None
-                        job_states[str(job.id)] = (update.status, progress_pct)
-                        logger.debug(f"Global WS snapshot: job={job.id}, status={update.status}, progress={progress_pct}")
+                if message is None:
+                    # No message received, check if websocket is still open
+                    continue
 
-                    logger.debug(f"Global WS: sending initial snapshot with {len(snapshots)} active jobs")
-                    await websocket.send_json(JobsSnapshotMessage(
-                        jobs=snapshots,
+                if message["type"] == "message":
+                    data = json.loads(message["data"])
+                    job_id = data.get("job_id")
+                    msg_org_id = data.get("organization_id")
+
+                    # Filter by organization if specified
+                    if organization_id and msg_org_id != organization_id:
+                        continue
+
+                    logger.debug(f"Global WS: received Redis update for job {job_id}, status={data.get('status')}")
+
+                    # Build progress object only if it has required fields
+                    progress_data = data.get("progress")
+                    progress_obj = None
+                    if progress_data and isinstance(progress_data, dict):
+                        if all(k in progress_data for k in ('current', 'total', 'percentage')):
+                            progress_obj = progress_data
+
+                    # Send update to WebSocket client
+                    await websocket.send_json(JobUpdateBroadcast(
+                        job_id=job_id,
+                        status=data.get("status"),
+                        progress=progress_obj,
+                        result=data.get("result"),
+                        error=data.get("error"),
                         timestamp=datetime.utcnow(),
                     ).model_dump(mode='json'))
-                    initial_snapshot_sent = True
-                else:
-                    # Subsequent iterations: send updates for changed jobs
-                    current_job_ids = set()
 
-                    for job in jobs:
-                        job_id = str(job.id)
-                        current_job_ids.add(job_id)
-                        celery_task_id = job.celery_task_id
-                        update = await _build_job_update_async(job, celery_task_id)
-
-                        progress_pct = update.progress.percentage if update.progress else None
-                        current_state = (update.status, progress_pct)
-
-                        # Check if changed
-                        if job_id not in job_states or job_states[job_id] != current_state:
-                            logger.debug(f"Global WS: job {job_id} changed from {job_states.get(job_id)} to {current_state}")
-                            await websocket.send_json(JobUpdateBroadcast(
-                                job_id=job_id,
-                                status=update.status,
-                                progress=update.progress,
-                                result=update.result,
-                                error=update.error,
-                                timestamp=datetime.utcnow(),
-                            ).model_dump(mode='json'))
-                            job_states[job_id] = current_state
-
-                    # Check for jobs that completed (no longer in active query)
-                    # Query recently completed jobs to send final update
-                    completed_job_ids = set(job_states.keys()) - current_job_ids
-                    if completed_job_ids:
-                        logger.debug(f"Global WS: detected {len(completed_job_ids)} completed jobs: {completed_job_ids}")
-                    for job_id in completed_job_ids:
-                        # Fetch the job to get final state
-                        job = await _get_job_for_ws(db, UUID(job_id))
-                        if job:
-                            update = await _build_job_update_async(job, job.celery_task_id)
-                            logger.debug(f"Global WS: sending completion update for job {job_id}, status={update.status}")
-                            await websocket.send_json(JobUpdateBroadcast(
-                                job_id=job_id,
-                                status=update.status,
-                                progress=update.progress,
-                                result=update.result,
-                                error=update.error,
-                                timestamp=datetime.utcnow(),
-                            ).model_dump(mode='json'))
-                        else:
-                            logger.warning(f"Global WS: job {job_id} not found in DB for completion update")
-                        # Remove from tracking
-                        del job_states[job_id]
-
-            # Poll interval: 1 second for responsiveness
-            await asyncio.sleep(1.0)
+            except asyncio.TimeoutError:
+                # Timeout is normal, just continue the loop
+                continue
+            except json.JSONDecodeError as e:
+                logger.warning(f"Global WS: failed to parse Redis message: {e}")
+            except WebSocketDisconnect:
+                logger.info("Client disconnected during message processing")
+                return
+            except RuntimeError as e:
+                # WebSocket already closed
+                if "close" in str(e).lower():
+                    logger.info("WebSocket closed, stopping Redis listener")
+                    return
+                raise
+            except Exception as e:
+                logger.error(f"Global WS: error processing message: {e}")
 
     except WebSocketDisconnect:
         logger.info("Client disconnected from global jobs WebSocket")
+    except asyncio.CancelledError:
+        logger.info("Global jobs WebSocket cancelled (server shutdown)")
+        raise  # Re-raise to allow proper cleanup
     except Exception as e:
         logger.error(f"Global jobs WebSocket error: {e}\n{traceback.format_exc()}")
         try:
@@ -734,6 +760,19 @@ async def websocket_jobs_status(websocket: WebSocket, organization_id: Optional[
             await websocket.close(code=1011)
         except Exception:
             pass
+    finally:
+        # Clean up Redis connection
+        if pubsub:
+            try:
+                await pubsub.unsubscribe()
+                await pubsub.close()
+            except Exception:
+                pass
+        if redis_client:
+            try:
+                await redis_client.close()
+            except Exception:
+                pass
 
 
 @router.patch(
@@ -915,25 +954,38 @@ async def restore_job_version(
             "content": {
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {},
                 "application/pdf": {},
+                "text/html": {},
             }
         },
     },
 )
 async def export_job_result(
     job_id: UUID,
-    format: TypeLiteral["docx", "pdf"],
-    template_id: Optional[UUID] = Query(None, description="Template to use (uses service default if not specified)"),
+    format: TypeLiteral["docx", "pdf", "html"],
+    template_id: Optional[UUID] = Query(None, description="Template to use (falls back to default)"),
+    version_number: Optional[int] = Query(None, description="Specific version to export (uses version content and per-version extraction cache)"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Export job result as DOCX or PDF.
+    Export job result as DOCX, PDF, or HTML with just-in-time extraction.
 
-    Uses template_id if provided, otherwise the service's default template.
-    If no template is available, uses a built-in default template.
+    Behavior:
+    1. Load template (specified or default)
+    2. Parse template placeholders
+    3. If version_number specified, fetch that version's content and use per-version extraction cache
+    4. Check which placeholders are already in extracted_metadata (main or per-version)
+    4. If missing placeholders exist AND flavor has extraction prompt configured:
+       - Perform just-in-time extraction for missing fields only
+       - Update job.result.extracted_metadata with new values
+       - Record extraction in job token metrics
+    5. Generate document with all available placeholder values
     """
     from fastapi.responses import StreamingResponse
     from app.services.document_template_service import document_template_service
     from app.services.document_service import document_service
+    from app.services.export_service import export_service
+    from app.services.provider_service import provider_service
+    from app.models.service_flavor import ServiceFlavor
 
     job = await job_service.get_job_by_id(db, job_id)
     if not job:
@@ -972,25 +1024,79 @@ async def export_job_result(
             logger.warning(f"Template file not found: {template_path}, using built-in default")
             template = None
     else:
-        # Try service default (may be None - DocumentService handles fallback)
-        template = await document_template_service.get_default_template(db, job.service_id)
-        # Verify template file exists if we got one
-        if template:
-            template_path = document_service.TEMPLATES_DIR / template.file_path
-            if not template_path.exists():
-                logger.warning(f"Default template file not found: {template_path}, using built-in default")
-                template = None
+        # First check if the job's service has a default template
+        if job.service and job.service.default_template_id:
+            template = await document_template_service.get_template(db, job.service.default_template_id)
+            if template:
+                template_path = document_service.TEMPLATES_DIR / template.file_path
+                if not template_path.exists():
+                    logger.warning(f"Service default template file not found: {template_path}, using built-in default")
+                    template = None
+        # Fall back to global default template
+        if not template:
+            template = await document_template_service.get_default_template(db)
+            # Verify template file exists if we got one
+            if template:
+                template_path = document_service.TEMPLATES_DIR / template.file_path
+                if not template_path.exists():
+                    logger.warning(f"Default template file not found: {template_path}, using built-in default")
+                    template = None
 
-    # Generate document (DocumentService uses built-in default if template is None)
+    # Prepare LLM inference for JIT extraction (if flavor has extraction prompt)
+    llm_inference = None
+    if job.flavor_id:
+        try:
+            # Get flavor with model and provider
+            from sqlalchemy.orm import joinedload as jl
+            flavor_stmt = (
+                select(ServiceFlavor)
+                .options(
+                    jl(ServiceFlavor.model).joinedload(Model.provider)
+                )
+                .where(ServiceFlavor.id == job.flavor_id)
+            )
+            flavor_result = await db.execute(flavor_stmt)
+            flavor = flavor_result.unique().scalar_one_or_none()
+
+            if flavor and flavor.placeholder_extraction_prompt_id and flavor.model:
+                # Get decrypted API key
+                decrypted_key = await provider_service.get_decrypted_api_key(db, flavor.model.provider_id)
+
+                # Create LLM wrapper for extraction
+                class ExtractionLLM:
+                    def __init__(self, model, api_key, api_url):
+                        from openai import AsyncOpenAI
+                        self.client = AsyncOpenAI(api_key=api_key, base_url=api_url)
+                        self.model_name = model.model_identifier
+
+                    async def generate(self, messages, temperature=0.1, max_tokens=2000):
+                        response = await self.client.chat.completions.create(
+                            model=self.model_name,
+                            messages=messages,
+                            temperature=temperature,
+                            max_tokens=max_tokens
+                        )
+                        return response.choices[0].message.content
+
+                llm_inference = ExtractionLLM(
+                    flavor.model,
+                    decrypted_key,
+                    flavor.model.provider.api_base_url
+                )
+        except Exception as e:
+            logger.warning(f"Could not prepare LLM for JIT extraction: {e}")
+
+    # Generate document with JIT extraction
     try:
-        if format == "docx":
-            content = await document_service.generate_docx(job, template)
-            media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            ext = "docx"
-        else:
-            content = await document_service.generate_pdf(job, template)
-            media_type = "application/pdf"
-            ext = "pdf"
+        content = await export_service.export_with_extraction(
+            db=db,
+            job=job,
+            template=template,
+            format=format,
+            llm_inference=llm_inference,
+            version_number=version_number,
+        )
+        await db.commit()  # Commit any JIT extraction updates
     except ImportError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1001,6 +1107,17 @@ async def export_job_result(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
+    if format == "docx":
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ext = "docx"
+    elif format == "html":
+        # HTML is returned as string, not BytesIO
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse(content=content, status_code=200)
+    else:
+        media_type = "application/pdf"
+        ext = "pdf"
 
     service_name = job.service.name if job.service else "job"
     filename = f"{service_name}_{job.id}.{ext}"
@@ -1013,30 +1130,28 @@ async def export_job_result(
 
 
 @router.post(
-    "/{job_id}/extract-metadata",
-    response_model=JobResponse,
+    "/{job_id}/export-preview",
     responses={
         400: {"model": ErrorResponse},
         404: {"model": ErrorResponse},
     },
 )
-async def extract_job_metadata(
+async def export_preview(
     job_id: UUID,
-    prompt_id: Optional[UUID] = Query(None, description="Extraction prompt to use"),
-    fields: Optional[List[str]] = Query(None, description="Fields to extract (defaults to standard fields)"),
+    template_id: Optional[UUID] = Query(None, description="Template to preview (uses default if not specified)"),
     db: AsyncSession = Depends(get_db),
-) -> JobResponse:
+) -> dict:
     """
-    Manually trigger metadata extraction for a completed job.
+    Preview export placeholders and extraction status.
 
-    - If prompt_id provided, uses that extraction prompt
-    - Otherwise, uses the flavor's configured extraction prompt
-    - fields parameter overrides the fields to extract
+    Returns information about which placeholders will be filled:
+    - available: Value is already in extracted_metadata
+    - extraction_required: Value can be extracted via JIT extraction
+    - missing: Value is not available and cannot be extracted
     """
-    from app.services.metadata_extraction_service import get_metadata_extraction_service
-    from app.services.provider_service import provider_service
-    from sqlalchemy.orm import joinedload as jl
-    from app.models.service_flavor import ServiceFlavor
+    from app.services.document_template_service import document_template_service
+    from app.services.document_service import document_service
+    from app.services.export_service import export_service
 
     job = await job_service.get_job_by_id(db, job_id)
     if not job:
@@ -1048,94 +1163,39 @@ async def extract_job_metadata(
     if job.status != "completed":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Can only extract metadata from completed jobs"
+            detail="Can only preview export for completed jobs"
         )
 
-    # Get job with flavor relationship
+    # Get job with relationships
     stmt = (
         select(Job)
-        .options(joinedload(Job.flavor))
+        .options(joinedload(Job.service), joinedload(Job.flavor))
         .where(Job.id == job_id)
     )
     result = await db.execute(stmt)
-    job_with_flavor = result.unique().scalar_one_or_none()
+    job = result.unique().scalar_one_or_none()
 
-    # Determine extraction prompt
-    extraction_prompt_id = prompt_id
-    if not extraction_prompt_id and job_with_flavor.flavor:
-        extraction_prompt_id = job_with_flavor.flavor.placeholder_extraction_prompt_id
-
-    if not extraction_prompt_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No extraction prompt specified and flavor has none configured"
-        )
-
-    # Get flavor with model and provider for LLM configuration
-    flavor_stmt = (
-        select(ServiceFlavor)
-        .options(
-            jl(ServiceFlavor.model).joinedload(Model.provider)
-        )
-        .where(ServiceFlavor.id == job_with_flavor.flavor_id)
-    )
-    flavor_result = await db.execute(flavor_stmt)
-    flavor = flavor_result.unique().scalar_one_or_none()
-
-    if not flavor or not flavor.model:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Job flavor has no model configured"
-        )
-
-    # Get decrypted API key
-    decrypted_key = await provider_service.get_decrypted_api_key(db, flavor.model.provider_id)
-
-    # Create a simple LLM wrapper for extraction
-    class ExtractionLLM:
-        def __init__(self, model, api_key, api_url):
-            from openai import AsyncOpenAI
-            self.client = AsyncOpenAI(api_key=api_key, base_url=api_url)
-            self.model_name = model.model_identifier
-
-        async def generate(self, messages, temperature=0.1, max_tokens=2000):
-            response = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens
+    # Get template
+    template = None
+    if template_id:
+        template = await document_template_service.get_template(db, template_id)
+        if not template:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Template not found"
             )
-            return response.choices[0].message.content
+    else:
+        # First check if the job's service has a default template
+        if job.service and job.service.default_template_id:
+            template = await document_template_service.get_template(db, job.service.default_template_id)
+        # Fall back to global default template
+        if not template:
+            template = await document_template_service.get_default_template(db)
 
-    llm = ExtractionLLM(
-        flavor.model,
-        decrypted_key,
-        flavor.model.provider.api_base_url
-    )
-    metadata_service = get_metadata_extraction_service(llm_inference=llm)
+    # Get preview
+    preview = await export_service.get_export_preview(db, job, template)
 
-    try:
-        metadata = await metadata_service.extract_with_prompt(
-            db, job_with_flavor, extraction_prompt_id, fields
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        logger.error(f"Metadata extraction failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Extraction failed: {str(e)}"
-        )
-
-    # Update job with extracted metadata
-    await metadata_service.update_job_metadata(db, job_id, metadata)
-    await db.commit()
-
-    # Return updated job
-    return await job_service.get_job_by_id(db, job_id)
+    return preview
 
 
 router_name = "jobs"
