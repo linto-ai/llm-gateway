@@ -3,13 +3,14 @@
 import { useState, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import { Copy, Check, Download, AlertCircle, FileText, Code, Pencil, History, FileOutput, Loader2 } from 'lucide-react';
+import { Copy, Check, Download, AlertCircle, FileText, Code, Pencil, FileOutput, Loader2, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import remarkGfm from 'remark-gfm';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useExportJob } from '@/hooks/use-document-templates';
+import { VersionDropdown } from './VersionDropdown';
 import type { ExportFormat } from '@/types/document-template';
 
 // Lazy load ReactMarkdown for performance with large results
@@ -33,10 +35,13 @@ interface JobResultViewProps {
   status: 'completed' | 'failed' | string;
   // Output type from flavor configuration
   outputType?: 'text' | 'markdown' | 'json';
-  // Edit and history callbacks
+  // Edit callback
   onEdit?: () => void;
-  onShowHistory?: () => void;
+  // Version viewing
   currentVersion?: number;
+  viewingVersion?: number;
+  onVersionChange?: (version: number) => void;
+  isLoadingVersion?: boolean;
   lastEditedAt?: string | null;
   // Export functionality
   jobId?: string;
@@ -49,8 +54,10 @@ export function JobResultView({
   status,
   outputType = 'text',
   onEdit,
-  onShowHistory,
   currentVersion = 1,
+  viewingVersion,
+  onVersionChange,
+  isLoadingVersion = false,
   lastEditedAt,
   jobId,
   jobServiceName,
@@ -62,16 +69,18 @@ export function JobResultView({
   // Export mutation
   const exportMutation = useExportJob();
 
-  // Handle export
+  // Handle export - uses the currently viewed version
   const handleExport = async (format: ExportFormat) => {
     if (!jobId) return;
 
     setIsExporting(true);
     try {
-      const fileName = `${jobServiceName || 'job'}-${jobId.slice(0, 8)}.${format}`;
+      const versionToExport = viewingVersion ?? currentVersion;
+      const fileName = `${jobServiceName || 'job'}-${jobId.slice(0, 8)}-v${versionToExport}.${format}`;
       await exportMutation.mutateAsync({
         jobId,
         format,
+        versionNumber: versionToExport,
         fileName,
       });
       toast.success(t('export.success'));
@@ -167,11 +176,15 @@ export function JobResultView({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CardTitle className="text-lg">{t('result')}</CardTitle>
-              {/* Version indicator */}
-              {currentVersion > 1 && (
-                <span className="text-sm text-muted-foreground">
-                  ({t('versions.version', { number: currentVersion })})
-                </span>
+              {/* Version dropdown - only show if we have jobId and version change capability */}
+              {jobId && onVersionChange && (
+                <VersionDropdown
+                  jobId={jobId}
+                  viewingVersion={viewingVersion ?? currentVersion}
+                  currentVersion={currentVersion}
+                  onVersionChange={onVersionChange}
+                  isLoading={isLoadingVersion}
+                />
               )}
             </div>
             {result && (
@@ -186,18 +199,6 @@ export function JobResultView({
                   >
                     <Pencil className="h-4 w-4 mr-1" />
                     {t('editor.editButton')}
-                  </Button>
-                )}
-                {/* History button */}
-                {onShowHistory && currentVersion >= 1 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onShowHistory}
-                    className="h-8"
-                  >
-                    <History className="h-4 w-4 mr-1" />
-                    {t('versions.historyButton')}
                   </Button>
                 )}
                 {/* Export buttons */}
@@ -257,6 +258,15 @@ export function JobResultView({
           </div>
         </CardHeader>
         <CardContent>
+          {/* Info banner when viewing an old version */}
+          {viewingVersion && viewingVersion !== currentVersion && (
+            <Alert className="mb-4 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+              <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-700 dark:text-blue-300">
+                {t('versions.viewingOldVersion', { number: viewingVersion })}
+              </AlertDescription>
+            </Alert>
+          )}
           {extractedContent ? (
             shouldRenderMarkdown ? (
               <Tabs defaultValue={defaultTab} className="w-full">

@@ -157,6 +157,7 @@ export interface ServiceResponse {
   service_type: ServiceType;
   description: I18nDescription;
   organization_id: string;
+  default_template_id?: string | null;
   flavors: FlavorResponse[];
   created_at: string;
   updated_at: string;
@@ -222,6 +223,7 @@ export interface CreateServiceRequest {
 export interface UpdateServiceRequest {
   name?: string;
   description?: Partial<I18nDescription>;
+  default_template_id?: string | null;
 }
 
 export interface UpdateFlavorRequest {

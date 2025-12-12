@@ -2,27 +2,56 @@
   "title": "Document Templates",
   "subtitle": "Manage DOCX templates for exporting job results",
   "upload": "Upload Template",
+  "edit": "Edit Template",
   "importFromLibrary": "Import from Library",
-  "uploadDescription": "Upload a DOCX template with '{{placeholders}}' for automatic substitution",
+  "uploadDescription": "Upload a DOCX template with placeholders (double curly brace syntax) for automatic substitution",
+  "editDescription": "Update template metadata or replace the template file",
   "name": "Template Name",
   "namePlaceholder": "Enter template name",
   "description": "Description",
   "descriptionPlaceholder": "Optional description of this template",
   "setDefault": "Set as Default",
-  "isDefault": "Default Template",
+  "setDefaultDescription": "Use this template as the default for this service",
+  "isDefault": "Default",
   "placeholders": "Available Placeholders",
   "noPlaceholders": "No placeholders detected",
   "download": "Download",
   "delete": "Delete",
-  "deleteConfirm": "Are you sure you want to delete this template?",
+  "deleteConfirm": "Are you sure you want to delete this template? This action cannot be undone.",
   "deleteSuccess": "Template deleted successfully",
   "deleteError": "Failed to delete template",
   "noTemplates": "No templates uploaded yet",
   "noTemplatesDescription": "Upload a DOCX template to get started with document exports",
   "uploadSuccess": "Template uploaded successfully",
   "uploadError": "Failed to upload template",
+  "updateSuccess": "Template updated successfully",
+  "updateError": "Failed to update template",
   "setDefaultSuccess": "Default template updated",
   "setDefaultError": "Failed to set default template",
+  "setGlobalDefault": "Set as global default",
+  "setGlobalDefaultSuccess": "Global default template updated",
+  "setGlobalDefaultError": "Failed to set global default template",
+  "replaceFile": "Replace File (Optional)",
+  "scope": {
+    "system": "System",
+    "organization": "Organization",
+    "user": "Personal"
+  },
+  "fields": {
+    "nameFr": "Name (French)",
+    "nameEn": "Name (English)",
+    "descriptionFr": "Description (French)",
+    "descriptionEn": "Description (English)",
+    "isDefault": "Set as default template",
+    "french": "French",
+    "english": "English",
+    "optionalEnglish": "Optional - falls back to French if not provided"
+  },
+  "filters": {
+    "scope": "Scope",
+    "allScopes": "All Scopes",
+    "count": "{count, plural, =0 {No templates} one {# template} other {# templates}}"
+  },
   "fileValidation": {
     "invalidType": "Only DOCX files are allowed",
     "tooLarge": "File size must be less than 10MB",
@@ -32,10 +61,13 @@
     "title": "Drag & drop your DOCX file here",
     "subtitle": "or click to browse",
     "selectedFile": "Selected file",
-    "removeFile": "Remove"
+    "removeFile": "Remove",
+    "replaceTitle": "Drag & drop to replace file",
+    "optional": "Leave empty to keep current file"
   },
   "table": {
     "name": "Name",
+    "scope": "Scope",
     "fileName": "File",
     "size": "Size",
     "placeholders": "Placeholders",
@@ -50,7 +82,7 @@
     "metadata": "Metadata Placeholders (from extraction)",
     "standardDescription": "Always available for all jobs",
     "metadataDescription": "Available when metadata extraction is configured. You can use any placeholder name and add a description to guide the LLM extraction.",
-    "metadataNote": "Examples: {{title}}, {{summary}}, {{custom_field: describe what to extract}}"
+    "metadataNote": "Custom placeholders: Use the double curly brace syntax with format field_name: description to guide AI extraction. Example: action_items: list of action items from the meeting"
   },
   "library": {
     "title": "Template Library",

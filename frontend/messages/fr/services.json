@@ -20,11 +20,19 @@
     "flavors": "Variantes",
     "execute": "Tester le service",
     "analytics": "Analytiques",
-    "templates": "Modèles"
+    "templates": "Templates"
   },
-  "templatesEmpty": "Aucun modèle de document configuré",
-  "templatesCount": "{count, plural, =1 {1 modèle} other {# modèles}}",
-  "manageTemplates": "Gérer les modèles",
+  "templatesEmpty": "Aucun template par defaut configure",
+  "templatesCount": "{count, plural, =1 {1 template} other {# templates}}",
+  "manageTemplates": "Configurer le template",
+  "selectDefaultTemplate": "Selectionner le template par defaut",
+  "noDefaultTemplate": "Aucun template par defaut",
+  "currentDefault": "Template actuel",
+  "changeDefault": "Changer",
+  "removeDefault": "Retirer",
+  "removeDefaultConfirm": "Retirer le template par defaut de ce service ?",
+  "defaultTemplateSet": "Template par defaut configure",
+  "defaultTemplateRemoved": "Template par defaut retire",
   "execution": {
     "title": "Tester le service",
     "description": "Téléchargez un fichier et sélectionnez une variante pour tester ce service",

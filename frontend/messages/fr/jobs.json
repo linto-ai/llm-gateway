@@ -135,18 +135,28 @@
   "export": {
     "docx": "Exporter DOCX",
     "pdf": "Exporter PDF",
-    "progress": "Génération du document...",
-    "success": "Document exporte avec succès",
-    "error": "Échec de l'export du document",
-    "noTemplate": "Aucun modèle configuré pour l'export",
-    "selectTemplate": "Sélectionner un modèle"
+    "progress": "Generation du document...",
+    "success": "Document exporte avec succes",
+    "error": "Echec de l'export du document",
+    "noTemplate": "Aucun modele configure pour l'export",
+    "selectTemplate": "Selectionner un modele",
+    "defaultTemplate": "Modele par defaut",
+    "preview": "Apercu de l'export",
+    "previewDescription": "Placeholders pour le modele : {template}",
+    "extractionRequired": "Certains champs necessitent une extraction (~{tokens} tokens estimes)",
+    "missingPlaceholders": "{count, plural, one {# placeholder manquant} other {# placeholders manquants}} : {placeholders}",
+    "placeholderStatus": {
+      "available": "Disponible",
+      "missing": "Manquant",
+      "extraction_required": "Sera extrait"
+    },
+    "statusSummary": {
+      "available": "{count} disponible(s)",
+      "extraction": "{count} a extraire",
+      "missing": "{count} manquant(s)"
+    }
   },
   "extractedMetadata": "Metadonnees extraites",
-  "extractMetadata": "Extraire les métadonnées",
-  "reExtractMetadata": "Réextraire les métadonnées",
-  "extractingMetadata": "Extraction des métadonnées...",
-  "extractMetadataSuccess": "Metadonnees extraites avec succès",
-  "extractMetadataError": "Échec de l'extraction des métadonnées",
   "categorization": {
     "title": "Categorisation",
     "matchedTags": "Tags correspondants",
@@ -173,6 +183,7 @@
     "edited": "Modifie {time}",
     "historyButton": "Historique",
     "loadError": "Échec du chargement de l'historique",
-    "contentUnavailable": "Contenu non disponible"
+    "contentUnavailable": "Contenu non disponible",
+    "viewingOldVersion": "Visualisation de la version {number}. Ce n'est pas la version actuelle."
   }
 }

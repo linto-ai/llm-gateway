@@ -279,24 +279,15 @@ export const apiClient = {
     },
 
     // Export job to DOCX/PDF
-    export: async (jobId: string, format: ExportFormat, templateId?: string): Promise<Blob> => {
-      const params = templateId ? `?template_id=${templateId}` : '';
-      const response = await api.get(`/api/v1/jobs/${jobId}/export/${format}${params}`, {
+    export: async (jobId: string, format: ExportFormat, templateId?: string, versionNumber?: number): Promise<Blob> => {
+      const params: string[] = [];
+      if (templateId) params.push(`template_id=${templateId}`);
+      if (versionNumber !== undefined && versionNumber !== null) params.push(`version_number=${versionNumber}`);
+      const queryString = params.length > 0 ? `?${params.join('&')}` : '';
+      const response = await api.get(`/api/v1/jobs/${jobId}/export/${format}${queryString}`, {
         responseType: 'blob',
       });
       return response as unknown as Blob;
-    },
-
-    // Extract metadata from completed job
-    extractMetadata: async (
-      jobId: string,
-      promptId?: string,
-      fields?: string[]
-    ): Promise<JobResponse> => {
-      const params: Record<string, unknown> = {};
-      if (promptId) params.prompt_id = promptId;
-      if (fields?.length) params.fields = fields;
-      return api.post(`/api/v1/jobs/${jobId}/extract-metadata`, params);
     },
   },
 
@@ -361,52 +352,116 @@ export const apiClient = {
 
   // ==================== DOCUMENT TEMPLATES ====================
   documentTemplates: {
-    list: async (serviceId?: string, options?: { includeGlobal?: boolean; globalOnly?: boolean }): Promise<DocumentTemplate[]> => {
-      const params: Record<string, unknown> = {};
-      if (serviceId) params.service_id = serviceId;
-      if (options?.includeGlobal) params.include_global = true;
-      if (options?.globalOnly) params.global_only = true;
-      return api.get('/api/v1/templates', { params });
+    /**
+     * List templates with hierarchical visibility filtering
+     */
+    list: async (params?: {
+      organization_id?: string;
+      user_id?: string;
+      include_system?: boolean;
+      service_id?: string;
+    }): Promise<DocumentTemplate[]> => {
+      const queryParams: Record<string, unknown> = {};
+      if (params?.organization_id) queryParams.organization_id = params.organization_id;
+      if (params?.user_id) queryParams.user_id = params.user_id;
+      if (params?.include_system !== undefined) queryParams.include_system = params.include_system;
+      if (params?.service_id) queryParams.service_id = params.service_id;
+      return api.get('/api/v1/document-templates', { params: queryParams });
     },
 
-    listGlobal: async (): Promise<DocumentTemplate[]> => {
-      return api.get('/api/v1/templates', { params: { global_only: true } });
+    /**
+     * List system templates (org_id=null, user_id=null)
+     */
+    listSystem: async (): Promise<DocumentTemplate[]> => {
+      return api.get('/api/v1/document-templates', { params: { include_system: true } });
     },
 
+    /**
+     * Get a single template by ID
+     */
     get: async (id: string): Promise<DocumentTemplate> => {
-      return api.get(`/api/v1/templates/${id}`);
+      return api.get(`/api/v1/document-templates/${id}`);
     },
 
+    /**
+     * Upload a new template with i18n fields
+     */
     upload: async (formData: FormData): Promise<DocumentTemplate> => {
-      return api.post('/api/v1/templates', formData, {
+      return api.post('/api/v1/document-templates', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
 
-    delete: async (id: string): Promise<void> => {
-      return api.delete(`/api/v1/templates/${id}`);
+    /**
+     * Update a template (metadata and/or file)
+     */
+    update: async (id: string, formData: FormData): Promise<DocumentTemplate> => {
+      return api.put(`/api/v1/document-templates/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
     },
 
+    /**
+     * Delete a template
+     */
+    delete: async (id: string): Promise<void> => {
+      return api.delete(`/api/v1/document-templates/${id}`);
+    },
+
+    /**
+     * Download the original DOCX file
+     */
     download: async (id: string): Promise<Blob> => {
-      const response = await api.get(`/api/v1/templates/${id}/download`, {
+      const response = await api.get(`/api/v1/document-templates/${id}/download`, {
         responseType: 'blob',
       });
       return response as unknown as Blob;
     },
 
-    setDefault: async (templateId: string, serviceId: string): Promise<void> => {
-      return api.post(`/api/v1/templates/${templateId}/set-default?service_id=${serviceId}`);
+    /**
+     * Get parsed placeholders from template
+     */
+    getPlaceholders: async (id: string): Promise<Array<{ name: string; description: string | null; is_standard: boolean }>> => {
+      return api.get(`/api/v1/document-templates/${id}/placeholders`);
     },
 
-    getPlaceholders: async (id: string): Promise<string[]> => {
-      return api.get(`/api/v1/templates/${id}/placeholders`);
+    // Legacy methods for backward compatibility
+    listGlobal: async (): Promise<DocumentTemplate[]> => {
+      return api.get('/api/v1/document-templates', { params: { include_system: true } });
+    },
+
+    setDefault: async (templateId: string, serviceId: string): Promise<void> => {
+      return api.post(`/api/v1/document-templates/${templateId}/set-default?service_id=${serviceId}`);
+    },
+
+    /**
+     * Set a template as the global default (for exports without service-specific default)
+     */
+    setGlobalDefault: async (templateId: string): Promise<void> => {
+      return api.post(`/api/v1/document-templates/${templateId}/set-global-default`);
     },
 
     import: async (templateId: string, serviceId: string, newName?: string): Promise<DocumentTemplate> => {
-      return api.post(`/api/v1/templates/${templateId}/import`, {
+      return api.post(`/api/v1/document-templates/${templateId}/import`, {
         service_id: serviceId,
         new_name: newName,
       });
+    },
+  },
+
+  // ==================== EXPORT PREVIEW ====================
+  exportPreview: {
+    /**
+     * Preview export placeholders and extraction status
+     */
+    get: async (jobId: string, templateId?: string): Promise<{
+      template_id: string;
+      template_name: string;
+      placeholders: Array<{ name: string; status: 'available' | 'missing' | 'extraction_required'; value?: string }>;
+      extraction_required: boolean;
+      estimated_extraction_tokens?: number;
+    }> => {
+      return api.post(`/api/v1/jobs/${jobId}/export-preview`, templateId ? { template_id: templateId } : {});
     },
   },
 };

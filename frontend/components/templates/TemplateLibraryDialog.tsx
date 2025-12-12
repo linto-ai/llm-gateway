@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { Library, FileText, Download, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -28,13 +28,22 @@ import {
   useGlobalDocumentTemplates,
   useImportDocumentTemplate,
 } from '@/hooks/use-document-templates';
+import {
+  getLocalizedName,
+  getLocalizedDescription,
+  formatFileSize,
+} from '@/lib/template-utils';
+import { getPlaceholderName } from '@/types/document-template';
 import type { DocumentTemplate } from '@/types/document-template';
 
 interface TemplateLibraryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  serviceId: string;
+  serviceId?: string;
+  /** Called after successful import (copy) of a template */
   onImportSuccess?: () => void;
+  /** Called when a template is selected (without importing). If provided, switches to selection mode. */
+  onSelect?: (template: DocumentTemplate) => void;
 }
 
 /**
@@ -45,24 +54,33 @@ export function TemplateLibraryDialog({
   onOpenChange,
   serviceId,
   onImportSuccess,
+  onSelect,
 }: TemplateLibraryDialogProps) {
   const t = useTranslations('templates');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
 
-  const [importingId, setImportingId] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const { data: globalTemplates = [], isLoading } = useGlobalDocumentTemplates();
   const importMutation = useImportDocumentTemplate();
 
-  // Format file size
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  // Selection mode: just call onSelect and close
+  const isSelectionMode = !!onSelect;
 
-  // Handle import
-  const handleImport = async (template: DocumentTemplate) => {
-    setImportingId(template.id);
+  // Handle template action (import or select depending on mode)
+  const handleTemplateAction = async (template: DocumentTemplate) => {
+    if (isSelectionMode) {
+      // Selection mode: just call onSelect
+      onSelect(template);
+      onOpenChange(false);
+      return;
+    }
+
+    // Import mode: copy template to service
+    if (!serviceId) return;
+
+    setProcessingId(template.id);
     try {
       await importMutation.mutateAsync({
         templateId: template.id,
@@ -79,7 +97,7 @@ export function TemplateLibraryDialog({
         : t('library.importError');
       toast.error(errorMessage);
     } finally {
-      setImportingId(null);
+      setProcessingId(null);
     }
   };
 
@@ -125,10 +143,10 @@ export function TemplateLibraryDialog({
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-blue-500" />
                         <div>
-                          <div className="font-medium">{template.name}</div>
-                          {template.description && (
+                          <div className="font-medium">{getLocalizedName(template, locale)}</div>
+                          {getLocalizedDescription(template, locale) && (
                             <p className="text-sm text-muted-foreground">
-                              {template.description}
+                              {getLocalizedDescription(template, locale)}
                             </p>
                           )}
                         </div>
@@ -144,9 +162,9 @@ export function TemplateLibraryDialog({
                             <Badge
                               key={placeholder}
                               variant="outline"
-                              className="text-xs"
+                              className="text-xs font-mono"
                             >
-                              {`{{${placeholder}}}`}
+                              {`{{${getPlaceholderName(placeholder)}}}`}
                             </Badge>
                           ))}
                           {template.placeholders.length > 3 && (
@@ -169,18 +187,18 @@ export function TemplateLibraryDialog({
                     <TableCell className="text-right">
                       <Button
                         size="sm"
-                        onClick={() => handleImport(template)}
-                        disabled={importingId === template.id}
+                        onClick={() => handleTemplateAction(template)}
+                        disabled={processingId === template.id}
                       >
-                        {importingId === template.id ? (
+                        {processingId === template.id ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            {t('library.importing')}
+                            {isSelectionMode ? tCommon('loading') : t('library.importing')}
                           </>
                         ) : (
                           <>
                             <Download className="h-4 w-4 mr-2" />
-                            {t('library.import')}
+                            {isSelectionMode ? tCommon('select') : t('library.import')}
                           </>
                         )}
                       </Button>

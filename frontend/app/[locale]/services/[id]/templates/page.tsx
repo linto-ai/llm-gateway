@@ -1,32 +1,22 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
-import { ArrowLeft, Plus, FileText, Info, Library } from 'lucide-react';
+import { toast } from 'sonner';
+import { ArrowLeft, FileText, Check, X, Library } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { TemplateUpload, TemplateList, TemplateLibraryDialog } from '@/components/templates';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { TemplateLibraryDialog } from '@/components/templates';
 
-import { useService } from '@/hooks/use-services';
-import { useDocumentTemplates } from '@/hooks/use-document-templates';
-import { STANDARD_PLACEHOLDERS, METADATA_PLACEHOLDERS } from '@/types/document-template';
+import { useService, useUpdateService } from '@/hooks/use-services';
+import { useDocumentTemplate, useDocumentTemplates } from '@/hooks/use-document-templates';
+import { getLocalizedName, getLocalizedDescription } from '@/lib/template-utils';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -35,18 +25,55 @@ interface PageProps {
 export default function ServiceTemplatesPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const { id: serviceId, locale } = resolvedParams;
-  const t = useTranslations('templates');
+  const t = useTranslations('services');
+  const tTemplates = useTranslations('templates');
   const tCommon = useTranslations('common');
-  const router = useRouter();
 
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [libraryDialogOpen, setLibraryDialogOpen] = useState(false);
-  const [placeholderInfoOpen, setPlaceholderInfoOpen] = useState(false);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
 
-  // Fetch service and templates
-  const { data: service, isLoading: serviceLoading } = useService(serviceId);
-  const { data: templates = [], isLoading: templatesLoading } = useDocumentTemplates(serviceId);
-  const isLoading = serviceLoading || templatesLoading;
+  // Fetch service
+  const { data: service, isLoading: serviceLoading, refetch: refetchService } = useService(serviceId);
+
+  // Fetch current default template if set
+  const { data: currentTemplate, isLoading: templateLoading } = useDocumentTemplate(
+    service?.default_template_id ?? undefined
+  );
+
+  // Update service mutation
+  const updateService = useUpdateService();
+
+  const isLoading = serviceLoading || templateLoading;
+
+  // Handle template selection from library
+  const handleTemplateSelect = async (templateId: string) => {
+    try {
+      await updateService.mutateAsync({
+        id: serviceId,
+        data: { default_template_id: templateId },
+      });
+      toast.success(t('defaultTemplateSet'));
+      setLibraryDialogOpen(false);
+      refetchService();
+    } catch (error: any) {
+      toast.error(error.message || tCommon('error'));
+    }
+  };
+
+  // Handle remove default template
+  const handleRemoveDefault = async () => {
+    try {
+      await updateService.mutateAsync({
+        id: serviceId,
+        data: { default_template_id: null },
+      });
+      toast.success(t('defaultTemplateRemoved'));
+      setRemoveDialogOpen(false);
+      refetchService();
+    } catch (error: any) {
+      toast.error(error.message || tCommon('error'));
+    }
+  };
 
   if (isLoading) {
     return (
@@ -81,123 +108,129 @@ export default function ServiceTemplatesPage({ params }: PageProps) {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">{t('title')}</h1>
+            <h1 className="text-3xl font-bold">{t('tabs.templates')}</h1>
             <p className="text-muted-foreground">
-              {service.name} - {t('subtitle')}
+              {service.name} - {t('selectDefaultTemplate')}
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setLibraryDialogOpen(true)}>
-            <Library className="h-4 w-4 mr-2" />
-            {t('importFromLibrary')}
-          </Button>
-          <Button onClick={() => setUploadDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('upload')}
-          </Button>
-        </div>
       </div>
 
-      {/* Placeholder Info Card */}
-      <Card>
-        <Collapsible open={placeholderInfoOpen} onOpenChange={setPlaceholderInfoOpen}>
-          <CollapsibleTrigger asChild>
-            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Info className="h-5 w-5 text-muted-foreground" />
-                  <CardTitle className="text-lg">{t('placeholderInfo.title')}</CardTitle>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {placeholderInfoOpen ? tCommon('collapse') : tCommon('expand')}
-                </span>
-              </div>
-            </CardHeader>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="space-y-6">
-              <p className="text-muted-foreground">{t('placeholderInfo.description')}</p>
-
-              {/* Standard Placeholders */}
-              <div>
-                <h4 className="font-medium mb-2">{t('placeholderInfo.standard')}</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  {t('placeholderInfo.standardDescription')}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {STANDARD_PLACEHOLDERS.map((placeholder) => (
-                    <Badge key={placeholder} variant="outline" className="font-mono">
-                      {`{{${placeholder}}}`}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Metadata Placeholders */}
-              <div>
-                <h4 className="font-medium mb-2">{t('placeholderInfo.metadata')}</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  {t('placeholderInfo.metadataDescription')}
-                </p>
-                <p className="text-xs text-muted-foreground italic mb-3">
-                  {t('placeholderInfo.metadataNote')}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {METADATA_PLACEHOLDERS.map((placeholder) => (
-                    <Badge key={placeholder} variant="secondary" className="font-mono">
-                      {`{{${placeholder}}}`}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
-      </Card>
-
-      {/* Templates List */}
+      {/* Current Default Template */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {t('title')}
-              </CardTitle>
-              <CardDescription>
-                {templates.length === 0
-                  ? t('noTemplates')
-                  : `${templates.length} template${templates.length === 1 ? '' : 's'}`}
-              </CardDescription>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            {t('currentDefault')}
+          </CardTitle>
+          <CardDescription>
+            {tTemplates('uploadDescription')}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <TemplateList templates={templates} serviceId={serviceId} />
+          {currentTemplate ? (
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <FileText className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium">{getLocalizedName(currentTemplate, locale)}</h3>
+                  {getLocalizedDescription(currentTemplate, locale) && (
+                    <p className="text-sm text-muted-foreground">
+                      {getLocalizedDescription(currentTemplate, locale)}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className="text-xs">
+                      {currentTemplate.file_name}
+                    </Badge>
+                    {currentTemplate.placeholders && currentTemplate.placeholders.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {currentTemplate.placeholders.length} placeholders
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setLibraryDialogOpen(true)}
+                >
+                  {t('changeDefault')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setRemoveDialogOpen(true)}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  {t('removeDefault')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="p-4 rounded-full bg-muted mb-4">
+                <FileText className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="font-medium mb-1">{t('noDefaultTemplate')}</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t('templatesEmpty')}
+              </p>
+              <Button onClick={() => setLibraryDialogOpen(true)}>
+                <Library className="h-4 w-4 mr-2" />
+                {t('selectDefaultTemplate')}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Upload Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t('upload')}</DialogTitle>
-          </DialogHeader>
-          <TemplateUpload
-            serviceId={serviceId}
-            onSuccess={() => setUploadDialogOpen(false)}
-            onCancel={() => setUploadDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Info Card */}
+      <Card className="border-dashed">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <FileText className="h-5 w-5 text-blue-500" />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium text-foreground mb-1">
+                {tTemplates('placeholderInfo.title')}
+              </p>
+              <p>
+                {tTemplates('placeholderInfo.description')}
+              </p>
+              <Button
+                variant="link"
+                className="px-0 h-auto mt-2"
+                asChild
+              >
+                <Link href={`/${locale}/templates`}>
+                  {tTemplates('title')} →
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Template Library Dialog */}
       <TemplateLibraryDialog
         open={libraryDialogOpen}
         onOpenChange={setLibraryDialogOpen}
-        serviceId={serviceId}
-        onImportSuccess={() => setLibraryDialogOpen(false)}
+        onSelect={(template) => handleTemplateSelect(template.id)}
+      />
+
+      {/* Remove Confirmation Dialog */}
+      <ConfirmDialog
+        open={removeDialogOpen}
+        onOpenChange={setRemoveDialogOpen}
+        title={t('removeDefault')}
+        description={t('removeDefaultConfirm')}
+        onConfirm={handleRemoveDefault}
+        variant="destructive"
       />
     </div>
   );

@@ -25,10 +25,9 @@ import { FlavorWizard } from '@/components/services/FlavorWizard';
 import { FlavorTable } from '@/components/services/FlavorTable';
 import { ServiceExecutionForm } from '@/components/services/ServiceExecutionForm';
 import { ServiceAnalytics } from '@/components/services/ServiceAnalytics';
-import { TemplateList } from '@/components/templates';
-
 import { useService, useDeleteService } from '@/hooks/use-services';
-import { useDocumentTemplates } from '@/hooks/use-document-templates';
+import { useDocumentTemplate } from '@/hooks/use-document-templates';
+import { getLocalizedName } from '@/lib/template-utils';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -48,8 +47,10 @@ export default function ServiceDetailPage({ params }: PageProps) {
   // Fetch service data (includes flavors)
   const { data: service, isLoading, error } = useService(id);
 
-  // Fetch document templates
-  const { data: templates = [] } = useDocumentTemplates(id);
+  // Fetch current default template if set
+  const { data: defaultTemplate } = useDocumentTemplate(
+    service?.default_template_id ?? undefined
+  );
 
   // Mutations
   const deleteService = useDeleteService();
@@ -239,9 +240,9 @@ export default function ServiceDetailPage({ params }: PageProps) {
                     {t('tabs.templates')}
                   </CardTitle>
                   <CardDescription>
-                    {templates.length === 0
-                      ? t('templatesEmpty')
-                      : t('templatesCount', { count: templates.length })}
+                    {defaultTemplate
+                      ? getLocalizedName(defaultTemplate, locale)
+                      : t('templatesEmpty')}
                   </CardDescription>
                 </div>
                 <Button variant="outline" asChild>
@@ -252,7 +253,30 @@ export default function ServiceDetailPage({ params }: PageProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <TemplateList templates={templates} serviceId={id} />
+              {defaultTemplate ? (
+                <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <FileText className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium">{getLocalizedName(defaultTemplate, locale)}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {defaultTemplate.file_name}
+                    </p>
+                  </div>
+                  <Badge>{t('currentDefault')}</Badge>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">{t('noDefaultTemplate')}</p>
+                  <Button asChild>
+                    <Link href={`/${locale}/services/${id}/templates`}>
+                      {t('selectDefaultTemplate')}
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

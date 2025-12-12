@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -21,8 +22,10 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useUploadDocumentTemplate } from '@/hooks/use-document-templates';
+import { formatFileSize } from '@/lib/template-utils';
 import type { DocumentTemplate } from '@/types/document-template';
 
 // Max file size: 10MB
@@ -34,16 +37,27 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 interface TemplateUploadProps {
-  serviceId: string;
+  organizationId?: string;
+  userId?: string;
+  /** @deprecated Use organizationId instead - kept for backward compatibility */
+  serviceId?: string;
+  /** Whether to show the "set as default" checkbox. Only relevant in service context. */
+  showDefaultOption?: boolean;
   onSuccess: (template: DocumentTemplate) => void;
   onCancel?: () => void;
 }
 
 /**
- * Template upload form with drag-and-drop support.
- * Uses native file input with drag-drop styling (react-dropzone can be added as enhancement).
+ * Template upload form with i18n fields and drag-and-drop support.
  */
-export function TemplateUpload({ serviceId, onSuccess, onCancel }: TemplateUploadProps) {
+export function TemplateUpload({
+  organizationId,
+  userId,
+  serviceId: _serviceId,
+  showDefaultOption = true,
+  onSuccess,
+  onCancel,
+}: TemplateUploadProps) {
   const t = useTranslations('templates');
   const tCommon = useTranslations('common');
 
@@ -53,10 +67,12 @@ export function TemplateUpload({ serviceId, onSuccess, onCancel }: TemplateUploa
 
   const uploadMutation = useUploadDocumentTemplate();
 
-  // Form schema
+  // Form schema with i18n fields
   const formSchema = z.object({
-    name: z.string().min(1, t('fileValidation.required')),
-    description: z.string().optional(),
+    name_fr: z.string().min(1, t('fileValidation.required')),
+    name_en: z.string().optional(),
+    description_fr: z.string().optional(),
+    description_en: z.string().optional(),
     is_default: z.boolean().default(false),
   });
 
@@ -65,8 +81,10 @@ export function TemplateUpload({ serviceId, onSuccess, onCancel }: TemplateUploa
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name_fr: '',
+      name_en: '',
+      description_fr: '',
+      description_en: '',
       is_default: false,
     },
   });
@@ -101,9 +119,9 @@ export function TemplateUpload({ serviceId, onSuccess, onCancel }: TemplateUploa
     setSelectedFile(file);
 
     // Auto-fill name from filename if empty
-    if (!form.getValues('name')) {
+    if (!form.getValues('name_fr')) {
       const nameWithoutExtension = file.name.replace(/\.docx$/i, '');
-      form.setValue('name', nameWithoutExtension);
+      form.setValue('name_fr', nameWithoutExtension);
     }
   };
 
@@ -145,11 +163,23 @@ export function TemplateUpload({ serviceId, onSuccess, onCancel }: TemplateUploa
 
     const formData = new FormData();
     formData.append('file', selectedFile);
-    formData.append('name', data.name);
-    formData.append('service_id', serviceId);
+    formData.append('name_fr', data.name_fr);
     formData.append('is_default', String(data.is_default));
-    if (data.description) {
-      formData.append('description', data.description);
+
+    if (data.name_en) {
+      formData.append('name_en', data.name_en);
+    }
+    if (data.description_fr) {
+      formData.append('description_fr', data.description_fr);
+    }
+    if (data.description_en) {
+      formData.append('description_en', data.description_en);
+    }
+    if (organizationId) {
+      formData.append('organization_id', organizationId);
+    }
+    if (userId) {
+      formData.append('user_id', userId);
     }
 
     try {
@@ -159,13 +189,6 @@ export function TemplateUpload({ serviceId, onSuccess, onCancel }: TemplateUploa
     } catch (error: any) {
       toast.error(error.message || t('uploadError'));
     }
-  };
-
-  // Format file size
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -228,54 +251,109 @@ export function TemplateUpload({ serviceId, onSuccess, onCancel }: TemplateUploa
           <p className="text-sm text-destructive">{fileError}</p>
         )}
 
-        {/* Template Name */}
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('name')}</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder={t('namePlaceholder')} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* i18n fields in tabs */}
+        <Tabs defaultValue="fr" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="fr">{t('fields.french')}</TabsTrigger>
+            <TabsTrigger value="en">{t('fields.english')}</TabsTrigger>
+          </TabsList>
 
-        {/* Description */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('description')}</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder={t('descriptionPlaceholder')} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <TabsContent value="fr" className="space-y-4 mt-4">
+            {/* French Name */}
+            <FormField
+              control={form.control}
+              name="name_fr"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('fields.nameFr')} *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder={t('namePlaceholder')} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        {/* Set as Default */}
-        <FormField
-          control={form.control}
-          name="is_default"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <FormControl>
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <FormLabel>{t('setDefault')}</FormLabel>
-                <FormDescription>
-                  {t('uploadDescription')}
-                </FormDescription>
-              </div>
-            </FormItem>
-          )}
-        />
+            {/* French Description */}
+            <FormField
+              control={form.control}
+              name="description_fr"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('fields.descriptionFr')}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder={t('descriptionPlaceholder')}
+                      rows={3}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </TabsContent>
+
+          <TabsContent value="en" className="space-y-4 mt-4">
+            {/* English Name */}
+            <FormField
+              control={form.control}
+              name="name_en"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('fields.nameEn')}</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder={t('namePlaceholder')} />
+                  </FormControl>
+                  <FormDescription>
+                    {t('fields.optionalEnglish')}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* English Description */}
+            <FormField
+              control={form.control}
+              name="description_en"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('fields.descriptionEn')}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder={t('descriptionPlaceholder')}
+                      rows={3}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </TabsContent>
+        </Tabs>
+
+        {/* Set as Default - only shown in service context */}
+        {showDefaultOption && (
+          <FormField
+            control={form.control}
+            name="is_default"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>{t('setDefault')}</FormLabel>
+                  <FormDescription>
+                    {t('setDefaultDescription')}
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Actions */}
         <div className="flex justify-end gap-3">

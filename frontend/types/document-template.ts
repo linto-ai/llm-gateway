@@ -1,24 +1,107 @@
 // Document Template types
 
 /**
- * Document template response from API
+ * Template scope indicating visibility level
+ */
+export type TemplateScope = 'system' | 'organization' | 'user';
+
+/**
+ * Document template response from API (updated schema with i18n)
  */
 export interface DocumentTemplate {
   id: string;
-  name: string;
-  description?: string;
-  service_id?: string;
-  organization_id?: string;
+  name_fr: string;
+  name_en: string | null;
+  description_fr: string | null;
+  description_en: string | null;
+  organization_id: string | null;
+  user_id: string | null;
   file_name: string;
   file_size: number;
-  placeholders?: string[];
+  file_hash: string;
+  mime_type: string;
+  placeholders: string[];
   is_default: boolean;
+  scope: TemplateScope;
   created_at: string;
   updated_at: string;
 }
 
 /**
- * Request to create a new template (via multipart form data)
+ * Query parameters for listing templates
+ */
+export interface TemplateQueryParams {
+  organization_id?: string;
+  user_id?: string;
+  include_system?: boolean;
+  service_id?: string;
+}
+
+/**
+ * Form data for template upload (i18n fields)
+ */
+export interface DocumentTemplateUpload {
+  file: File;
+  name_fr: string;
+  name_en?: string;
+  description_fr?: string;
+  description_en?: string;
+  organization_id?: string;
+  user_id?: string;
+  is_default?: boolean;
+}
+
+/**
+ * Form data for template update
+ */
+export interface DocumentTemplateUpdate {
+  file?: File;
+  name_fr?: string;
+  name_en?: string;
+  description_fr?: string;
+  description_en?: string;
+  is_default?: boolean;
+}
+
+/**
+ * Placeholder info with metadata
+ */
+export interface PlaceholderInfo {
+  name: string;
+  description: string | null;
+  is_standard: boolean;
+}
+
+/**
+ * Placeholder status for export preview
+ */
+export interface PlaceholderStatus {
+  name: string;
+  status: 'available' | 'missing' | 'extraction_required';
+  value?: string;
+}
+
+/**
+ * Export preview response
+ */
+export interface ExportPreview {
+  template_id: string;
+  template_name: string;
+  placeholders: PlaceholderStatus[];
+  extraction_required: boolean;
+  estimated_extraction_tokens?: number;
+}
+
+/**
+ * Export preview request
+ */
+export interface ExportPreviewRequest {
+  template_id?: string;
+}
+
+/**
+ * Legacy: Request to create a new template (via multipart form data)
+ * @deprecated Use DocumentTemplateUpload instead
  */
 export interface DocumentTemplateCreate {
   name: string;
@@ -28,8 +111,8 @@ export interface DocumentTemplateCreate {
 }
 
 /**
- * Form data fields for template upload
- * Actual upload uses FormData with file attachment
+ * Legacy: Form data fields for template upload
+ * @deprecated Use DocumentTemplateUpload instead
  */
 export interface DocumentTemplateUploadFields {
   name: string;

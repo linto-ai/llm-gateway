@@ -139,14 +139,24 @@
     "success": "Document exported successfully",
     "error": "Failed to export document",
     "noTemplate": "No template configured for export",
-    "selectTemplate": "Select Template"
+    "selectTemplate": "Select Template",
+    "defaultTemplate": "Default Template",
+    "preview": "Export Preview",
+    "previewDescription": "Placeholders for template: {template}",
+    "extractionRequired": "Some fields require extraction (~{tokens} tokens estimated)",
+    "missingPlaceholders": "{count, plural, one {# placeholder is missing} other {# placeholders are missing}}: {placeholders}",
+    "placeholderStatus": {
+      "available": "Available",
+      "missing": "Missing",
+      "extraction_required": "Will be extracted"
+    },
+    "statusSummary": {
+      "available": "{count} available",
+      "extraction": "{count} need extraction",
+      "missing": "{count} missing"
+    }
   },
   "extractedMetadata": "Extracted Metadata",
-  "extractMetadata": "Extract Metadata",
-  "reExtractMetadata": "Re-extract Metadata",
-  "extractingMetadata": "Extracting metadata...",
-  "extractMetadataSuccess": "Metadata extracted successfully",
-  "extractMetadataError": "Failed to extract metadata",
   "categorization": {
     "title": "Categorization",
     "matchedTags": "Matched Tags",
@@ -173,6 +183,7 @@
     "edited": "Edited {time}",
     "historyButton": "History",
     "loadError": "Failed to load version history",
-    "contentUnavailable": "Content not available"
+    "contentUnavailable": "Content not available",
+    "viewingOldVersion": "Viewing version {number}. This is not the current version."
   }
 }

@@ -60,8 +60,9 @@ export function FlavorWizardAdvanced({ service, config, flavor }: FlavorWizardAd
   const outputType = form.watch('output_type');
   const failoverEnabled = form.watch('failover_enabled');
 
-  // Only show extraction prompt config when output type is markdown
-  const showExtractionConfig = outputType === 'markdown';
+  // Show extraction prompt config for text and markdown output types
+  // (extraction can be useful to extract metadata from plain text outputs too)
+  const showExtractionConfig = outputType === 'markdown' || outputType === 'text';
 
   // Fetch prompts for extraction and categorization prompt selectors
   const { data: promptsResponse } = usePrompts({});

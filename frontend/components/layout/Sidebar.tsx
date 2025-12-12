@@ -13,6 +13,7 @@ import {
   FileText,
   Briefcase,
   Settings2,
+  Files,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -50,6 +51,11 @@ const navItems: NavItem[] = [
     href: '/prompts',
     labelKey: 'prompts',
     icon: FileText,
+  },
+  {
+    href: '/templates',
+    labelKey: 'templates',
+    icon: Files,
   },
   {
     href: '/jobs',

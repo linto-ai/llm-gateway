@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import type { DocumentTemplate, ExportFormat } from '@/types/document-template';
+import type {
+  DocumentTemplate,
+  ExportFormat,
+  TemplateQueryParams,
+  ExportPreview,
+  PlaceholderInfo,
+} from '@/types/document-template';
 import type { JobResponse } from '@/types/job';
 
 /**
@@ -10,19 +16,30 @@ import type { JobResponse } from '@/types/job';
 // ==================== DOCUMENT TEMPLATES ====================
 
 /**
- * Fetch document templates, optionally filtered by service
- * Note: API returns DocumentTemplate[] directly, not wrapped in { templates: [...] }
+ * Fetch document templates with hierarchical visibility
  */
-export const useDocumentTemplates = (serviceId?: string, options?: { includeGlobal?: boolean }) => {
+export const useDocumentTemplates = (params?: TemplateQueryParams) => {
   return useQuery({
-    queryKey: ['document-templates', serviceId, options?.includeGlobal],
-    queryFn: () => apiClient.documentTemplates.list(serviceId, { includeGlobal: options?.includeGlobal }),
-    select: (data) => data, // Return array directly
+    queryKey: ['document-templates', params],
+    queryFn: () => apiClient.documentTemplates.list(params),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 };
 
 /**
- * Fetch global document templates (template library)
+ * Fetch system templates (org_id=null, user_id=null)
+ */
+export const useSystemDocumentTemplates = () => {
+  return useQuery({
+    queryKey: ['document-templates', 'system'],
+    queryFn: () => apiClient.documentTemplates.listSystem(),
+    select: (data) => data,
+  });
+};
+
+/**
+ * Fetch global document templates (template library) - legacy alias
  */
 export const useGlobalDocumentTemplates = () => {
   return useQuery({
@@ -57,6 +74,20 @@ export const useUploadDocumentTemplate = () => {
 };
 
 /**
+ * Update a document template (metadata and/or file)
+ */
+export const useUpdateDocumentTemplate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
+      apiClient.documentTemplates.update(id, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['document-templates'] });
+    },
+  });
+};
+
+/**
  * Delete a document template
  */
 export const useDeleteDocumentTemplate = () => {
@@ -84,6 +115,20 @@ export const useSetDefaultDocumentTemplate = () => {
 };
 
 /**
+ * Set a template as the global default (for exports without service-specific default)
+ */
+export const useSetGlobalDefaultDocumentTemplate = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (templateId: string) =>
+      apiClient.documentTemplates.setGlobalDefault(templateId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['document-templates'] });
+    },
+  });
+};
+
+/**
  * Import a global template to a service
  */
 export const useImportDocumentTemplate = () => {
@@ -94,6 +139,17 @@ export const useImportDocumentTemplate = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['document-templates'] });
     },
+  });
+};
+
+/**
+ * Get template placeholders
+ */
+export const useTemplatePlaceholders = (templateId: string | undefined) => {
+  return useQuery({
+    queryKey: ['document-templates', templateId, 'placeholders'],
+    queryFn: () => apiClient.documentTemplates.getPlaceholders(templateId!),
+    enabled: !!templateId,
   });
 };
 
@@ -129,14 +185,16 @@ export const useExportJob = () => {
       jobId,
       format,
       templateId,
+      versionNumber,
       fileName,
     }: {
       jobId: string;
       format: ExportFormat;
       templateId?: string;
+      versionNumber?: number;
       fileName?: string;
     }) => {
-      const blob = await apiClient.jobs.export(jobId, format, templateId);
+      const blob = await apiClient.jobs.export(jobId, format, templateId, versionNumber);
       // Trigger browser download
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -151,25 +209,13 @@ export const useExportJob = () => {
   });
 };
 
-// ==================== METADATA EXTRACTION ====================
-
 /**
- * Extract metadata from a completed job
+ * Preview export placeholders and extraction status
  */
-export const useExtractJobMetadata = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      jobId,
-      promptId,
-      fields,
-    }: {
-      jobId: string;
-      promptId?: string;
-      fields?: string[];
-    }) => apiClient.jobs.extractMetadata(jobId, promptId, fields),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['jobs', variables.jobId] });
-    },
+export const useExportPreview = (jobId: string, templateId?: string) => {
+  return useQuery({
+    queryKey: ['export-preview', jobId, templateId],
+    queryFn: () => apiClient.exportPreview.get(jobId, templateId),
+    enabled: !!jobId,
   });
 };

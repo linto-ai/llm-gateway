@@ -4,7 +4,7 @@ import { use, useMemo, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -27,15 +27,13 @@ import {
   JobMetricsCard,
   JobProcessingTimeline,
   JobResultEditor,
-  JobVersionHistory,
   MetadataDisplay,
   CategorizationDisplay,
 } from '@/components/jobs';
 
 import { useJob, useDeleteJob } from '@/hooks/use-jobs';
 import { useJobWebSocket } from '@/hooks/use-job-websocket';
-import { useUpdateJobResult, useRestoreJobVersion } from '@/hooks/use-job-versions';
-import { useExtractJobMetadata } from '@/hooks/use-document-templates';
+import { useUpdateJobResult, useJobVersion } from '@/hooks/use-job-versions';
 import type { JobResponse, JobStatus, JobTokenMetrics, CumulativeMetrics } from '@/types/job';
 
 interface JobDetailPageProps {
@@ -104,14 +102,20 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
   // Determine if job is active (for live metrics display)
   const isActiveJob = ['queued', 'started', 'processing'].includes(currentStatus);
 
-  // Edit and version history state
+  // Edit state
   const [isEditing, setIsEditing] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // Mutations for editing, restoring and deleting
+  // Version viewing state - null means viewing current version
+  const [viewingVersionNumber, setViewingVersionNumber] = useState<number | null>(null);
+
+  // Fetch specific version content when viewing a non-current version
+  const {
+    data: versionData,
+    isLoading: isLoadingVersion,
+  } = useJobVersion(id, viewingVersionNumber ?? 0);
+
+  // Mutations for editing and deleting
   const updateResultMutation = useUpdateJobResult(id);
-  const restoreVersionMutation = useRestoreJobVersion(id);
-  const extractMetadataMutation = useExtractJobMetadata();
   const deleteJobMutation = useDeleteJob();
 
   // Build current token metrics from WebSocket cumulative data for live display
@@ -136,7 +140,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
     return `${minutes}m ${remainingSeconds}s`;
   }, [job?.created_at, job?.completed_at]);
 
-  // Extract content from result for editing
+  // Extract content from result for editing (always from current version, not viewed version)
   const extractedContent = useMemo(() => {
     if (!currentResult) return '';
     if (typeof currentResult === 'string') return currentResult;
@@ -151,6 +155,8 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
     try {
       await updateResultMutation.mutateAsync(content);
       setIsEditing(false);
+      // Reset to viewing current version after save
+      setViewingVersionNumber(null);
       toast.success(t('editor.saveSuccess'));
     } catch (error: any) {
       toast.error(error.message || t('editor.saveError'));
@@ -158,16 +164,51 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
     }
   }, [updateResultMutation, t]);
 
-  // Handle restore from version history
-  const handleRestoreVersion = useCallback(async (versionNumber: number) => {
-    try {
-      await restoreVersionMutation.mutateAsync(versionNumber);
-      toast.success(t('versions.restoreSuccess', { number: versionNumber }));
-    } catch (error: any) {
-      toast.error(error.message || t('versions.restoreError'));
-      throw error;
+  // Handle version change - just switch the viewing version
+  const handleVersionChange = useCallback((versionNumber: number) => {
+    const currentVer = job?.current_version ?? 1;
+    // If selecting current version, clear the viewing state
+    if (versionNumber === currentVer) {
+      setViewingVersionNumber(null);
+    } else {
+      setViewingVersionNumber(versionNumber);
     }
-  }, [restoreVersionMutation, t]);
+  }, [job?.current_version]);
+
+  // Determine which content to display based on viewing version
+  const displayResult = useMemo(() => {
+    // If viewing a specific version (not current), use version data
+    if (viewingVersionNumber !== null && versionData?.content) {
+      // Wrap in same format as job result
+      return { output: versionData.content };
+    }
+    // Otherwise use current result
+    return currentResult;
+  }, [viewingVersionNumber, versionData, currentResult]);
+
+  // Determine which metadata to display based on viewing version
+  const displayMetadata = useMemo(() => {
+    // If viewing a non-current version
+    if (viewingVersionNumber !== null) {
+      // Version 1 uses the main extracted_metadata (that's where it was originally extracted from)
+      if (viewingVersionNumber === 1) {
+        return job?.result?.extracted_metadata ?? null;
+      }
+      // Other versions: check version_extractions cache
+      const versionExtractions = job?.result?.version_extractions;
+      if (versionExtractions) {
+        const versionKey = String(viewingVersionNumber);
+        const versionExtraction = versionExtractions[versionKey];
+        if (versionExtraction?.metadata) {
+          return versionExtraction.metadata;
+        }
+      }
+      // No cached metadata for this version - show nothing
+      return null;
+    }
+    // Viewing current version - use main extracted_metadata
+    return job?.result?.extracted_metadata ?? null;
+  }, [viewingVersionNumber, job?.result]);
 
   // Handle delete job
   const handleDeleteJob = useCallback(async () => {
@@ -300,53 +341,31 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
         />
       ) : (
         <JobResultView
-          result={currentResult}
+          result={displayResult}
           error={currentError}
           status={currentStatus}
           outputType={job?.output_type}
-          onEdit={currentStatus === 'completed' ? () => setIsEditing(true) : undefined}
-          onShowHistory={currentStatus === 'completed' ? () => setIsHistoryOpen(true) : undefined}
+          onEdit={currentStatus === 'completed' && viewingVersionNumber === null ? () => setIsEditing(true) : undefined}
           currentVersion={job?.current_version}
+          viewingVersion={viewingVersionNumber ?? job?.current_version}
+          onVersionChange={currentStatus === 'completed' ? handleVersionChange : undefined}
+          isLoadingVersion={isLoadingVersion}
           lastEditedAt={job?.last_edited_at}
           jobId={id}
           jobServiceName={job?.service_name}
         />
       )}
 
-      {/* Re-extract Metadata Button - only show if flavor has extraction prompt */}
-      {currentStatus === 'completed' && job?.has_extraction_prompt && (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            onClick={() => extractMetadataMutation.mutate({ jobId: id })}
-            disabled={extractMetadataMutation.isPending}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${extractMetadataMutation.isPending ? 'animate-spin' : ''}`} />
-            {extractMetadataMutation.isPending ? t('extractingMetadata') : t('reExtractMetadata')}
-          </Button>
-        </div>
-      )}
-
       {/* Extracted Metadata Display */}
-      {job?.result?.extracted_metadata && Object.keys(job.result.extracted_metadata).length > 0 && (
+      {displayMetadata && Object.keys(displayMetadata).length > 0 && (
         <MetadataDisplay
-          metadata={job.result.extracted_metadata}
+          metadata={displayMetadata}
         />
       )}
 
       {/* Categorization Display */}
       {job?.result?.categorization && (
         <CategorizationDisplay categorization={job.result.categorization} />
-      )}
-
-      {/* Version history dialog */}
-      {isHistoryOpen && job && (
-        <JobVersionHistory
-          jobId={id}
-          currentVersion={job.current_version ?? 1}
-          onRestore={handleRestoreVersion}
-          onClose={() => setIsHistoryOpen(false)}
-        />
       )}
 
       {/* Metadata Card */}

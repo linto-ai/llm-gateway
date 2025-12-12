@@ -5,7 +5,7 @@ import React, { createContext, useContext } from 'react';
 /**
  * Organization Context
  * Provides a default organization ID to all forms
- * In future sprints, this will be replaced with user authentication
+ * TODO: Replace with user authentication
  */
 
 interface OrganizationContextType {

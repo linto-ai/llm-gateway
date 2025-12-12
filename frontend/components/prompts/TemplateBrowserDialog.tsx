@@ -27,7 +27,7 @@ export function TemplateBrowserDialog({
   onSelect,
   locale = 'en',
 }: TemplateBrowserDialogProps) {
-  const t = useTranslations('sprint007.prompts.templates');
+  const t = useTranslations('prompts.templates');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
 
