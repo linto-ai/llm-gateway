@@ -170,6 +170,7 @@ class ServiceService:
             "is_active": service.is_active,
             "metadata": service.service_metadata,  # Map service_metadata -> metadata
             "service_category": service.service_category,
+            "default_template_id": service.default_template_id,
             "flavors": [self._to_flavor_response(f) for f in service.flavors],
             "created_at": service.created_at,
             "updated_at": service.updated_at

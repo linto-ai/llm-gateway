@@ -43,6 +43,8 @@ python-docx>=0.8.11
 # Markdown to DOCX conversion (LibreOffice for PDF)
 markdown>=3.5
 htmldocx>=0.0.6
+# DOCX to HTML conversion (for preview)
+mammoth>=1.6.0
 
 # CLI tools for load testing
 click>=8.0

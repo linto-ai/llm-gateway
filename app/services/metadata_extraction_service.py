@@ -46,23 +46,28 @@ class MetadataExtractionService:
     async def _get_all_template_placeholders(
         self,
         db: AsyncSession,
-        service_id: UUID,
+        organization_id: Optional[UUID] = None,
+        user_id: Optional[UUID] = None,
     ) -> List[str]:
         """
-        Collect all unique placeholders from ALL templates attached to a service.
+        Collect all unique placeholders from ALL templates visible to the context.
 
         This ensures metadata extraction covers all fields that might be needed
         regardless of which template is used for export.
 
         Args:
             db: Database session
-            service_id: Service ID to get templates for
+            organization_id: Organization scope
+            user_id: User scope
 
         Returns:
             Sorted list of unique placeholder names from all templates
         """
         templates = await document_template_service.list_templates(
-            db, service_id=service_id
+            db,
+            organization_id=organization_id,
+            user_id=user_id,
+            include_system=True,
         )
 
         # Always start with default fields
@@ -111,9 +116,16 @@ class MetadataExtractionService:
             return {}
 
         # Build extraction prompt with placeholders
-        # Get ALL placeholders from ALL templates for this service
-        fields_to_extract = await self._get_all_template_placeholders(db, job.service_id)
-        logger.info(f"Extracting metadata fields for service {job.service_id}: {fields_to_extract}")
+        # Get ALL placeholders from ALL templates visible in the job's context
+        # Note: organization_id on Job is a string, convert if valid UUID
+        org_uuid = None
+        if job.organization_id:
+            try:
+                org_uuid = UUID(job.organization_id)
+            except (ValueError, TypeError):
+                pass
+        fields_to_extract = await self._get_all_template_placeholders(db, organization_id=org_uuid)
+        logger.info(f"Extracting metadata fields for job {job.id}: {fields_to_extract}")
         extraction_prompt = prompt.content.replace(
             "{{output}}", result_content
         ).replace(
@@ -182,11 +194,18 @@ class MetadataExtractionService:
         if not result_content:
             return {}
 
-        # Use provided fields, or get ALL placeholders from ALL templates for this service
+        # Use provided fields, or get ALL placeholders from ALL templates visible in context
         if fields:
             fields_to_extract = fields
         else:
-            fields_to_extract = await self._get_all_template_placeholders(db, job.service_id)
+            # Convert job organization_id string to UUID if valid
+            org_uuid = None
+            if job.organization_id:
+                try:
+                    org_uuid = UUID(job.organization_id)
+                except (ValueError, TypeError):
+                    pass
+            fields_to_extract = await self._get_all_template_placeholders(db, organization_id=org_uuid)
 
         # Build extraction prompt - handle both {} and {{}} placeholder styles
         extraction_prompt = prompt.content

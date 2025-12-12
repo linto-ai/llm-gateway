@@ -12,7 +12,6 @@ This directory contains synthetic conversation datasets in **plain text format**
 - Multi-speaker conversation processing
 - Cross-language conversation analysis
 
-**Sprint:** 004
 **Generated:** 2025-11-24
 **Format:** Plain text (.txt) files
 **Method:** LLM-generated synthetic conversations

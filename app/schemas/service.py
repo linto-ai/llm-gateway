@@ -333,12 +333,14 @@ class ServiceUpdate(BaseModel):
     flavors: Optional[List[ServiceFlavorCreate]] = None
     metadata: Optional[Dict[str, Any]] = None
     service_category: Optional[str] = Field(None, max_length=50)
+    default_template_id: Optional[UUID] = Field(None, description="Default document template for export")
 
 
 class ServiceResponse(ServiceBase):
     """Schema for service response with database fields."""
     id: UUID
     flavors: List[ServiceFlavorResponse]
+    default_template_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
 

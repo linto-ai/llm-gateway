@@ -1,17 +1,17 @@
 # Document Templates Guide
 
-Document templates enable DOCX/PDF export of job results with automatic metadata extraction.
+Document templates enable DOCX/PDF/HTML export of job results with automatic metadata extraction.
 
 ## How It Works
 
 ```
-Job Result → Extraction Prompt → Metadata → Template → DOCX/PDF
+Job Result → Extraction Prompt → Metadata → Template → DOCX/PDF/HTML
 ```
 
 1. **Job completes** with a result (summary, translation, etc.)
 2. **Extraction prompt** (LLM call) extracts metadata fields from the result
 3. **Placeholders** in the template are replaced with extracted values
-4. **DOCX/PDF** is generated for download
+4. **DOCX/PDF/HTML** is generated for download or preview
 
 ## Setup
 
@@ -102,23 +102,36 @@ curl "http://localhost:8000/api/v1/jobs/{job_id}/export/docx" -o result.docx
 # Export to PDF
 curl "http://localhost:8000/api/v1/jobs/{job_id}/export/pdf" -o result.pdf
 
+# Export to HTML (for preview or embedding)
+curl "http://localhost:8000/api/v1/jobs/{job_id}/export/html" -o result.html
+
 # With specific template
 curl "http://localhost:8000/api/v1/jobs/{job_id}/export/docx?template_id={uuid}" -o result.docx
 ```
 
-### Manual Metadata Extraction
+## Metadata Extraction
 
-Trigger extraction manually on a completed job:
+Metadata extraction happens automatically at job submission time, only when the service's default template has custom placeholders defined. There are no default extraction fields - only template-defined custom placeholders are extracted.
 
-```bash
-curl -X POST "http://localhost:8000/api/v1/jobs/{job_id}/extract-metadata"
-```
+Standard placeholders (`output`, `job_id`, `job_date`, `service_name`, etc.) are computed at export time and don't require LLM extraction.
 
-## Default Fields
+## Export Formats
 
-If no template is configured, these fields are available by default:
+| Format | Description | Use Case |
+|--------|-------------|----------|
+| `docx` | Microsoft Word document | Editable documents, direct download |
+| `pdf` | PDF via LibreOffice | Faithful rendering with template styles |
+| `html` | HTML via mammoth | Quick preview, embedding in web pages |
 
-`title`, `summary`, `participants`, `date`, `topics`, `action_items`, `sentiment`, `language`, `word_count`, `key_points`
+### HTML Export Notes
+
+The HTML export uses [mammoth](https://github.com/mwilliamson/python-mammoth) to convert DOCX to HTML. While mammoth handles basic formatting well, some complex template features may not render perfectly:
+
+- **Supported**: Paragraphs, headings, bold/italic/underline, lists, tables, images (base64 embedded)
+- **Limited**: Multi-column layouts, headers/footers, complex table borders
+- **Not supported**: Page breaks, text boxes, shapes
+
+For faithful rendering of complex templates, use PDF export instead.
 
 ## API Reference
 
@@ -129,5 +142,4 @@ See [Swagger](http://localhost:8000/docs) for full API. Key endpoints:
 | `POST /templates` | Upload template (multipart) |
 | `GET /templates` | List templates |
 | `GET /templates/{id}/placeholders` | Get extracted placeholders |
-| `GET /jobs/{id}/export/{format}` | Export job (docx/pdf) |
-| `POST /jobs/{id}/extract-metadata` | Trigger extraction |
+| `GET /jobs/{id}/export/{format}` | Export job (docx/pdf/html) |

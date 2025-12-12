@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Sprint 008 - Manual API Tests
+# Flavor Templates - Manual API Tests
 # Run these tests against the running backend to verify bug fixes
 
 BASE_URL="http://localhost:8000"
@@ -17,7 +17,7 @@ echo "Creating test templates..."
 SYSTEM_TEMPLATE_ID=$(curl -s -X POST "${BASE_URL}/api/v1/prompts" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "sprint-008-system-template",
+    "name": "flavor-test-system-template",
     "content": "You are a helpful assistant that summarizes conversations.",
     "language": "en",
     "is_template": true,
@@ -27,7 +27,7 @@ SYSTEM_TEMPLATE_ID=$(curl -s -X POST "${BASE_URL}/api/v1/prompts" \
 USER_TEMPLATE_ID=$(curl -s -X POST "${BASE_URL}/api/v1/prompts" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "sprint-008-user-template",
+    "name": "flavor-test-user-template",
     "content": "Summarize the following conversation: {{conversation}}",
     "language": "en",
     "is_template": true,
@@ -37,7 +37,7 @@ USER_TEMPLATE_ID=$(curl -s -X POST "${BASE_URL}/api/v1/prompts" \
 REDUCE_TEMPLATE_ID=$(curl -s -X POST "${BASE_URL}/api/v1/prompts" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "sprint-008-reduce-template",
+    "name": "flavor-test-reduce-template",
     "content": "Combine these summaries: {{summaries}}",
     "language": "en",
     "is_template": true,
@@ -183,8 +183,8 @@ echo "TEST-008-006: Set Default Flavor"
 NEW_SERVICE=$(curl -s -X POST "${BASE_URL}/api/v1/services" \
   -H "Content-Type: application/json" \
   -d "{
-    \"name\": \"sprint-008-multi-flavor-$RANDOM\",
-    \"route\": \"/test-sprint-008-$RANDOM\",
+    \"name\": \"flavor-test-multi-flavor-$RANDOM\",
+    \"route\": \"/test-flavor-test-$RANDOM\",
     \"service_type\": \"summary\",
     \"flavors\": [
       {\"name\": \"Flavor A\", \"model_id\": \"${MODEL_ID}\", \"temperature\": 0.7, \"is_default\": true},
@@ -308,7 +308,7 @@ echo ""
 
 # Summary
 echo "========================================"
-echo "Sprint 008 QA Test Results"
+echo "Flavor Templates QA Test Results"
 echo "========================================"
 echo "PASSED: $PASSED/10"
 echo "FAILED: $FAILED/10"

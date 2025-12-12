@@ -76,44 +76,41 @@ def resolve_tokenizer_for_flavor(flavor) -> str:
 
 async def _get_extraction_fields(db: AsyncSession, service_id: UUID) -> list[str]:
     """
-    Collect all unique placeholders from templates attached to a service.
+    Collect custom placeholders from the service's default template for extraction.
 
-    These fields will be passed to the extraction prompt to ensure
-    metadata extraction covers all template placeholders.
+    Only returns placeholders that need to be extracted by the LLM.
+    STANDARD_PLACEHOLDERS (output, job_date, service_name, etc.) are excluded
+    as they are computed at export time.
+
+    No default extraction fields - only template-defined custom placeholders.
 
     Returns:
-        Sorted list of placeholder definitions (with hints if available)
+        Sorted list of placeholder definitions (with hints if available),
+        or empty list if no custom placeholders to extract.
     """
-    # Default fields always available (standard metadata)
-    default_fields = {
-        "title": "title",
-        "summary": "summary",
-        "participants": "participants",
-        "date": "date",
-        "topics": "topics",
-        "action_items": "action_items",
-        "sentiment": "sentiment",
-        "language": "language",
-        "key_points": "key_points"
-    }
+    # Standard placeholders computed at export time - NOT to be extracted by LLM
+    standard_placeholders = set(document_template_service.STANDARD_PLACEHOLDERS)
 
-    templates = await document_template_service.list_templates(db, service_id=service_id)
+    # No default fields - only extract what the template defines
+    extraction_fields = {}
 
-    # Map field_name -> full placeholder (with description if available)
-    all_fields = dict(default_fields)
-
-    for template in templates:
-        if template.placeholders:
+    # Get service's default template (if any)
+    service = await service_service.get_service_by_id(db, service_id)
+    if service and service.default_template_id:
+        template = await document_template_service.get_template(db, service.default_template_id)
+        if template and template.placeholders:
             for placeholder in template.placeholders:
                 # Extract field name (part before colon, if any)
                 # e.g., "cat_count: number of cats" -> "cat_count"
                 field_name = placeholder.split(":")[0].strip()
+                # Skip STANDARD_PLACEHOLDERS - they're computed at export, not extracted
+                if field_name in standard_placeholders:
+                    continue
                 # Keep the full placeholder with description for LLM guidance
-                if field_name not in all_fields or ":" in placeholder:
-                    all_fields[field_name] = placeholder
+                extraction_fields[field_name] = placeholder
 
-    # Return sorted list of placeholder definitions (with descriptions)
-    return sorted(list(all_fields.values()))
+    # Return sorted list of placeholder definitions (empty if no custom placeholders)
+    return sorted(list(extraction_fields.values()))
 
 
 async def _validate_context(

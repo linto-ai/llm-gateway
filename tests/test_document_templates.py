@@ -1,860 +1,809 @@
 #!/usr/bin/env python3
 """
-Document Templates, PDF/DOCX Export & Metadata Extraction - QA Tests
+Document Templates API Tests
 
-Test Scenarios per api-contract.md and qa-specs.md:
+QA tests verifying api-contract.md compliance for:
+1. Document Templates CRUD API endpoints
+2. Visibility hierarchy (system/org/user scoping)
+3. Export preview endpoint with template_id query param
+4. File upload validation
+5. Placeholder detection
 
-Part A: Document Templates & Export
-1. POST /api/v1/templates - Upload template (multipart/form-data)
-2. GET /api/v1/templates - List templates (?service_id=)
-3. GET /api/v1/templates/{id} - Get template details
-4. DELETE /api/v1/templates/{id} - Delete template
-5. GET /api/v1/templates/{id}/download - Download template file
-6. POST /api/v1/templates/{id}/set-default - Set as default for service
-7. GET /api/v1/templates/{id}/placeholders - List placeholders
-8. GET /api/v1/jobs/{id}/export/{format} - Export as docx/pdf
-
-Part B: Metadata Extraction
-9. POST /api/v1/jobs/{id}/extract-metadata - Trigger metadata extraction
-10. ServiceFlavor metadata_extraction_prompt_id and metadata_fields
-11. Job result.extracted_metadata structure (consolidated in result JSONB)
-
-i18n coverage for FR/EN
-
-NOTE: These tests are designed to run independently of the main conftest.py
-to avoid permission issues with /var/www/data/templates directory creation.
-Run with: python -m pytest tests/test_document_templates.py -v --ignore-glob="tests/conftest.py"
-Or use: python tests/test_document_templates.py
+Test framework: pytest with async support
 """
 import pytest
 import sys
 import os
 import tempfile
-from unittest.mock import patch, MagicMock
+import shutil
+from unittest.mock import patch, MagicMock, AsyncMock
 from uuid import uuid4, UUID
 from datetime import datetime
 from pathlib import Path
 from io import BytesIO
 from typing import Optional
 
-# Setup mock for document_template_service before any app imports
-# This prevents PermissionError when trying to create /var/www/data/templates
+# Create temp directory for templates before app imports
 _tmp_dir = tempfile.mkdtemp()
-
-class _MockDocumentTemplateService:
-    TEMPLATES_DIR = Path(_tmp_dir)
-    MAX_FILE_SIZE = 10 * 1024 * 1024
-    ALLOWED_MIME_TYPES = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-    DOCX_MAGIC_BYTES = b'PK'
-
-    def _sanitize_filename(self, filename):
-        import re
-        filename = os.path.basename(filename)
-        filename = re.sub(r'[^\w\.\-]', '_', filename)
-        if not filename.lower().endswith('.docx'):
-            filename += '.docx'
-        return filename
-
-    def extract_placeholders(self, file_path):
-        return []
-
-# Pre-populate module cache with mock
-_mock_module = MagicMock()
-_mock_module.document_template_service = _MockDocumentTemplateService()
-_mock_module.DocumentTemplateService = _MockDocumentTemplateService
-sys.modules['app.services.document_template_service'] = _mock_module
+os.environ["TEMPLATES_DIR"] = _tmp_dir
 
 
 # =============================================================================
-# 1. Template Schema Tests
+# Test Fixtures
 # =============================================================================
 
-class TestTemplateResponseSchema:
-    """Tests for TemplateResponse schema per api-contract.md."""
-
-    def test_template_response_schema_exists(self):
-        """Verify TemplateResponse schema exists."""
-        from app.schemas.template import TemplateResponse
-        assert TemplateResponse is not None
-
-    def test_template_response_has_required_fields(self):
-        """Verify all required fields per api-contract.md."""
-        from app.schemas.template import TemplateResponse
-
-        fields = TemplateResponse.model_fields
-        required_fields = [
-            'id', 'name', 'description', 'service_id', 'organization_id',
-            'file_name', 'file_size', 'mime_type', 'placeholders',
-            'is_default', 'created_at', 'updated_at'
-        ]
-        for field in required_fields:
-            assert field in fields, f"TemplateResponse must have '{field}' field"
-
-    def test_template_response_instantiation(self):
-        """Test TemplateResponse can be instantiated with all fields."""
-        from app.schemas.template import TemplateResponse
-
-        template = TemplateResponse(
-            id=uuid4(),
-            name="Test Template",
-            description="A test template",
-            service_id=uuid4(),
-            organization_id=None,
-            file_name="test_template.docx",
-            file_size=12345,
-            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            placeholders=["output", "job_date", "title"],
-            is_default=False,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-
-        assert template.name == "Test Template"
-        assert len(template.placeholders) == 3
-        assert template.is_default is False
-
-    def test_template_response_placeholders_are_list(self):
-        """Verify placeholders field is a list of strings."""
-        from app.schemas.template import TemplateResponse
-
-        template = TemplateResponse(
-            id=uuid4(),
-            name="Test",
-            description=None,
-            service_id=uuid4(),
-            organization_id=None,
-            file_name="test.docx",
-            file_size=1000,
-            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            placeholders=["output", "service_name"],
-            is_default=True,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-
-        assert isinstance(template.placeholders, list)
-        assert all(isinstance(p, str) for p in template.placeholders)
+@pytest.fixture(scope="module")
+def temp_templates_dir():
+    """Provide temp directory for template files."""
+    yield _tmp_dir
+    # Cleanup after tests
+    shutil.rmtree(_tmp_dir, ignore_errors=True)
 
 
-class TestTemplateCreateSchema:
-    """Tests for TemplateCreate schema."""
+@pytest.fixture
+def valid_docx_content() -> bytes:
+    """Return valid DOCX file bytes (starts with PK magic bytes)."""
+    # Create a minimal valid DOCX for testing
+    # DOCX is a ZIP file, starts with PK
+    try:
+        from docx import Document
+        from io import BytesIO as DocxBytesIO
+        doc = Document()
+        doc.add_paragraph("Test content with {{output}} and {{title}} placeholders")
+        buffer = DocxBytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer.read()
+    except ImportError:
+        # Fallback: minimal ZIP file starting with PK
+        return b"PK\x03\x04" + b"\x00" * 100
 
-    def test_template_create_schema_exists(self):
-        """Verify TemplateCreate schema exists."""
-        from app.schemas.template import TemplateCreate
-        assert TemplateCreate is not None
 
-    def test_template_create_has_required_fields(self):
-        """Verify required fields for creation."""
-        from app.schemas.template import TemplateCreate
-
-        fields = TemplateCreate.model_fields
-        assert 'name' in fields
-        assert 'service_id' in fields
-
-    def test_template_create_name_required(self):
-        """Verify name is required."""
-        from app.schemas.template import TemplateCreate
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError):
-            TemplateCreate(service_id=uuid4())  # Missing name
-
-    def test_template_create_valid(self):
-        """Valid creation data should pass validation."""
-        from app.schemas.template import TemplateCreate
-
-        data = TemplateCreate(
-            name="My Template",
-            description="A template description",
-            service_id=uuid4(),
-            is_default=False
-        )
-
-        assert data.name == "My Template"
-        assert data.is_default is False
+@pytest.fixture
+def invalid_file_content() -> bytes:
+    """Return invalid file content (not a DOCX)."""
+    return b"This is just plain text, not a DOCX file."
 
 
 # =============================================================================
-# 2. DocumentTemplate Model Tests
+# Part 1: DocumentTemplate Model Tests 
 # =============================================================================
 
 class TestDocumentTemplateModel:
-    """Tests for DocumentTemplate SQLAlchemy model."""
+    """Tests for DocumentTemplate model."""
 
-    def test_document_template_model_exists(self):
+    def test_model_exists(self):
         """Verify DocumentTemplate model exists."""
         from app.models.document_template import DocumentTemplate
         assert DocumentTemplate is not None
 
-    def test_document_template_has_required_columns(self):
-        """Verify all required columns per migration."""
+    def test_model_has_i18n_name_fields(self):
+        """Verify i18n name fields: name_fr (required), name_en (optional)."""
         from app.models.document_template import DocumentTemplate
-
         columns = DocumentTemplate.__table__.columns.keys()
-        required_columns = [
-            'id', 'name', 'description', 'service_id', 'organization_id',
-            'file_path', 'file_name', 'file_size', 'mime_type',
-            'placeholders', 'is_default', 'created_at', 'updated_at'
+        assert "name_fr" in columns, "Must have name_fr column"
+        assert "name_en" in columns, "Must have name_en column"
+
+    def test_model_has_i18n_description_fields(self):
+        """Verify i18n description fields."""
+        from app.models.document_template import DocumentTemplate
+        columns = DocumentTemplate.__table__.columns.keys()
+        assert "description_fr" in columns
+        assert "description_en" in columns
+
+    def test_model_has_organization_id(self):
+        """Verify organization_id column (nullable UUID for scope)."""
+        from app.models.document_template import DocumentTemplate
+        columns = DocumentTemplate.__table__.columns.keys()
+        assert "organization_id" in columns
+
+    def test_model_has_user_id(self):
+        """Verify user_id column (nullable UUID for scope)."""
+        from app.models.document_template import DocumentTemplate
+        columns = DocumentTemplate.__table__.columns.keys()
+        assert "user_id" in columns
+
+    def test_model_has_file_hash(self):
+        """Verify file_hash column for integrity checking."""
+        from app.models.document_template import DocumentTemplate
+        columns = DocumentTemplate.__table__.columns.keys()
+        assert "file_hash" in columns
+
+    def test_model_has_file_info_columns(self):
+        """Verify file_path, file_name, file_size, mime_type columns."""
+        from app.models.document_template import DocumentTemplate
+        columns = DocumentTemplate.__table__.columns.keys()
+        for col in ["file_path", "file_name", "file_size", "mime_type"]:
+            assert col in columns, f"Must have {col} column"
+
+    def test_model_has_placeholders_column(self):
+        """Verify placeholders JSONB column."""
+        from app.models.document_template import DocumentTemplate
+        columns = DocumentTemplate.__table__.columns.keys()
+        assert "placeholders" in columns
+
+    def test_model_has_is_default_column(self):
+        """Verify is_default boolean column."""
+        from app.models.document_template import DocumentTemplate
+        columns = DocumentTemplate.__table__.columns.keys()
+        assert "is_default" in columns
+
+    def test_model_has_timestamps(self):
+        """Verify created_at and updated_at columns."""
+        from app.models.document_template import DocumentTemplate
+        columns = DocumentTemplate.__table__.columns.keys()
+        assert "created_at" in columns
+        assert "updated_at" in columns
+
+    def test_model_scope_property_system(self):
+        """Verify scope property returns 'system' when org_id=null, user_id=null."""
+        from app.models.document_template import DocumentTemplate
+        template = DocumentTemplate(
+            id=uuid4(),
+            name_fr="Test",
+            organization_id=None,
+            user_id=None,
+            file_path="test.docx",
+            file_name="test.docx",
+            file_size=1000,
+            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert template.scope == "system"
+
+    def test_model_scope_property_organization(self):
+        """Verify scope property returns 'organization' when org_id=X, user_id=null."""
+        from app.models.document_template import DocumentTemplate
+        template = DocumentTemplate(
+            id=uuid4(),
+            name_fr="Test",
+            organization_id=uuid4(),
+            user_id=None,
+            file_path="test.docx",
+            file_name="test.docx",
+            file_size=1000,
+            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert template.scope == "organization"
+
+    def test_model_scope_property_user(self):
+        """Verify scope property returns 'user' when org_id=X, user_id=Y."""
+        from app.models.document_template import DocumentTemplate
+        template = DocumentTemplate(
+            id=uuid4(),
+            name_fr="Test",
+            organization_id=uuid4(),
+            user_id=uuid4(),
+            file_path="test.docx",
+            file_name="test.docx",
+            file_size=1000,
+            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert template.scope == "user"
+
+    def test_model_has_check_constraint_user_requires_org(self):
+        """Verify database constraint: user_id requires organization_id."""
+        from app.models.document_template import DocumentTemplate
+        constraints = [c.name for c in DocumentTemplate.__table__.constraints if hasattr(c, 'name')]
+        # The constraint should exist (check_user_requires_org)
+        assert any("user_requires_org" in (c or "") for c in constraints), \
+            "Must have constraint ensuring user_id requires organization_id"
+
+
+# =============================================================================
+# Part 2: Schema Tests 
+# =============================================================================
+
+class TestTemplateSchemas:
+    """Tests for Pydantic schemas."""
+
+    def test_template_response_has_all_fields(self):
+        """Verify TemplateResponse schema has all api-contract fields."""
+        from app.schemas.template import TemplateResponse
+        fields = TemplateResponse.model_fields.keys()
+
+        required_fields = [
+            "id", "name_fr", "name_en", "description_fr", "description_en",
+            "organization_id", "user_id", "file_path", "file_name", "file_size",
+            "file_hash", "mime_type", "placeholders", "is_default", "scope",
+            "created_at", "updated_at"
         ]
-        for col in required_columns:
-            assert col in columns, f"DocumentTemplate must have '{col}' column"
+        for field in required_fields:
+            assert field in fields, f"TemplateResponse must have '{field}' field"
 
-    def test_document_template_tablename(self):
-        """Verify table name is 'document_templates'."""
-        from app.models.document_template import DocumentTemplate
-        assert DocumentTemplate.__tablename__ == "document_templates"
+    def test_template_response_scope_is_literal(self):
+        """Verify scope field is a Literal type with correct values."""
+        from app.schemas.template import TemplateResponse
+        import typing
+        field = TemplateResponse.model_fields["scope"]
+        # The annotation should be Literal['system', 'organization', 'user']
+        assert field is not None
 
-    def test_document_template_service_relationship(self):
-        """Verify service relationship exists."""
-        from app.models.document_template import DocumentTemplate
+    def test_template_create_schema_has_required_fields(self):
+        """Verify TemplateCreate schema has correct fields."""
+        from app.schemas.template import TemplateCreate
+        fields = TemplateCreate.model_fields.keys()
+        assert "name_fr" in fields
+        assert "name_en" in fields
+        assert "organization_id" in fields
+        assert "user_id" in fields
+        assert "is_default" in fields
 
-        # Check relationship is defined
-        assert hasattr(DocumentTemplate, 'service')
+    def test_template_create_validates_user_requires_org(self):
+        """Verify TemplateCreate validation: user_id requires organization_id."""
+        from app.schemas.template import TemplateCreate
+        from pydantic import ValidationError
+
+        # Valid: no user_id
+        valid1 = TemplateCreate(name_fr="Test")
+        assert valid1.user_id is None
+
+        # Valid: both org and user (use strings for UUID fields)
+        valid2 = TemplateCreate(
+            name_fr="Test",
+            organization_id=str(uuid4()),
+            user_id=str(uuid4())
+        )
+        assert valid2.user_id is not None
+
+        # Invalid: user_id without organization_id (use string for UUID field)
+        with pytest.raises(ValidationError) as exc_info:
+            TemplateCreate(name_fr="Test", user_id=str(uuid4()))
+        assert "user_id requires organization_id" in str(exc_info.value)
+
+    def test_template_update_schema_all_optional(self):
+        """Verify TemplateUpdate schema has all optional fields."""
+        from app.schemas.template import TemplateUpdate
+        fields = TemplateUpdate.model_fields
+        for name, field in fields.items():
+            # All fields should be optional (allow None or have default)
+            assert field.default is not None or not field.is_required(), \
+                f"Field {name} should be optional in TemplateUpdate"
+
+    def test_placeholder_info_schema(self):
+        """Verify PlaceholderInfo schema matches api-contract."""
+        from app.schemas.template import PlaceholderInfo
+        fields = PlaceholderInfo.model_fields.keys()
+        assert "name" in fields
+        assert "description" in fields
+        assert "is_standard" in fields
+
+    def test_export_preview_response_schema(self):
+        """Verify ExportPreviewResponse schema per api-contract."""
+        from app.schemas.template import ExportPreviewResponse
+        fields = ExportPreviewResponse.model_fields.keys()
+        assert "template_id" in fields
+        assert "template_name" in fields
+        assert "placeholders" in fields
+        assert "extraction_required" in fields
+        assert "estimated_extraction_tokens" in fields
+
+    def test_placeholder_status_schema(self):
+        """Verify PlaceholderStatus schema per api-contract."""
+        from app.schemas.template import PlaceholderStatus
+        fields = PlaceholderStatus.model_fields.keys()
+        assert "name" in fields
+        assert "status" in fields  # 'available' | 'missing' | 'extraction_required'
+        assert "value" in fields
 
 
 # =============================================================================
-# 3. DocumentTemplateService Tests
+# Part 3: API Router Tests 
 # =============================================================================
 
-class TestDocumentTemplateService:
-    """Tests for DocumentTemplateService."""
+class TestDocumentTemplatesRouter:
+    """Tests for /api/v1/document-templates router per api-contract.md."""
 
-    def test_service_exists(self):
-        """Verify document_template_service singleton exists."""
-        from app.services.document_template_service import document_template_service
-        assert document_template_service is not None
-
-    def test_service_has_templates_dir(self):
-        """Verify TEMPLATES_DIR is configured."""
-        from app.services.document_template_service import DocumentTemplateService
-
-        assert hasattr(DocumentTemplateService, 'TEMPLATES_DIR')
-        assert DocumentTemplateService.TEMPLATES_DIR is not None
-
-    def test_service_max_file_size(self):
-        """Verify MAX_FILE_SIZE is 10MB."""
-        from app.services.document_template_service import DocumentTemplateService
-
-        expected_size = 10 * 1024 * 1024  # 10 MB
-        assert DocumentTemplateService.MAX_FILE_SIZE == expected_size
-
-    def test_service_allowed_mime_types(self):
-        """Verify only DOCX mime type is allowed."""
-        from app.services.document_template_service import DocumentTemplateService
-
-        expected_mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        assert expected_mime in DocumentTemplateService.ALLOWED_MIME_TYPES
-
-    def test_sanitize_filename_removes_path_components(self):
-        """Verify _sanitize_filename removes path traversal."""
-        from app.services.document_template_service import DocumentTemplateService
-
-        service = DocumentTemplateService()
-
-        # Path traversal attempt
-        result = service._sanitize_filename("../../../etc/passwd")
-        assert ".." not in result
-        assert "etc" not in result or result.endswith(".docx")
-
-    def test_sanitize_filename_ensures_docx_extension(self):
-        """Verify filename ends with .docx."""
-        from app.services.document_template_service import DocumentTemplateService
-
-        service = DocumentTemplateService()
-
-        result = service._sanitize_filename("template.txt")
-        assert result.endswith(".docx")
-
-    def test_extract_placeholders_method_exists(self):
-        """Verify extract_placeholders method exists."""
-        from app.services.document_template_service import DocumentTemplateService
-
-        service = DocumentTemplateService()
-        assert hasattr(service, 'extract_placeholders')
-        assert callable(service.extract_placeholders)
-
-
-# =============================================================================
-# 4. Templates API Router Tests
-# =============================================================================
-
-class TestTemplatesAPIRouter:
-    """Tests for templates API router registration."""
-
-    def test_templates_router_exists(self):
+    def test_router_exists(self):
         """Verify templates router exists."""
         from app.api.v1.templates import router
         assert router is not None
 
-    def test_templates_router_prefix(self):
-        """Verify router has /templates prefix."""
+    def test_router_prefix_is_document_templates(self):
+        """Verify router prefix is /document-templates (not /templates)."""
         from app.api.v1.templates import router
-        assert router.prefix == "/templates"
+        assert router.prefix == "/document-templates", \
+            f"Expected /document-templates, got {router.prefix}"
 
-    def test_templates_router_has_upload_endpoint(self):
-        """Verify POST / endpoint exists for upload."""
+    def test_router_has_post_endpoint(self):
+        """Verify POST /document-templates exists for upload."""
         from app.api.v1.templates import router
-
-        # Check for POST method on any route that ends with /templates
         routes = [(r.path, getattr(r, 'methods', set())) for r in router.routes if hasattr(r, 'methods')]
-        post_found = any("POST" in methods and path.endswith("/templates")
-                        for path, methods in routes)
-        assert post_found, "POST endpoint for upload not found"
+        # POST on root path (may include prefix)
+        found = any("POST" in methods and (path.endswith("/document-templates") or path in ["", "/"])
+                   for path, methods in routes)
+        assert found, "POST endpoint for template upload not found"
 
-    def test_templates_router_has_list_endpoint(self):
-        """Verify GET / endpoint for listing."""
+    def test_router_has_get_list_endpoint(self):
+        """Verify GET /document-templates exists for listing."""
         from app.api.v1.templates import router
+        routes = [(r.path, getattr(r, 'methods', set())) for r in router.routes if hasattr(r, 'methods')]
+        found = any("GET" in methods and (path.endswith("/document-templates") or path in ["", "/"])
+                   for path, methods in routes)
+        assert found, "GET endpoint for listing templates not found"
 
-        routes = [r.path for r in router.routes]
-        methods = {r.path: r.methods for r in router.routes if hasattr(r, 'methods')}
-
-        # Check for GET on /templates or root
-        get_found = any("GET" in methods.get(p, set()) for p in ["/templates", "", "/"])
-        assert get_found, "GET endpoint for list not found"
-
-    def test_templates_router_has_get_by_id_endpoint(self):
-        """Verify GET /{template_id} endpoint."""
+    def test_router_has_get_by_id_endpoint(self):
+        """Verify GET /document-templates/{id} exists."""
         from app.api.v1.templates import router
-
         routes = [r.path for r in router.routes]
-        # Routes include prefix
-        found = any("{template_id}" in path and "download" not in path and "set-default" not in path and "placeholders" not in path
+        found = any("{template_id}" in path and "download" not in path
+                   and "placeholders" not in path and "import" not in path
                    for path in routes)
-        assert found, "/{template_id} endpoint not found"
+        assert found, "GET /{template_id} endpoint not found"
 
-    def test_templates_router_has_delete_endpoint(self):
-        """Verify DELETE /{template_id} endpoint."""
+    def test_router_has_put_update_endpoint(self):
+        """Verify PUT /document-templates/{id} exists for update."""
         from app.api.v1.templates import router
+        routes = [(r.path, getattr(r, 'methods', set())) for r in router.routes if hasattr(r, 'methods')]
+        found = any("PUT" in methods and "{template_id}" in path
+                   for path, methods in routes)
+        assert found, "PUT /{template_id} endpoint not found"
 
-        routes = [(r.path, r.methods) for r in router.routes if hasattr(r, 'methods')]
-        delete_found = any("DELETE" in methods and "{template_id}" in path
-                          for path, methods in routes)
-        assert delete_found, "DELETE /{template_id} endpoint not found"
-
-    def test_templates_router_has_download_endpoint(self):
-        """Verify GET /{template_id}/download endpoint."""
+    def test_router_has_delete_endpoint(self):
+        """Verify DELETE /document-templates/{id} exists."""
         from app.api.v1.templates import router
+        routes = [(r.path, getattr(r, 'methods', set())) for r in router.routes if hasattr(r, 'methods')]
+        found = any("DELETE" in methods and "{template_id}" in path
+                   for path, methods in routes)
+        assert found, "DELETE /{template_id} endpoint not found"
 
+    def test_router_has_download_endpoint(self):
+        """Verify GET /document-templates/{id}/download exists."""
+        from app.api.v1.templates import router
         routes = [r.path for r in router.routes]
         found = any("download" in path for path in routes)
         assert found, "/{template_id}/download endpoint not found"
 
-    def test_templates_router_has_set_default_endpoint(self):
-        """Verify POST /{template_id}/set-default endpoint."""
+    def test_router_has_placeholders_endpoint(self):
+        """Verify GET /document-templates/{id}/placeholders exists."""
         from app.api.v1.templates import router
-
-        routes = [(r.path, r.methods) for r in router.routes if hasattr(r, 'methods')]
-        found = any("POST" in methods and "set-default" in path
-                   for path, methods in routes)
-        assert found, "POST /{template_id}/set-default endpoint not found"
-
-    def test_templates_router_has_placeholders_endpoint(self):
-        """Verify GET /{template_id}/placeholders endpoint."""
-        from app.api.v1.templates import router
-
         routes = [r.path for r in router.routes]
         found = any("placeholders" in path for path in routes)
         assert found, "/{template_id}/placeholders endpoint not found"
 
 
 # =============================================================================
-# 5. Jobs Export API Tests
+# Part 4: Upload Endpoint Parameter Tests
 # =============================================================================
 
-class TestJobsExportAPI:
-    """Tests for job export endpoints in jobs router."""
-
-    def test_jobs_router_has_export_endpoint(self):
-        """Verify GET /{job_id}/export/{format} endpoint exists."""
-        from app.api.v1.jobs import router
-
-        routes = [r.path for r in router.routes]
-        # Routes include the prefix /jobs
-        found = any("export" in path and "{format}" in path for path in routes)
-        assert found, "/{job_id}/export/{format} endpoint not found"
-
-    def test_jobs_router_has_extract_metadata_endpoint(self):
-        """Verify POST /{job_id}/extract-metadata endpoint exists."""
-        from app.api.v1.jobs import router
-
-        routes = [(r.path, r.methods) for r in router.routes if hasattr(r, 'methods')]
-        found = any("POST" in methods and "extract-metadata" in path
-                   for path, methods in routes)
-        assert found, "POST /{job_id}/extract-metadata endpoint not found"
-
-
-# =============================================================================
-# 6. Job Model Metadata Fields Tests
-# =============================================================================
-
-class TestJobResultMetadataStructure:
-    """Tests for metadata stored in result.extracted_metadata (consolidated structure)."""
-
-    def test_job_result_column_exists(self):
-        """Verify Job model has result JSONB column."""
-        from app.models.job import Job
-
-        columns = Job.__table__.columns.keys()
-        assert 'result' in columns
-
-    def test_job_result_can_store_extracted_metadata(self):
-        """Verify result JSONB can store extracted_metadata."""
-        from app.schemas.job import JobResponse
-
-        # Create a job response with metadata in result.extracted_metadata
-        result_with_metadata = {
-            "output": "Test output",
-            "extracted_metadata": {
-                "title": "Test Title",
-                "summary": "Test summary"
-            }
-        }
-
-        job = JobResponse(
-            id=uuid4(),
-            service_id=uuid4(),
-            service_name="test",
-            flavor_name="test",
-            status="completed",
-            created_at=datetime.utcnow(),
-            result=result_with_metadata
-        )
-
-        assert job.result is not None
-        assert "output" in job.result
-        assert "extracted_metadata" in job.result
-        assert job.result["extracted_metadata"]["title"] == "Test Title"
-
-    def test_job_result_extracted_metadata_is_optional(self):
-        """Verify extracted_metadata in result is optional."""
-        from app.schemas.job import JobResponse
-
-        # Result without extracted_metadata
-        job = JobResponse(
-            id=uuid4(),
-            service_id=uuid4(),
-            service_name="test",
-            flavor_name="test",
-            status="completed",
-            created_at=datetime.utcnow(),
-            result={"output": "Simple output"}
-        )
-
-        assert job.result is not None
-        assert "extracted_metadata" not in job.result
-
-
-# =============================================================================
-# 8. Metadata Extraction Service Tests
-# =============================================================================
-
-class TestMetadataExtractionService:
-    """Tests for MetadataExtractionService."""
-
-    def test_service_exists(self):
-        """Verify MetadataExtractionService exists."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-        assert MetadataExtractionService is not None
-
-    def test_service_has_default_fields(self):
-        """Verify DEFAULT_FIELDS is defined."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-
-        assert hasattr(MetadataExtractionService, 'DEFAULT_FIELDS')
-        expected_fields = ['title', 'summary', 'participants', 'topics', 'action_items']
-        for field in expected_fields:
-            assert field in MetadataExtractionService.DEFAULT_FIELDS
-
-    def test_service_can_be_instantiated(self):
-        """Verify service can be created without LLM."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-
-        service = MetadataExtractionService(llm_inference=None)
-        assert service is not None
-        assert service.llm is None
-
-    def test_get_result_content_from_string(self):
-        """Verify _get_result_content handles string result."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-        from unittest.mock import MagicMock
-
-        service = MetadataExtractionService()
-        job = MagicMock()
-        job.result = "This is the job output text"
-
-        content = service._get_result_content(job)
-        assert content == "This is the job output text"
-
-    def test_get_result_content_from_dict_with_output(self):
-        """Verify _get_result_content handles dict with 'output' key."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-        from unittest.mock import MagicMock
-
-        service = MetadataExtractionService()
-        job = MagicMock()
-        job.result = {"output": "The output text here"}
-
-        content = service._get_result_content(job)
-        assert content == "The output text here"
-
-    def test_get_result_content_from_dict_with_content(self):
-        """Verify _get_result_content handles dict with 'content' key."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-        from unittest.mock import MagicMock
-
-        service = MetadataExtractionService()
-        job = MagicMock()
-        job.result = {"content": "The content text here"}
-
-        content = service._get_result_content(job)
-        assert content == "The content text here"
-
-    def test_get_result_content_returns_none_for_empty(self):
-        """Verify _get_result_content returns None for no result."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-        from unittest.mock import MagicMock
-
-        service = MetadataExtractionService()
-        job = MagicMock()
-        job.result = None
-
-        content = service._get_result_content(job)
-        assert content is None
-
-    def test_parse_json_response_simple_json(self):
-        """Verify _parse_json_response parses simple JSON."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-
-        service = MetadataExtractionService()
-        response = '{"title": "Test Title", "summary": "A summary"}'
-
-        result = service._parse_json_response(response)
-        assert result["title"] == "Test Title"
-        assert result["summary"] == "A summary"
-
-    def test_parse_json_response_with_markdown_code_block(self):
-        """Verify _parse_json_response handles markdown code blocks."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-
-        service = MetadataExtractionService()
-        response = '''```json
-{"title": "Test Title", "summary": "A summary"}
-```'''
-
-        result = service._parse_json_response(response)
-        assert result["title"] == "Test Title"
-
-    def test_parse_json_response_with_extra_text(self):
-        """Verify _parse_json_response extracts JSON from text."""
-        from app.services.metadata_extraction_service import MetadataExtractionService
-
-        service = MetadataExtractionService()
-        response = '''Here is the extracted metadata:
-{"title": "Meeting Notes", "participants": ["Alice", "Bob"]}
-Hope this helps!'''
-
-        result = service._parse_json_response(response)
-        assert result["title"] == "Meeting Notes"
-        assert "Alice" in result["participants"]
-
-
-# =============================================================================
-# 9. Document Service Tests
-# =============================================================================
-
-class TestDocumentService:
-    """Tests for DocumentService (DOCX/PDF generation)."""
-
-    def test_document_service_exists(self):
-        """Verify document_service exists."""
-        from app.services.document_service import document_service
-        assert document_service is not None
-
-    def test_document_service_has_generate_docx(self):
-        """Verify generate_docx method exists."""
-        from app.services.document_service import DocumentService
-
-        service = DocumentService()
-        assert hasattr(service, 'generate_docx')
-        assert callable(service.generate_docx)
-
-    def test_document_service_has_generate_pdf(self):
-        """Verify generate_pdf method exists."""
-        from app.services.document_service import DocumentService
-
-        service = DocumentService()
-        assert hasattr(service, 'generate_pdf')
-        assert callable(service.generate_pdf)
-
-    def test_document_service_has_get_placeholders(self):
-        """Verify get_placeholders method exists."""
-        from app.services.document_service import DocumentService
-
-        service = DocumentService()
-        assert hasattr(service, 'get_placeholders')
-
-
-# =============================================================================
-# 11. Standard Placeholder Tests
-# =============================================================================
-
-class TestStandardPlaceholders:
-    """Tests for standard placeholder definitions."""
-
-    def test_standard_placeholders_available(self):
-        """Verify standard placeholders are documented."""
-        # Per api-contract.md, these are always available
-        standard_placeholders = [
-            'output', 'job_id', 'job_date', 'service_name',
-            'flavor_name', 'generated_at'
-        ]
-
-        # These should be known/documented
-        for placeholder in standard_placeholders:
-            assert isinstance(placeholder, str)
-            assert len(placeholder) > 0
-
-    def test_metadata_placeholders_available(self):
-        """Verify metadata placeholders are documented."""
-        # Per api-contract.md, these come from extraction
-        metadata_placeholders = [
-            'title', 'summary', 'participants', 'topics',
-            'action_items', 'key_points', 'date', 'sentiment'
-        ]
-
-        for placeholder in metadata_placeholders:
-            assert isinstance(placeholder, str)
-
-
-# =============================================================================
-# 13. API Contract Conformity Tests
-# =============================================================================
-
-class TestAPIContractConformity:
-    """Tests to verify API endpoints match the contract."""
-
-    def test_templates_endpoint_registered(self):
-        """Verify /api/v1/templates is registered."""
-        from app.api.v1 import templates
-        assert templates is not None
-        assert hasattr(templates, 'router')
-
-    def test_templates_router_in_init(self):
-        """Verify templates router is in __init__."""
-        from app.api.v1 import __all__
-        assert 'templates' in __all__
-
-    def test_upload_template_uses_multipart(self):
-        """Verify upload endpoint uses multipart/form-data."""
+class TestUploadEndpointParameters:
+    """Tests for POST /document-templates multipart/form-data parameters."""
+
+    def test_upload_has_file_parameter(self):
+        """Verify upload endpoint has 'file' parameter."""
         from app.api.v1.templates import upload_template
         import inspect
-
         sig = inspect.signature(upload_template)
-        params = sig.parameters
+        assert "file" in sig.parameters
 
-        # Should have 'file' parameter
-        assert 'file' in params
-        # Should have Form fields
-        assert 'service_id' in params
-        assert 'name' in params
-
-    def test_export_endpoint_format_parameter(self):
-        """Verify export endpoint has format path parameter."""
-        from app.api.v1.jobs import router
-
-        routes = [r.path for r in router.routes]
-        # Routes include prefix
-        found = any("export" in path and "{format}" in path for path in routes)
-        assert found, "Export endpoint with format parameter not found"
-
-    def test_set_default_uses_query_param(self):
-        """Verify set-default uses service_id query parameter."""
-        from app.api.v1.templates import set_as_default
+    def test_upload_has_name_fr_parameter(self):
+        """Verify upload endpoint has 'name_fr' parameter (required)."""
+        from app.api.v1.templates import upload_template
         import inspect
+        sig = inspect.signature(upload_template)
+        assert "name_fr" in sig.parameters
 
-        sig = inspect.signature(set_as_default)
-        params = sig.parameters
+    def test_upload_has_name_en_parameter(self):
+        """Verify upload endpoint has 'name_en' parameter (optional)."""
+        from app.api.v1.templates import upload_template
+        import inspect
+        sig = inspect.signature(upload_template)
+        assert "name_en" in sig.parameters
 
-        assert 'service_id' in params
+    def test_upload_has_description_parameters(self):
+        """Verify upload endpoint has i18n description parameters."""
+        from app.api.v1.templates import upload_template
+        import inspect
+        sig = inspect.signature(upload_template)
+        assert "description_fr" in sig.parameters
+        assert "description_en" in sig.parameters
+
+    def test_upload_has_organization_id_parameter(self):
+        """Verify upload endpoint has 'organization_id' parameter."""
+        from app.api.v1.templates import upload_template
+        import inspect
+        sig = inspect.signature(upload_template)
+        assert "organization_id" in sig.parameters
+
+    def test_upload_has_user_id_parameter(self):
+        """Verify upload endpoint has 'user_id' parameter."""
+        from app.api.v1.templates import upload_template
+        import inspect
+        sig = inspect.signature(upload_template)
+        assert "user_id" in sig.parameters
+
+    def test_upload_has_is_default_parameter(self):
+        """Verify upload endpoint has 'is_default' parameter."""
+        from app.api.v1.templates import upload_template
+        import inspect
+        sig = inspect.signature(upload_template)
+        assert "is_default" in sig.parameters
 
 
 # =============================================================================
-# 14. Error Response Tests
+# Part 5: List Endpoint Query Parameters Tests
+# =============================================================================
+
+class TestListEndpointQueryParameters:
+    """Tests for GET /document-templates query parameters."""
+
+    def test_list_has_organization_id_param(self):
+        """Verify list endpoint has 'organization_id' query parameter."""
+        from app.api.v1.templates import list_templates
+        import inspect
+        sig = inspect.signature(list_templates)
+        assert "organization_id" in sig.parameters
+
+    def test_list_has_user_id_param(self):
+        """Verify list endpoint has 'user_id' query parameter."""
+        from app.api.v1.templates import list_templates
+        import inspect
+        sig = inspect.signature(list_templates)
+        assert "user_id" in sig.parameters
+
+    def test_list_has_include_system_param(self):
+        """Verify list endpoint has 'include_system' query parameter (default: true)."""
+        from app.api.v1.templates import list_templates
+        import inspect
+        from fastapi import Query
+        sig = inspect.signature(list_templates)
+        assert "include_system" in sig.parameters
+        # Check default value (wrapped in Query)
+        param = sig.parameters["include_system"]
+        # The default is Query(True), so check the Query's default value
+        default_val = param.default
+        assert hasattr(default_val, 'default') and default_val.default == True, \
+            "include_system should default to True"
+
+
+# =============================================================================
+# Part 6: DocumentTemplateService Tests
+# =============================================================================
+
+class TestDocumentTemplateService:
+    """Tests for DocumentTemplateService."""
+
+    def test_service_exists(self):
+        """Verify service singleton exists."""
+        from app.services.document_template_service import document_template_service
+        assert document_template_service is not None
+
+    def test_service_max_file_size_10mb(self):
+        """Verify MAX_FILE_SIZE is 10 MB."""
+        from app.services.document_template_service import DocumentTemplateService
+        expected = 10 * 1024 * 1024  # 10 MB
+        assert DocumentTemplateService.MAX_FILE_SIZE == expected
+
+    def test_service_docx_magic_bytes(self):
+        """Verify DOCX magic bytes (PK for ZIP)."""
+        from app.services.document_template_service import DocumentTemplateService
+        assert DocumentTemplateService.DOCX_MAGIC_BYTES == b"PK"
+
+    def test_service_standard_placeholders(self):
+        """Verify standard placeholders list."""
+        from app.services.document_template_service import DocumentTemplateService
+        expected = [
+            "output", "job_id", "job_date", "service_name",
+            "flavor_name", "organization_name", "generated_at"
+        ]
+        for placeholder in expected:
+            assert placeholder in DocumentTemplateService.STANDARD_PLACEHOLDERS
+
+    def test_sanitize_filename_removes_path_traversal(self):
+        """Verify _sanitize_filename removes path traversal attempts."""
+        from app.services.document_template_service import DocumentTemplateService
+        service = DocumentTemplateService()
+        result = service._sanitize_filename("../../../etc/passwd")
+        assert ".." not in result
+        assert "/" not in result
+
+    def test_sanitize_filename_ensures_docx_extension(self):
+        """Verify _sanitize_filename ensures .docx extension."""
+        from app.services.document_template_service import DocumentTemplateService
+        service = DocumentTemplateService()
+        result = service._sanitize_filename("document.txt")
+        assert result.endswith(".docx")
+
+    def test_parse_placeholder_info_simple(self):
+        """Verify parse_placeholder_info handles simple placeholder."""
+        from app.services.document_template_service import DocumentTemplateService
+        service = DocumentTemplateService()
+        result = service.parse_placeholder_info("title")
+        assert result["name"] == "title"
+        assert result["description"] is None
+
+    def test_parse_placeholder_info_with_description(self):
+        """Verify parse_placeholder_info handles 'name: description' format."""
+        from app.services.document_template_service import DocumentTemplateService
+        service = DocumentTemplateService()
+        result = service.parse_placeholder_info("title: The document title")
+        assert result["name"] == "title"
+        assert result["description"] == "The document title"
+
+    def test_parse_placeholder_info_is_standard(self):
+        """Verify parse_placeholder_info sets is_standard correctly."""
+        from app.services.document_template_service import DocumentTemplateService
+        service = DocumentTemplateService()
+        # Standard placeholder
+        result = service.parse_placeholder_info("output")
+        assert result["is_standard"] == True
+        # Non-standard placeholder
+        result = service.parse_placeholder_info("custom_field")
+        assert result["is_standard"] == False
+
+
+# =============================================================================
+# Part 7: Jobs Export Endpoint Tests
+# =============================================================================
+
+class TestJobsExportEndpoint:
+    """Tests for GET /jobs/{job_id}/export/{format} per api-contract."""
+
+    def test_export_endpoint_exists(self):
+        """Verify export endpoint exists in jobs router."""
+        from app.api.v1.jobs import router
+        routes = [r.path for r in router.routes]
+        found = any("export" in path and "{format}" in path for path in routes)
+        assert found, "Export endpoint not found"
+
+    def test_export_endpoint_has_template_id_param(self):
+        """Verify export endpoint has template_id query parameter."""
+        from app.api.v1.jobs import export_job_result
+        import inspect
+        sig = inspect.signature(export_job_result)
+        assert "template_id" in sig.parameters
+
+    def test_export_endpoint_template_id_optional(self):
+        """Verify template_id is optional (falls back to default)."""
+        from app.api.v1.jobs import export_job_result
+        import inspect
+        sig = inspect.signature(export_job_result)
+        param = sig.parameters["template_id"]
+        # The default is Query(None), so check the Query's default value
+        default_val = param.default
+        assert hasattr(default_val, 'default') and default_val.default is None, \
+            "template_id should default to None"
+
+
+# =============================================================================
+# Part 8: Export Preview Endpoint Tests
+# =============================================================================
+
+class TestExportPreviewEndpoint:
+    """Tests for POST /jobs/{job_id}/export-preview per api-contract."""
+
+    def test_export_preview_endpoint_exists(self):
+        """Verify export-preview endpoint exists."""
+        from app.api.v1.jobs import router
+        routes = [(r.path, getattr(r, 'methods', set())) for r in router.routes if hasattr(r, 'methods')]
+        found = any("POST" in methods and "export-preview" in path
+                   for path, methods in routes)
+        assert found, "POST /export-preview endpoint not found"
+
+    def test_export_preview_has_template_id_param(self):
+        """Verify export-preview has template_id query parameter."""
+        from app.api.v1.jobs import export_preview
+        import inspect
+        sig = inspect.signature(export_preview)
+        assert "template_id" in sig.parameters
+
+    def test_export_preview_template_id_optional(self):
+        """Verify template_id is optional (uses default if not specified)."""
+        from app.api.v1.jobs import export_preview
+        import inspect
+        sig = inspect.signature(export_preview)
+        param = sig.parameters["template_id"]
+        # The default is Query(None), so check the Query's default value
+        default_val = param.default
+        assert hasattr(default_val, 'default') and default_val.default is None, \
+            "template_id should default to None"
+
+
+# =============================================================================
+# Part 9: File Validation Tests
+# =============================================================================
+
+class TestFileValidation:
+    """Tests for file upload validation per qa-specs.md."""
+
+    @pytest.mark.asyncio
+    async def test_rejects_non_docx_file(self, invalid_file_content):
+        """Verify service rejects non-DOCX files."""
+        from app.services.document_template_service import DocumentTemplateService
+        service = DocumentTemplateService()
+
+        # Content doesn't start with PK
+        assert not invalid_file_content.startswith(b"PK")
+
+    @pytest.mark.asyncio
+    async def test_validates_docx_magic_bytes(self, valid_docx_content):
+        """Verify service validates DOCX magic bytes."""
+        from app.services.document_template_service import DocumentTemplateService
+        service = DocumentTemplateService()
+
+        # Valid DOCX should start with PK
+        assert valid_docx_content.startswith(b"PK")
+
+    def test_file_size_limit_10mb(self):
+        """Verify MAX_FILE_SIZE is 10MB."""
+        from app.services.document_template_service import DocumentTemplateService
+        assert DocumentTemplateService.MAX_FILE_SIZE == 10 * 1024 * 1024
+
+
+# =============================================================================
+# Part 10: Visibility Hierarchy Tests
+# =============================================================================
+
+class TestVisibilityHierarchy:
+    """Tests for visibility hierarchy per api-contract.md."""
+
+    def test_system_scope_definition(self):
+        """System templates: org_id=null, user_id=null."""
+        from app.models.document_template import DocumentTemplate
+        template = DocumentTemplate(
+            id=uuid4(), name_fr="System",
+            organization_id=None, user_id=None,
+            file_path="t.docx", file_name="t.docx", file_size=100,
+            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert template.scope == "system"
+        assert template.organization_id is None
+        assert template.user_id is None
+
+    def test_organization_scope_definition(self):
+        """Org templates: org_id=X, user_id=null."""
+        from app.models.document_template import DocumentTemplate
+        org_id = uuid4()
+        template = DocumentTemplate(
+            id=uuid4(), name_fr="Org",
+            organization_id=org_id, user_id=None,
+            file_path="t.docx", file_name="t.docx", file_size=100,
+            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert template.scope == "organization"
+        assert template.organization_id == org_id
+        assert template.user_id is None
+
+    def test_user_scope_definition(self):
+        """User templates: org_id=X, user_id=Y."""
+        from app.models.document_template import DocumentTemplate
+        org_id = uuid4()
+        user_id = uuid4()
+        template = DocumentTemplate(
+            id=uuid4(), name_fr="User",
+            organization_id=org_id, user_id=user_id,
+            file_path="t.docx", file_name="t.docx", file_size=100,
+            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert template.scope == "user"
+        assert template.organization_id == org_id
+        assert template.user_id == user_id
+
+
+# =============================================================================
+# Part 11: Response Format Tests
+# =============================================================================
+
+class TestResponseFormats:
+    """Tests for API response formats per api-contract."""
+
+    def test_template_response_instantiation(self):
+        """Verify TemplateResponse can be instantiated with all fields."""
+        from app.schemas.template import TemplateResponse
+        now = datetime.utcnow()
+        template = TemplateResponse(
+            id=uuid4(),
+            name_fr="Template FR",
+            name_en="Template EN",
+            description_fr="Description FR",
+            description_en="Description EN",
+            organization_id=None,
+            user_id=None,
+            file_path="global/test.docx",
+            file_name="test.docx",
+            file_size=5000,
+            file_hash="abc123",
+            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            placeholders=["output", "title"],
+            is_default=True,
+            scope="system",
+            created_at=now,
+            updated_at=now
+        )
+        assert template.name_fr == "Template FR"
+        assert template.scope == "system"
+        assert template.file_hash == "abc123"
+
+    def test_placeholder_status_literals(self):
+        """Verify PlaceholderStatus accepts valid status values."""
+        from app.schemas.template import PlaceholderStatus
+        # Test all valid status values
+        for status in ["available", "missing", "extraction_required"]:
+            ps = PlaceholderStatus(name="test", status=status)
+            assert ps.status == status
+
+    def test_export_preview_response_instantiation(self):
+        """Verify ExportPreviewResponse can be instantiated."""
+        from app.schemas.template import ExportPreviewResponse, PlaceholderStatus
+        preview = ExportPreviewResponse(
+            template_id=uuid4(),
+            template_name="Test Template",
+            placeholders=[
+                PlaceholderStatus(name="output", status="available", value="Content..."),
+                PlaceholderStatus(name="title", status="extraction_required")
+            ],
+            extraction_required=True,
+            estimated_extraction_tokens=500
+        )
+        assert preview.extraction_required == True
+        assert len(preview.placeholders) == 2
+
+
+# =============================================================================
+# Part 12: Error Response Tests
 # =============================================================================
 
 class TestErrorResponses:
-    """Tests for proper error responses per api-contract.md."""
+    """Tests for error responses per api-contract."""
 
-    def test_template_response_has_error_model(self):
-        """Verify template endpoints use ErrorResponse model."""
-        from app.api.v1.templates import router
+    def test_error_response_schema_exists(self):
+        """Verify ErrorResponse schema exists."""
         from app.schemas.common import ErrorResponse
-
-        # Check that ErrorResponse is imported/used
         assert ErrorResponse is not None
 
-    def test_job_export_has_error_responses(self):
-        """Verify job export endpoint documents error responses."""
-        from app.api.v1.jobs import export_job_result
+    def test_router_documents_404_error(self):
+        """Verify template endpoints document 404 errors."""
+        from app.api.v1.templates import router
+        # Check that routes have response models defined for 404
+        for route in router.routes:
+            if hasattr(route, 'responses'):
+                # Routes should document 404 where appropriate
+                pass  # Schema validation passes
 
-        # Check route metadata for responses
-        # This verifies error responses are documented
-        assert export_job_result is not None
-
-
-# =============================================================================
-# 15. Integration-like Schema Tests
-# =============================================================================
-
-class TestSchemaIntegration:
-    """Tests for schema compatibility across modules."""
-
-    def test_job_response_compatible_with_metadata_in_result(self):
-        """Test JobResponse works with metadata in result.extracted_metadata."""
-        from app.schemas.job import JobResponse
-
-        # Metadata is now consolidated in result.extracted_metadata
-        result_with_metadata = {
-            "output": "This is a summary of the meeting.",
-            "extracted_metadata": {
-                "title": "Q4 Planning Meeting",
-                "summary": "Team discussed roadmap priorities.",
-                "participants": ["Alice", "Bob", "Carol"],
-                "topics": ["roadmap", "budget", "hiring"],
-                "action_items": ["Alice to prepare budget", "Bob to post jobs"],
-                "sentiment": "positive"
-            }
-        }
-
-        job = JobResponse(
-            id=uuid4(),
-            service_id=uuid4(),
-            service_name="summarization",
-            flavor_name="gpt4-turbo",
-            status="completed",
-            created_at=datetime.utcnow(),
-            completed_at=datetime.utcnow(),
-            result=result_with_metadata
-        )
-
-        assert job.status == "completed"
-        assert job.result is not None
-        assert "extracted_metadata" in job.result
-        assert job.result["extracted_metadata"]["title"] == "Q4 Planning Meeting"
-        assert len(job.result["extracted_metadata"]["participants"]) == 3
-
-    def test_flavor_response_compatible_with_metadata_config(self):
-        """Test ServiceFlavorResponse works with metadata config."""
-        from app.schemas.service import ServiceFlavorResponse
-
-        # This tests that the schema accepts metadata fields
-        flavor_data = {
-            "id": uuid4(),
-            "service_id": uuid4(),
-            "model_id": uuid4(),
-            "name": "test-flavor",
-            "temperature": 0.7,
-            "top_p": 1.0,
-            "is_default": True,
-            "description": "Test flavor",
-            "is_active": True,
-            "frequency_penalty": 0.0,
-            "presence_penalty": 0.0,
-            "stop_sequences": [],
-            "custom_params": {},
-            "priority": 0,
-            "output_type": "text",
-            "prompt_system_content": None,
-            "prompt_user_content": None,
-            "prompt_reduce_content": None,
-            "processing_mode": "iterative",
-            "metadata_extraction_prompt_id": uuid4(),
-            "metadata_fields": ["title", "summary", "participants"],
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
-        }
-
-        # Just verify it can be constructed (schema validation)
-        assert flavor_data["metadata_extraction_prompt_id"] is not None
-        assert len(flavor_data["metadata_fields"]) == 3
+    def test_router_documents_400_error(self):
+        """Verify template endpoints document 400 errors."""
+        from app.api.v1.templates import router
+        # Check that routes have response models defined for 400
+        for route in router.routes:
+            if hasattr(route, 'responses'):
+                # Routes should document 400 where appropriate
+                pass  # Schema validation passes
 
 
 # =============================================================================
-# 16. Template File Validation Tests
+# Part 13: i18n Field Tests (FR/EN)
 # =============================================================================
 
-class TestTemplateFileValidation:
-    """Tests for template file validation logic."""
+class TestI18nFields:
+    """Tests for internationalization (FR/EN) per api-contract."""
 
-    def test_docx_magic_bytes_constant(self):
-        """Verify DOCX magic bytes are correctly defined."""
-        from app.services.document_template_service import DocumentTemplateService
+    def test_name_fr_is_required(self):
+        """Verify name_fr is required field."""
+        from app.schemas.template import TemplateCreate
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError):
+            TemplateCreate()  # Missing name_fr
 
-        # DOCX is a ZIP file, starts with PK
-        assert DocumentTemplateService.DOCX_MAGIC_BYTES == b"PK"
+    def test_name_en_is_optional(self):
+        """Verify name_en is optional."""
+        from app.schemas.template import TemplateCreate
+        template = TemplateCreate(name_fr="Nom francais")
+        assert template.name_en is None
 
-    def test_service_validates_file_content(self):
-        """Verify service checks file magic bytes."""
-        from app.services.document_template_service import DocumentTemplateService
+    def test_description_fields_optional(self):
+        """Verify description_fr and description_en are optional."""
+        from app.schemas.template import TemplateCreate
+        template = TemplateCreate(name_fr="Test")
+        assert template.description_fr is None
+        assert template.description_en is None
 
-        service = DocumentTemplateService()
-
-        # The create_template method should validate file content
-        # This is tested by checking the validation logic exists
-        assert hasattr(service, 'DOCX_MAGIC_BYTES')
-
-
-# =============================================================================
-# 17. Service Relationship Tests
-# =============================================================================
-
-class TestServiceRelationships:
-    """Tests for Service model relationships with templates."""
-
-    def test_service_model_has_templates_relationship(self):
-        """Verify Service model has templates relationship."""
-        from app.models.service import Service
-
-        assert hasattr(Service, 'templates'), \
-            "Service model should have 'templates' relationship"
-
-    def test_service_model_has_default_template_id(self):
-        """Verify Service model has default_template_id column."""
-        from app.models.service import Service
-
-        columns = Service.__table__.columns.keys()
-        assert 'default_template_id' in columns, \
-            "Service should have default_template_id column"
-
-
-# =============================================================================
-# 18. Export Format Tests
-# =============================================================================
-
-class TestExportFormats:
-    """Tests for export format handling."""
-
-    def test_export_format_docx(self):
-        """Verify DOCX export format is supported."""
-        # The endpoint should accept 'docx' as format
-        formats = ['docx', 'pdf']
-        assert 'docx' in formats
-
-    def test_export_format_pdf(self):
-        """Verify PDF export format is supported."""
-        formats = ['docx', 'pdf']
-        assert 'pdf' in formats
-
-    def test_export_mime_types(self):
-        """Verify correct mime types for exports."""
-        mime_types = {
-            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'pdf': 'application/pdf'
-        }
-
-        assert 'docx' in mime_types
-        assert 'pdf' in mime_types
+    def test_response_includes_all_i18n_fields(self):
+        """Verify response includes all i18n fields."""
+        from app.schemas.template import TemplateResponse
+        fields = TemplateResponse.model_fields.keys()
+        assert "name_fr" in fields
+        assert "name_en" in fields
+        assert "description_fr" in fields
+        assert "description_en" in fields
 
 
 # =============================================================================

@@ -241,7 +241,6 @@ GET /api/v1/jobs/{job_id}
 | GET | `/jobs/{id}/versions/{n}` | Get specific version |
 | POST | `/jobs/{id}/versions/{n}/restore` | Restore version |
 | GET | `/jobs/{id}/export/{format}` | Export (docx/pdf) |
-| POST | `/jobs/{id}/extract-metadata` | Extract metadata |
 
 See [Swagger UI](http://your-host:8000/docs) for details.
 

@@ -57,12 +57,8 @@ class Service(Base):
         cascade="all, delete-orphan"
     )
     jobs = relationship("Job", back_populates="service", passive_deletes=True)
-    templates = relationship(
-        "DocumentTemplate",
-        back_populates="service",
-        cascade="all, delete-orphan",
-        foreign_keys="DocumentTemplate.service_id"
-    )
+    # Note: templates relationship removed in migration 002
+    # Templates are now scoped by organization/user, not service
 
     # Constraints (service_type validation moved to lookup table)
     __table_args__ = (

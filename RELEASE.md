@@ -1,3 +1,57 @@
+# 2.1.0
+
+## Feature Release - User-Scoped Templates and Version-Aware Export (2025-12-14)
+
+### New Features
+
+**User-Scoped Document Templates**
+- Templates now support three scope levels: system, organization, and user (personal)
+- Users can upload their own DOCX templates via the `/api/v1/document-templates` endpoint
+- Hierarchical visibility: users see system templates, org templates, and their personal templates
+- Templates can be imported from higher scopes (system -> org -> user)
+
+**Version-Aware Export**
+- Export endpoint now supports `version_number` parameter for exporting specific job versions
+- Per-version extraction cache: JIT metadata extraction is cached separately per version
+- Extraction results stored in `job.result.version_extractions[version_number]`
+
+**Template Scoping API**
+- `organization_id` and `user_id` fields accept any string (supports MongoDB ObjectIds)
+- GET `/api/v1/document-templates` accepts `organization_id`, `user_id`, and `include_system` filters
+- DELETE `/api/v1/document-templates/{id}` with ownership validation
+
+### API Changes
+
+**Document Templates Endpoint**
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/document-templates` | POST | Upload new template (multipart/form-data) |
+| `/api/v1/document-templates` | GET | List templates with scope filtering |
+| `/api/v1/document-templates/{id}` | GET | Get template details |
+| `/api/v1/document-templates/{id}` | PUT | Update template metadata or file |
+| `/api/v1/document-templates/{id}` | DELETE | Delete template |
+| `/api/v1/document-templates/{id}/placeholders` | GET | Get template placeholders with metadata |
+| `/api/v1/document-templates/{id}/download` | GET | Download original DOCX file |
+| `/api/v1/document-templates/{id}/import` | POST | Copy template to lower scope |
+| `/api/v1/document-templates/{id}/set-default` | POST | Set as default for a service |
+| `/api/v1/document-templates/{id}/set-global-default` | POST | Set as global default |
+
+**Export Endpoint Updates**
+- `GET /api/v1/jobs/{id}/export/{format}?version_number=N` - Export specific version
+- JIT extraction now uses version content when `version_number` specified
+- Extraction cache is per-version in `version_extractions`
+
+### Database Changes
+- `document_templates` table: `organization_id` and `user_id` changed from UUID to VARCHAR(100)
+- Added `scope` computed property: "system", "organization", or "user"
+
+### Integration Notes
+- LinTO Studio integration via `/api/publication/*` proxy endpoints
+- Template upload forwarded with proper multipart handling
+- User ID from JWT payload used for personal template scoping
+
+---
+
 # 2.0.0
 
 ## Major Release - Complete Platform Rewrite (2025-12-01)
