@@ -4,7 +4,7 @@ import logging
 import asyncio
 import traceback
 from datetime import datetime
-from typing import Optional, List, Dict, Literal as TypeLiteral
+from typing import Optional, List, Literal as TypeLiteral
 from uuid import UUID
 from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, Query, status, WebSocket, WebSocketDisconnect
@@ -1150,7 +1150,6 @@ async def export_preview(
     - missing: Value is not available and cannot be extracted
     """
     from app.services.document_template_service import document_template_service
-    from app.services.document_service import document_service
     from app.services.export_service import export_service
 
     job = await job_service.get_job_by_id(db, job_id)

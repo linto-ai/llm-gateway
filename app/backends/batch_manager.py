@@ -480,7 +480,7 @@ class BatchManager:
 
             if not sentences:
                 # No sentence boundaries found - force split by token count
-                self.logger.warning(f"No sentence boundaries found. Force-splitting by character chunks.")
+                self.logger.warning("No sentence boundaries found. Force-splitting by character chunks.")
                 sub_turns = self._force_split_turn(turn, speaker_prefix, content, max_tokens)
                 processed.extend(sub_turns)
                 continue

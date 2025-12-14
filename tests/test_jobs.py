@@ -1221,82 +1221,12 @@ class TestJobResultVersionService:
         assert MAX_VERSIONS == 10, \
             "MAX_VERSIONS should be 10 per api-contract.md"
 
-    def test_service_full_snapshot_interval_constant(self):
-        """Verify FULL_SNAPSHOT_INTERVAL constant is 5 per api-contract.md."""
-        from app.services.job_result_version_service import FULL_SNAPSHOT_INTERVAL
-
-        assert FULL_SNAPSHOT_INTERVAL == 5, \
-            "FULL_SNAPSHOT_INTERVAL should be 5 per api-contract.md"
-
-
 # =============================================================================
-# 20. Diff Storage Tests (Unit Tests)
+# 20. Content Storage Tests (Unit Tests)
 # =============================================================================
 
-class TestDiffComputation:
-    """Tests for diff computation and application."""
-
-    def test_service_has_compute_diff_method(self):
-        """Verify service has _compute_diff method."""
-        from app.services.job_result_version_service import job_result_version_service
-
-        assert hasattr(job_result_version_service, '_compute_diff'), \
-            "Service must have '_compute_diff' method"
-
-    def test_service_has_apply_diff_method(self):
-        """Verify service has _apply_diff method."""
-        from app.services.job_result_version_service import job_result_version_service
-
-        assert hasattr(job_result_version_service, '_apply_diff'), \
-            "Service must have '_apply_diff' method"
-
-    def test_diff_computation_basic(self):
-        """Test basic diff computation."""
-        from app.services.job_result_version_service import job_result_version_service
-
-        old_content = "Hello World"
-        new_content = "Hello New World"
-
-        diff = job_result_version_service._compute_diff(old_content, new_content)
-
-        assert diff is not None
-        assert len(diff) > 0
-
-    def test_diff_application_basic(self):
-        """Test basic diff application."""
-        from app.services.job_result_version_service import job_result_version_service
-
-        old_content = "Hello World"
-        new_content = "Hello New World"
-
-        diff = job_result_version_service._compute_diff(old_content, new_content)
-        reconstructed = job_result_version_service._apply_diff(old_content, diff)
-
-        assert reconstructed == new_content
-
-    def test_diff_with_unicode_content(self):
-        """Test diff computation with Unicode (French) content."""
-        from app.services.job_result_version_service import job_result_version_service
-
-        old_content = "Resume du document en francais"
-        new_content = "Resume modifie du document en francais avec accents: cafe, ecole"
-
-        diff = job_result_version_service._compute_diff(old_content, new_content)
-        reconstructed = job_result_version_service._apply_diff(old_content, diff)
-
-        assert reconstructed == new_content
-
-    def test_diff_with_large_content(self):
-        """Test diff computation with large content (>10KB)."""
-        from app.services.job_result_version_service import job_result_version_service
-
-        old_content = "Line of text\n" * 1000  # ~13KB
-        new_content = old_content + "Additional content at the end\n"
-
-        diff = job_result_version_service._compute_diff(old_content, new_content)
-        reconstructed = job_result_version_service._apply_diff(old_content, diff)
-
-        assert reconstructed == new_content
+class TestContentExtraction:
+    """Tests for content extraction (full content storage, no diffs)."""
 
     def test_extract_result_content_from_dict(self):
         """Test content extraction from dict result."""
@@ -1449,6 +1379,7 @@ class TestJobServiceIntegrationTests:
         mock_job.service_id = uuid4()
         mock_job.service = Mock(name="test-service")
         mock_job.service.name = "test-service"
+        mock_job.flavor_id = uuid4()
         mock_job.flavor = Mock(name="test-flavor")
         mock_job.flavor.name = "test-flavor"
         mock_job.flavor.output_type = "text"
@@ -1543,20 +1474,6 @@ class TestJobsI18nFunctionality:
         assert "Corrected" in update.content
         assert "modifications" in update.content
 
-    def test_diff_preserves_unicode_characters(self):
-        """Test that diff preserves all Unicode characters correctly."""
-        from app.services.job_result_version_service import job_result_version_service
-
-        # French content with special characters
-        old_content = "Le cafe est delicieux"
-        new_content = "Le cafe francais est tres delicieux"
-
-        diff = job_result_version_service._compute_diff(old_content, new_content)
-        reconstructed = job_result_version_service._apply_diff(old_content, diff)
-
-        assert reconstructed == new_content
-
-
 # =============================================================================
 # 25. Edge Cases and Business Rules
 # =============================================================================
@@ -1578,13 +1495,6 @@ class TestJobsEdgeCasesAndBusinessRules:
 
         assert MAX_VERSIONS == 10, \
             "MAX_VERSIONS should be 10 per api-contract.md"
-
-    def test_full_snapshot_every_5th_version(self):
-        """Document full snapshot at every 5th version."""
-        from app.services.job_result_version_service import FULL_SNAPSHOT_INTERVAL
-
-        assert FULL_SNAPSHOT_INTERVAL == 5, \
-            "Full snapshots at version 1 and every 5th version per api-contract.md"
 
 
 # =============================================================================

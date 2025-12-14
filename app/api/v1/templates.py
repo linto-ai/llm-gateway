@@ -12,7 +12,6 @@ from app.api.dependencies import get_db
 from app.services.document_template_service import document_template_service
 from app.schemas.template import (
     TemplateResponse,
-    TemplateUpdate,
     TemplateImportRequest,
     PlaceholderInfo,
 )

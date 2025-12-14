@@ -391,7 +391,7 @@ class DocumentTemplateService:
             select(DocumentTemplate).where(
                 DocumentTemplate.organization_id.is_(None),
                 DocumentTemplate.user_id.is_(None),
-                DocumentTemplate.is_default == True
+                DocumentTemplate.is_default.is_(True)
             )
         )
         return result.scalar_one_or_none()
