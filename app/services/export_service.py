@@ -363,22 +363,6 @@ class ExportService:
         missing = []
         standard_placeholders = set(DocumentTemplateService.STANDARD_PLACEHOLDERS)
 
-        # If template changed since last extraction, force re-extraction of all non-standard placeholders
-        # Also force re-extraction if we have metadata but no tracking yet (bootstrap)
-        template_changed = (
-            template_id is not None
-            and last_extraction_template_id is not None
-            and template_id != last_extraction_template_id
-        )
-
-        # Bootstrap: if we have extracted_metadata but no template tracking yet,
-        # force re-extraction to establish proper template tracking
-        needs_bootstrap = (
-            template_id is not None
-            and last_extraction_template_id is None
-            and len(current_metadata) > 0
-        )
-
         for placeholder in template_placeholders:
             # Parse placeholder name
             info = self.template_service.parse_placeholder_info(placeholder)
@@ -483,7 +467,6 @@ class ExportService:
         )
 
         # Also handle {} style placeholders
-        import re
         placeholder_positions = []
         i = 0
         while i < len(extraction_prompt):

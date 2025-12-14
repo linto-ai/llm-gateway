@@ -4,11 +4,19 @@ export type JobStatus = 'queued' | 'started' | 'processing' | 'completed' | 'fai
 
 export type PassType = 'initial' | 'continuation' | 'reduce' | 'summary' | 'single_pass' | 'extraction' | 'categorization';
 
+// Version extraction cache entry
+export interface VersionExtraction {
+  metadata: Record<string, any>;
+  template_id?: string;
+  extracted_at: string;
+}
+
 // Job result structure (consolidated from result JSONB column)
 export interface JobResult {
   output: string;
   extracted_metadata?: Record<string, any>;
   categorization?: JobCategorization;
+  version_extractions?: Record<string, VersionExtraction>;
 }
 
 export interface JobCategorization {

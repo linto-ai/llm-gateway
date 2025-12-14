@@ -366,7 +366,7 @@ class DocumentTemplateService:
                 select(DocumentTemplate).where(
                     DocumentTemplate.organization_id == organization_id,
                     DocumentTemplate.user_id == user_id,
-                    DocumentTemplate.is_default == True
+                    DocumentTemplate.is_default.is_(True)
                 )
             )
             template = result.scalar_one_or_none()
@@ -379,7 +379,7 @@ class DocumentTemplateService:
                 select(DocumentTemplate).where(
                     DocumentTemplate.organization_id == organization_id,
                     DocumentTemplate.user_id.is_(None),
-                    DocumentTemplate.is_default == True
+                    DocumentTemplate.is_default.is_(True)
                 )
             )
             template = result.scalar_one_or_none()
@@ -492,7 +492,7 @@ class DocumentTemplateService:
                 .where(
                     DocumentTemplate.organization_id.is_(None),
                     DocumentTemplate.user_id.is_(None),
-                    DocumentTemplate.is_default == True
+                    DocumentTemplate.is_default.is_(True)
                 )
                 .values(is_default=False)
             )
@@ -503,7 +503,7 @@ class DocumentTemplateService:
                 .where(
                     DocumentTemplate.organization_id == organization_id,
                     DocumentTemplate.user_id.is_(None),
-                    DocumentTemplate.is_default == True
+                    DocumentTemplate.is_default.is_(True)
                 )
                 .values(is_default=False)
             )
@@ -514,7 +514,7 @@ class DocumentTemplateService:
                 .where(
                     DocumentTemplate.organization_id == organization_id,
                     DocumentTemplate.user_id == user_id,
-                    DocumentTemplate.is_default == True
+                    DocumentTemplate.is_default.is_(True)
                 )
                 .values(is_default=False)
             )
