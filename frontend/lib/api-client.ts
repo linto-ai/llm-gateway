@@ -359,12 +359,14 @@ export const apiClient = {
       organization_id?: string;
       user_id?: string;
       include_system?: boolean;
+      include_all?: boolean;
       service_id?: string;
     }): Promise<DocumentTemplate[]> => {
       const queryParams: Record<string, unknown> = {};
       if (params?.organization_id) queryParams.organization_id = params.organization_id;
       if (params?.user_id) queryParams.user_id = params.user_id;
       if (params?.include_system !== undefined) queryParams.include_system = params.include_system;
+      if (params?.include_all !== undefined) queryParams.include_all = params.include_all;
       if (params?.service_id) queryParams.service_id = params.service_id;
       return api.get('/api/v1/document-templates', { params: queryParams });
     },

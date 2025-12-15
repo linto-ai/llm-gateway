@@ -86,6 +86,7 @@ async def list_templates(
     organization_id: Optional[str] = Query(None, max_length=100, description="Filter by organization scope"),
     user_id: Optional[str] = Query(None, max_length=100, description="Filter by user scope"),
     include_system: bool = Query(True, description="Include system templates (org_id=null, user_id=null)"),
+    include_all: bool = Query(False, description="Admin mode: return ALL templates regardless of scope"),
     db: AsyncSession = Depends(get_db),
 ) -> List[TemplateResponse]:
     """
@@ -100,12 +101,14 @@ async def list_templates(
     - `?include_system=true` -> system templates only
     - `?organization_id=X&include_system=true` -> system + org X templates
     - `?organization_id=X&user_id=Y&include_system=true` -> system + org X + user Y templates
+    - `?include_all=true` -> ALL templates (admin mode)
     """
     templates = await document_template_service.list_templates(
         db=db,
         organization_id=organization_id,
         user_id=user_id,
         include_system=include_system,
+        include_all=include_all,
     )
     return templates
 

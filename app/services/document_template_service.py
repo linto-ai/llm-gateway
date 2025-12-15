@@ -169,6 +169,7 @@ class DocumentTemplateService:
         organization_id: Optional[str] = None,
         user_id: Optional[str] = None,
         include_system: bool = True,
+        include_all: bool = False,
     ) -> List[DocumentTemplate]:
         """
         List templates visible to the given org/user.
@@ -183,10 +184,18 @@ class DocumentTemplateService:
             organization_id: Organization ID for filtering
             user_id: User ID for filtering
             include_system: Also include system templates (default: True)
+            include_all: Return ALL templates regardless of scope (admin mode)
 
         Returns:
             List of DocumentTemplate objects
         """
+        # Admin mode: return all templates without filtering
+        if include_all:
+            query = select(DocumentTemplate)
+            query = query.order_by(DocumentTemplate.created_at.desc())
+            result = await db.execute(query)
+            return list(result.scalars().all())
+
         conditions = []
 
         # Always include system templates if requested

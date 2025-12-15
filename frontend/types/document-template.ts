@@ -34,6 +34,7 @@ export interface TemplateQueryParams {
   organization_id?: string;
   user_id?: string;
   include_system?: boolean;
+  include_all?: boolean;
   service_id?: string;
 }
 

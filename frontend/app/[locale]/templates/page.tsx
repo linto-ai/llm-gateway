@@ -53,9 +53,9 @@ export default function TemplatesPage({ params }: PageProps) {
   const [scopeFilter, setScopeFilter] = useState<TemplateScope | 'all'>('all');
   const [showPlaceholderInfo, setShowPlaceholderInfo] = useState(false);
 
-  // Fetch all templates (system + org + user)
+  // Fetch ALL templates (admin mode - system + org + user)
   const { data: templates, isLoading, isFetching, refetch } = useDocumentTemplates({
-    include_system: true,
+    include_all: true,
   });
 
   // Show loading state for initial fetch
