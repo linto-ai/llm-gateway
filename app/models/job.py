@@ -1,8 +1,8 @@
 """Job model for tracking task execution."""
-from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, CheckConstraint, Index
+from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func, text
+from sqlalchemy.sql import func
 import uuid
 
 from app.core.database import Base
