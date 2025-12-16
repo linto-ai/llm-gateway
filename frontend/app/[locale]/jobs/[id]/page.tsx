@@ -188,27 +188,44 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
 
   // Determine which metadata to display based on viewing version
   const displayMetadata = useMemo(() => {
-    // If viewing a non-current version
-    if (viewingVersionNumber !== null) {
-      // Version 1 uses the main extracted_metadata (that's where it was originally extracted from)
-      if (viewingVersionNumber === 1) {
-        return job?.result?.extracted_metadata ?? null;
-      }
-      // Other versions: check version_extractions cache
-      const versionExtractions = job?.result?.version_extractions;
+    const versionExtractions = job?.result?.version_extractions;
+
+    // Helper to get metadata from version_extractions
+    const getVersionMetadata = (versionNum: number) => {
       if (versionExtractions) {
-        const versionKey = String(viewingVersionNumber);
+        const versionKey = String(versionNum);
         const versionExtraction = versionExtractions[versionKey];
         if (versionExtraction?.metadata) {
           return versionExtraction.metadata;
         }
       }
-      // No cached metadata for this version - show nothing
       return null;
+    };
+
+    // If viewing a non-current version
+    if (viewingVersionNumber !== null) {
+      // Version 1: try extracted_metadata first, then version_extractions
+      if (viewingVersionNumber === 1) {
+        return job?.result?.extracted_metadata ?? getVersionMetadata(1) ?? null;
+      }
+      // Other versions: check version_extractions cache
+      return getVersionMetadata(viewingVersionNumber);
     }
-    // Viewing current version - use main extracted_metadata
-    return job?.result?.extracted_metadata ?? null;
-  }, [viewingVersionNumber, job?.result]);
+
+    // Viewing current version - try main extracted_metadata first
+    const mainMetadata = job?.result?.extracted_metadata;
+    if (mainMetadata && Object.keys(mainMetadata).length > 0) {
+      return mainMetadata;
+    }
+
+    // Fallback: check version_extractions for current version
+    const currentVersion = job?.current_version;
+    if (currentVersion) {
+      return getVersionMetadata(currentVersion);
+    }
+
+    return null;
+  }, [viewingVersionNumber, job?.result, job?.current_version]);
 
   // Handle delete job
   const handleDeleteJob = useCallback(async () => {
