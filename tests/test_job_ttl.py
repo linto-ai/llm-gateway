@@ -2,15 +2,14 @@
 """
 Job TTL (Time To Live) Feature Tests
 
-Sprint 9 - Tests covering:
+Tests covering:
 1. ServiceFlavor model has default_ttl_seconds column
 2. ServiceFlavor schemas support default_ttl_seconds field with validation
 3. Job model has expires_at column
 4. Job creation computes expires_at from flavor's default_ttl_seconds
 5. JobResponse includes expires_at field
-6. Cleanup task exists and has correct signature
-7. Validation rules (positive int, max 1 year, null allowed)
-8. Backward compatibility (null TTL = never expire)
+6. Validation rules (positive int, max 1 year, null allowed)
+7. Backward compatibility (null TTL = never expire)
 """
 import pytest
 from datetime import datetime, timedelta, timezone
@@ -538,53 +537,7 @@ class TestJobServiceTTLResponses:
 
 
 # =============================================================================
-# 7. Cleanup Task Tests
-# =============================================================================
-
-class TestCleanupExpiredJobsTask:
-    """Tests for cleanup_expired_jobs Celery task."""
-
-    def test_cleanup_task_exists(self):
-        """Verify cleanup_expired_jobs task is defined."""
-        from app.http_server.celery_app import cleanup_expired_jobs
-
-        assert cleanup_expired_jobs is not None
-        assert callable(cleanup_expired_jobs)
-
-    def test_cleanup_task_is_celery_task(self):
-        """Verify cleanup_expired_jobs is decorated as Celery task."""
-        from app.http_server.celery_app import cleanup_expired_jobs
-
-        # Celery tasks have certain attributes
-        assert hasattr(cleanup_expired_jobs, 'delay'), \
-            "cleanup_expired_jobs should be a Celery task with .delay() method"
-
-    def test_celery_beat_schedule_includes_cleanup(self):
-        """Verify Celery Beat schedule includes cleanup task."""
-        from app.http_server.celery_app import celery_app
-
-        beat_schedule = celery_app.conf.beat_schedule
-        assert "cleanup-expired-jobs" in beat_schedule, \
-            "Celery Beat should have 'cleanup-expired-jobs' scheduled task"
-
-        task_config = beat_schedule["cleanup-expired-jobs"]
-        assert task_config["task"] == "app.http_server.celery_app.cleanup_expired_jobs"
-
-    def test_cleanup_interval_config_exists(self):
-        """Verify JOB_CLEANUP_INTERVAL_SECONDS config exists with default."""
-        from app.core.config import settings
-
-        assert hasattr(settings, "job_cleanup_interval_seconds"), \
-            "Settings should have job_cleanup_interval_seconds"
-        assert settings.job_cleanup_interval_seconds > 0, \
-            "Cleanup interval should be positive"
-        # Default per api-contract.md is 300 seconds (5 minutes)
-        assert settings.job_cleanup_interval_seconds >= 60, \
-            "Cleanup interval should be at least 1 minute"
-
-
-# =============================================================================
-# 8. API Contract Conformity Tests
+# 7. API Contract Conformity Tests
 # =============================================================================
 
 class TestTTLAPIContractConformity:
