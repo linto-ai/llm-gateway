@@ -752,6 +752,8 @@ async def execute_service(
         fallback_reason=fallback_reason,
         fallback_input_tokens=input_tokens,
         fallback_context_available=context_available,
+        # TTL configuration from flavor
+        default_ttl_seconds=flavor.default_ttl_seconds,
     )
 
     # Now dispatch Celery task with the predetermined task_id and flavor priority
@@ -1028,6 +1030,8 @@ async def _execute_with_file_internal(
         fallback_reason=fallback_reason,
         fallback_input_tokens=input_tokens,
         fallback_context_available=context_available,
+        # TTL configuration from flavor
+        default_ttl_seconds=flavor.default_ttl_seconds,
     )
 
     # Now dispatch Celery task with the predetermined task_id and flavor priority

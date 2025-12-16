@@ -61,3 +61,78 @@ export function getEffectiveModelLimits(model: {
     maxGeneration: model.max_generation_length,
   };
 }
+
+// TTL (Time To Live) utilities
+
+export type TtlUnit = 'seconds' | 'minutes' | 'hours' | 'days';
+
+const TTL_MULTIPLIERS: Record<TtlUnit, number> = {
+  seconds: 1,
+  minutes: 60,
+  hours: 3600,
+  days: 86400,
+};
+
+/**
+ * Convert a duration value with unit to seconds
+ */
+export function ttlToSeconds(value: number, unit: TtlUnit): number {
+  return value * TTL_MULTIPLIERS[unit];
+}
+
+/**
+ * Convert seconds to the most appropriate unit with value
+ */
+export function secondsToTtl(seconds: number): { value: number; unit: TtlUnit } {
+  if (seconds % 86400 === 0 && seconds >= 86400) {
+    return { value: seconds / 86400, unit: 'days' };
+  }
+  if (seconds % 3600 === 0 && seconds >= 3600) {
+    return { value: seconds / 3600, unit: 'hours' };
+  }
+  if (seconds % 60 === 0 && seconds >= 60) {
+    return { value: seconds / 60, unit: 'minutes' };
+  }
+  return { value: seconds, unit: 'seconds' };
+}
+
+/**
+ * Format a TTL duration in seconds to a human-readable string
+ * Note: This returns the English format; for i18n use the translation keys instead
+ */
+export function formatTtlDuration(seconds: number): string {
+  if (seconds >= 86400) {
+    const days = Math.floor(seconds / 86400);
+    return `${days} ${days === 1 ? 'day' : 'days'}`;
+  }
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600);
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+  }
+  if (seconds >= 60) {
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+  }
+  return `${seconds} ${seconds === 1 ? 'second' : 'seconds'}`;
+}
+
+/**
+ * Check if a date is expired (past now)
+ */
+export function isExpired(expiresAt: string | Date | null | undefined): boolean {
+  if (!expiresAt) return false;
+  const expiresDate = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+  return expiresDate < new Date();
+}
+
+/**
+ * Check if a date is expiring soon (within specified hours, default 24)
+ */
+export function isExpiringSoon(expiresAt: string | Date | null | undefined, withinHours: number = 24): boolean {
+  if (!expiresAt) return false;
+  const expiresDate = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+  const now = new Date();
+  if (expiresDate < now) return false; // Already expired
+  const hoursUntilExpiry = (expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+  return hoursUntilExpiry < withinHours;
+}

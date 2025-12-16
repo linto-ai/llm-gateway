@@ -163,6 +163,13 @@ class ServiceFlavor(Base):
         nullable=True
     )
 
+    # Job TTL configuration
+    default_ttl_seconds = Column(
+        Integer,
+        nullable=True,
+        comment="Default TTL for jobs in seconds. NULL = never expire."
+    )
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

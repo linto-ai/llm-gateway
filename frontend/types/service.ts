@@ -149,6 +149,9 @@ export interface FlavorResponse {
   failover_on_model_error: boolean;
   failover_on_content_filter: boolean;
   max_failover_depth: number;
+
+  // Job TTL configuration (null = never expire)
+  default_ttl_seconds: number | null;
 }
 
 export interface ServiceResponse {
@@ -210,6 +213,9 @@ export interface CreateFlavorRequest {
 
   // Placeholder extraction configuration
   placeholder_extraction_prompt_id?: string;
+
+  // Job TTL configuration
+  default_ttl_seconds?: number | null;
 }
 
 export interface CreateServiceRequest {
@@ -265,6 +271,9 @@ export interface UpdateFlavorRequest {
 
   // Placeholder extraction configuration
   placeholder_extraction_prompt_id?: string;
+
+  // Job TTL configuration
+  default_ttl_seconds?: number | null;
 }
 
 export interface ServiceListFilters {

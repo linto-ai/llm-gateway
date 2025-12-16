@@ -141,6 +141,9 @@ export interface JobResponse {
 
   // Processing mode from flavor
   processing_mode: 'single_pass' | 'iterative';
+
+  // Job expiration (from flavor TTL configuration)
+  expires_at: string | null;  // ISO datetime or null if never expires
 }
 
 export interface JobUpdate {

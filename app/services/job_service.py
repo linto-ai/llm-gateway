@@ -109,8 +109,15 @@ class JobService:
         fallback_reason: Optional[str] = None,
         fallback_input_tokens: Optional[int] = None,
         fallback_context_available: Optional[int] = None,
+        # TTL configuration (from flavor)
+        default_ttl_seconds: Optional[int] = None,
     ) -> Job:
         """Create a new job record in the database."""
+        # Compute expires_at from TTL if provided
+        expires_at = None
+        if default_ttl_seconds is not None and default_ttl_seconds > 0:
+            expires_at = datetime.utcnow() + timedelta(seconds=default_ttl_seconds)
+
         job = Job(
             service_id=service_id,
             flavor_id=flavor_id,
@@ -126,6 +133,8 @@ class JobService:
             fallback_reason=fallback_reason,
             fallback_input_tokens=fallback_input_tokens,
             fallback_context_available=fallback_context_available,
+            # TTL expiration
+            expires_at=expires_at,
         )
         db.add(job)
         await db.commit()
@@ -194,6 +203,8 @@ class JobService:
             last_edited_at=job.last_edited_at,
             has_extraction_prompt=has_extraction_prompt,
             processing_mode=processing_mode,
+            # TTL expiration
+            expires_at=job.expires_at,
         )
 
     async def get_job_by_celery_id(self, db: AsyncSession, celery_task_id: str) -> Optional[Job]:
@@ -327,6 +338,8 @@ class JobService:
                 last_edited_at=job.last_edited_at,
                 has_extraction_prompt=has_extraction_prompt,
                 processing_mode=processing_mode,
+                # TTL expiration
+                expires_at=job.expires_at,
             ))
 
         return items, total
@@ -644,6 +657,38 @@ class JobService:
             Job.status.in_(["queued", "started", "processing"])
         )
         return await db.scalar(stmt) or 0
+
+    async def cleanup_expired_jobs(self, db: AsyncSession) -> int:
+        """
+        Delete jobs that have exceeded their TTL (expires_at in the past).
+
+        Jobs with NULL expires_at are never deleted.
+
+        Args:
+            db: Database session
+
+        Returns:
+            Number of deleted jobs
+        """
+        # Find expired jobs
+        stmt = select(Job).where(
+            Job.expires_at.isnot(None),
+            Job.expires_at < datetime.utcnow()
+        )
+        result = await db.execute(stmt)
+        expired_jobs = result.scalars().all()
+
+        if not expired_jobs:
+            return 0
+
+        # Delete them
+        for job in expired_jobs:
+            await db.delete(job)
+
+        await db.commit()
+        logger.info(f"Deleted {len(expired_jobs)} expired jobs (TTL cleanup)")
+
+        return len(expired_jobs)
 
 
 job_service = JobService()

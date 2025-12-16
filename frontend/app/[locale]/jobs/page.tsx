@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useRouter, useParams } from 'next/navigation';
 import { formatDistanceToNow, format } from 'date-fns';
-import { ChevronDown, ChevronUp, Copy, Check, AlertCircle, XCircle, ExternalLink, Wifi, WifiOff, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Copy, Check, AlertCircle, XCircle, ExternalLink, Wifi, WifiOff, Trash2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 
 import { useJobs, useCancelJob, useDeleteJob } from '@/hooks/use-jobs';
 import { useJobsWebSocket } from '@/hooks/use-jobs-websocket';
+import { isExpired, isExpiringSoon } from '@/lib/utils';
 import type { JobResponse, JobStatus, JobListFilters, JobProgress } from '@/types/job';
 
 // Status badge variant mapping
@@ -266,6 +267,34 @@ export default function JobsPage() {
       cell: (job) => getDuration(job),
     },
     {
+      header: t('expiresAt'),
+      cell: (job) => {
+        if (!job.expires_at) {
+          return <span className="text-muted-foreground text-sm">{t('expiration.never')}</span>;
+        }
+        if (isExpired(job.expires_at)) {
+          return (
+            <Badge variant="destructive" className="text-xs">
+              {t('expiration.expired')}
+            </Badge>
+          );
+        }
+        if (isExpiringSoon(job.expires_at)) {
+          return (
+            <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-400">
+              <Clock className="h-3 w-3 mr-1" />
+              {t('expiration.expiringSoon')}
+            </Badge>
+          );
+        }
+        return (
+          <span className="text-sm">
+            {formatDistanceToNow(new Date(job.expires_at), { addSuffix: true })}
+          </span>
+        );
+      },
+    },
+    {
       header: '',
       cell: (job) => {
         const isTerminal = ['completed', 'failed', 'cancelled'].includes(job.status);
@@ -441,6 +470,31 @@ export default function JobsPage() {
                 <p>{format(new Date(job.completed_at), 'PPpp')}</p>
               </div>
             )}
+            <div>
+              <span className="text-muted-foreground">{t('expiresAt')}</span>
+              <div className="flex items-center gap-2">
+                {job.expires_at === null ? (
+                  <p className="text-muted-foreground">{t('expiration.never')}</p>
+                ) : isExpired(job.expires_at) ? (
+                  <>
+                    <p className="line-through">{format(new Date(job.expires_at), 'PPpp')}</p>
+                    <Badge variant="destructive" className="text-xs">
+                      {t('expiration.expired')}
+                    </Badge>
+                  </>
+                ) : isExpiringSoon(job.expires_at) ? (
+                  <>
+                    <p>{format(new Date(job.expires_at), 'PPpp')}</p>
+                    <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-400">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {t('expiration.expiringSoon')}
+                    </Badge>
+                  </>
+                ) : (
+                  <p>{format(new Date(job.expires_at), 'PPpp')}</p>
+                )}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -214,6 +214,12 @@ class JobResponse(BaseModel):
         description="Processing mode: single_pass or iterative"
     )
 
+    # TTL / Expiration
+    expires_at: Optional[datetime] = Field(
+        None,
+        description="When this job expires. NULL = never."
+    )
+
     class Config:
         from_attributes = True
 

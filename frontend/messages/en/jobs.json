@@ -18,6 +18,13 @@
   "createdAt": "Created at",
   "startedAt": "Started at",
   "completedAt": "Completed at",
+  "expiresAt": "Expires at",
+  "expiration": {
+    "never": "Never",
+    "expired": "Expired",
+    "expiringSoon": "Expiring soon",
+    "expiresIn": "Expires in {time}"
+  },
   "status": {
     "label": "Status",
     "queued": "Queued",

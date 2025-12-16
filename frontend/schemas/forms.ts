@@ -112,6 +112,14 @@ export const flavorFormSchema = z.object({
   failover_on_model_error: z.boolean().default(true),
   failover_on_content_filter: z.boolean().default(false),
   max_failover_depth: z.number().int().min(1).max(10).default(3),
+
+  // Job TTL configuration (null = never expire)
+  default_ttl_seconds: z.number()
+    .int()
+    .positive('validation.positive')
+    .max(31536000, 'validation.maxTtl')  // 1 year in seconds
+    .nullable()
+    .optional(),
 });
 
 export type FlavorFormData = z.infer<typeof flavorFormSchema>;

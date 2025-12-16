@@ -18,6 +18,13 @@
   "createdAt": "Cree le",
   "startedAt": "Demarre le",
   "completedAt": "Termine le",
+  "expiresAt": "Expire le",
+  "expiration": {
+    "never": "Jamais",
+    "expired": "Expire",
+    "expiringSoon": "Expire bientot",
+    "expiresIn": "Expire dans {time}"
+  },
   "status": {
     "label": "Statut",
     "queued": "En file d'attente",

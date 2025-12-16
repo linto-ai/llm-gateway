@@ -35,12 +35,14 @@ A **Flavor** is a specific model configuration within a service:
 - Includes system/user prompt templates
 - Supports iterative processing for long documents
 - **Token limits inherited from Model** (see [Model Limits Guide](MODEL_LIMITS_GUIDE.md))
+- **TTL configuration** via `default_ttl_seconds` (jobs auto-expire after this duration)
 
 ### Jobs
 A **Job** tracks execution of a service request:
 - Unique UUID
 - Status flow: `queued` → `started` → `processing` → `completed` | `failed`
 - Stores results and progress
+- Optional `expires_at` timestamp (computed from flavor's `default_ttl_seconds` at creation)
 
 ---
 
@@ -241,8 +243,37 @@ GET /api/v1/jobs/{job_id}
 | GET | `/jobs/{id}/versions/{n}` | Get specific version |
 | POST | `/jobs/{id}/versions/{n}/restore` | Restore version |
 | GET | `/jobs/{id}/export/{format}` | Export (docx/pdf) |
+| POST | `/jobs/cleanup-expired` | Delete all expired jobs |
 
 See [Swagger UI](http://your-host:8000/docs) for details.
+
+### Job TTL (Time-To-Live)
+
+Jobs can be configured to automatically expire after a certain duration.
+
+**Configuration:**
+- Set `default_ttl_seconds` on a Flavor to apply TTL to all jobs created with that flavor
+- Jobs created with a TTL-enabled flavor will have `expires_at` computed at creation time
+- Jobs with `expires_at = null` never expire
+
+**Cleanup:**
+```http
+POST /api/v1/jobs/cleanup-expired
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "deleted_count": 42,
+  "message": "Deleted 42 expired jobs"
+}
+```
+
+**Notes:**
+- Cleanup is not automatic - call this endpoint periodically or integrate with your scheduler
+- Only jobs with `expires_at` in the past are deleted
+- Jobs with `expires_at = null` are never deleted by this endpoint
 
 ---
 

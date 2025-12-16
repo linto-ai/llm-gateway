@@ -1,8 +1,8 @@
 """Job model for tracking task execution."""
-from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, CheckConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
 import uuid
 
 from app.core.database import Base
@@ -43,6 +43,13 @@ class Job(Base):
     fallback_reason = Column(Text, nullable=True)
     fallback_input_tokens = Column(Integer, nullable=True)
     fallback_context_available = Column(Integer, nullable=True)
+
+    # TTL / Expiration
+    expires_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="When this job expires and can be cleaned up. NULL = never."
+    )
 
     # Relationships
     service = relationship("Service", back_populates="jobs")

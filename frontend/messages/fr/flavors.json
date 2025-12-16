@@ -1,4 +1,20 @@
 {
+  "jobRetention": {
+    "title": "Retention des taches",
+    "description": "Configurez la duree de conservation des taches terminees avant leur suppression automatique.",
+    "enable": "Activer l'expiration des taches",
+    "enableDescription": "Supprimer automatiquement les taches apres une duree specifiee",
+    "durationPlaceholder": "Entrez la duree",
+    "preview": "Les taches expireront apres {value} {unit}",
+    "neverExpires": "Les taches n'expireront jamais et seront conservees en permanence.",
+    "maxExceeded": "La periode de retention maximale est de 1 an (365 jours).",
+    "units": {
+      "seconds": "Secondes",
+      "minutes": "Minutes",
+      "hours": "Heures",
+      "days": "Jours"
+    }
+  },
   "analytics": {
     "title": "Analytiques",
     "noData": "Aucune donnee analytique disponible",

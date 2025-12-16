@@ -248,6 +248,47 @@ async def cleanup_stale_jobs(
 
 
 @router.post(
+    "/cleanup-expired",
+    responses={200: {"description": "Expired jobs cleanup result"}},
+)
+async def cleanup_expired_jobs(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Delete jobs that have exceeded their TTL (expires_at in the past).
+
+    Jobs with NULL expires_at are never deleted by this endpoint.
+    This cleans up jobs from flavors that have a default_ttl_seconds configured.
+
+    Returns the count of deleted jobs.
+    """
+    from app.models.job import Job
+
+    # Delete expired jobs
+    result = await db.execute(
+        select(Job).where(
+            Job.expires_at.isnot(None),
+            Job.expires_at < datetime.utcnow()
+        )
+    )
+    expired_jobs = result.scalars().all()
+    deleted_count = len(expired_jobs)
+
+    for job in expired_jobs:
+        await db.delete(job)
+
+    await db.commit()
+
+    logger.info(f"Cleaned up {deleted_count} expired jobs")
+
+    return {
+        "status": "success",
+        "deleted_count": deleted_count,
+        "message": f"Deleted {deleted_count} expired jobs" if deleted_count else "No expired jobs found",
+    }
+
+
+@router.post(
     "/cleanup-orphaned",
     responses={200: {"description": "Orphaned jobs cleanup result"}},
 )

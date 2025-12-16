@@ -1407,6 +1407,8 @@ class TestJobServiceIntegrationTests:
         mock_job.fallback_reason = None
         mock_job.fallback_input_tokens = None
         mock_job.fallback_context_available = None
+        # TTL field
+        mock_job.expires_at = None
 
         service = JobService()
 

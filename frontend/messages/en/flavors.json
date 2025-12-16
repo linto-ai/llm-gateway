@@ -1,4 +1,20 @@
 {
+  "jobRetention": {
+    "title": "Job Retention",
+    "description": "Configure how long completed jobs are kept before automatic cleanup.",
+    "enable": "Enable job expiration",
+    "enableDescription": "Automatically delete jobs after a specified time",
+    "durationPlaceholder": "Enter duration",
+    "preview": "Jobs will expire after {value} {unit}",
+    "neverExpires": "Jobs will never expire and will be kept permanently.",
+    "maxExceeded": "Maximum retention period is 1 year (365 days).",
+    "units": {
+      "seconds": "Seconds",
+      "minutes": "Minutes",
+      "hours": "Hours",
+      "days": "Days"
+    }
+  },
   "analytics": {
     "title": "Analytics",
     "noData": "No analytics data available",

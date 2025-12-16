@@ -107,6 +107,13 @@ class ServiceFlavorBase(BaseModel):
     # Categorization prompt configuration
     categorization_prompt_id: Optional[UUID] = None
 
+    # Job TTL configuration
+    default_ttl_seconds: Optional[int] = Field(
+        None,
+        gt=0,
+        le=31536000,  # Max 1 year in seconds
+        description="Default TTL for jobs in seconds. NULL = never expire."
+    )
 
 
 class ServiceFlavorCreate(ServiceFlavorBase):
@@ -181,6 +188,14 @@ class ServiceFlavorUpdate(BaseModel):
 
     # Categorization prompt configuration
     categorization_prompt_id: Optional[UUID] = None
+
+    # Job TTL configuration
+    default_ttl_seconds: Optional[int] = Field(
+        None,
+        gt=0,
+        le=31536000,  # Max 1 year in seconds
+        description="Default TTL for jobs. NULL = never expire."
+    )
 
 
 class ModelInfo(BaseModel):
@@ -274,6 +289,9 @@ class ServiceFlavorResponse(BaseModel):
     # Categorization prompt configuration
     categorization_prompt_id: Optional[UUID] = None
     categorization_prompt_name: Optional[str] = None
+
+    # Job TTL configuration
+    default_ttl_seconds: Optional[int] = None
 
     created_at: datetime
     updated_at: datetime

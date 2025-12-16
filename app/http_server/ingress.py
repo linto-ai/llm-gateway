@@ -264,6 +264,11 @@ async def periodic_orphan_monitor():
                                     f"  - Job {job_info['job_id']}: {job_info['action']} "
                                     f"(celery={job_info['celery_status']})"
                                 )
+
+                    # Also cleanup expired jobs (TTL-based)
+                    expired_count = await job_service.cleanup_expired_jobs(db)
+                    if expired_count > 0:
+                        logger.info(f"Orphan monitor: deleted {expired_count} expired jobs (TTL)")
             except asyncio.CancelledError:
                 raise
             except Exception as e:

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslations, useLocale } from 'next-intl';
+import { ttlToSeconds, secondsToTtl, type TtlUnit } from '@/lib/utils';
 
 import {
   FormControl,
@@ -31,7 +32,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, Info } from 'lucide-react';
+import { ChevronDown, Info, Clock } from 'lucide-react';
 
 import { FlavorConfigAdvanced } from './FlavorConfigAdvanced';
 import { FailoverChainPreview } from './FailoverChainPreview';
@@ -59,6 +60,30 @@ export function FlavorWizardAdvanced({ service, config, flavor }: FlavorWizardAd
 
   const outputType = form.watch('output_type');
   const failoverEnabled = form.watch('failover_enabled');
+  const defaultTtlSeconds = form.watch('default_ttl_seconds');
+
+  // TTL input state - initialize from existing value or defaults
+  const initialTtl = useMemo(() => {
+    if (defaultTtlSeconds && defaultTtlSeconds > 0) {
+      return secondsToTtl(defaultTtlSeconds);
+    }
+    return { value: 7, unit: 'days' as TtlUnit }; // Default to 7 days when enabling
+  }, []);
+
+  const [ttlValue, setTtlValue] = useState<number | ''>(
+    defaultTtlSeconds ? initialTtl.value : ''
+  );
+  const [ttlUnit, setTtlUnit] = useState<TtlUnit>(initialTtl.unit);
+  const [ttlEnabled, setTtlEnabled] = useState<boolean>(defaultTtlSeconds !== null && defaultTtlSeconds !== undefined);
+
+  // Update form when TTL changes
+  useEffect(() => {
+    if (!ttlEnabled || ttlValue === '' || ttlValue <= 0) {
+      setValue('default_ttl_seconds', null);
+    } else {
+      setValue('default_ttl_seconds', ttlToSeconds(ttlValue, ttlUnit));
+    }
+  }, [ttlEnabled, ttlValue, ttlUnit, setValue]);
 
   // Show extraction prompt config for text and markdown output types
   // (extraction can be useful to extract metadata from plain text outputs too)
@@ -271,6 +296,101 @@ export function FlavorWizardAdvanced({ service, config, flavor }: FlavorWizardAd
           </FormItem>
         )}
       />
+
+      {/* Job Retention / TTL Configuration */}
+      <Collapsible className="border rounded-lg p-4">
+        <CollapsibleTrigger asChild>
+          <Button type="button" variant="ghost" className="w-full justify-between p-0">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <h3 className="text-sm font-medium">{tFlavors('jobRetention.title')}</h3>
+            </div>
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-4 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {tFlavors('jobRetention.description')}
+          </p>
+
+          {/* Enable TTL Toggle */}
+          <div className="flex flex-row items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium">{tFlavors('jobRetention.enable')}</Label>
+              <p className="text-xs text-muted-foreground">
+                {tFlavors('jobRetention.enableDescription')}
+              </p>
+            </div>
+            <Switch
+              checked={ttlEnabled}
+              onCheckedChange={(checked) => {
+                setTtlEnabled(checked);
+                if (checked && ttlValue === '') {
+                  setTtlValue(7); // Default to 7 when enabling
+                }
+              }}
+            />
+          </div>
+
+          {ttlEnabled && (
+            <div className="space-y-4">
+              {/* Duration Input */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder={tFlavors('jobRetention.durationPlaceholder')}
+                    value={ttlValue}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTtlValue(val === '' ? '' : parseInt(val, 10));
+                    }}
+                  />
+                </div>
+                <div className="w-32">
+                  <Select value={ttlUnit} onValueChange={(value) => setTtlUnit(value as TtlUnit)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="seconds">{tFlavors('jobRetention.units.seconds')}</SelectItem>
+                      <SelectItem value="minutes">{tFlavors('jobRetention.units.minutes')}</SelectItem>
+                      <SelectItem value="hours">{tFlavors('jobRetention.units.hours')}</SelectItem>
+                      <SelectItem value="days">{tFlavors('jobRetention.units.days')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Preview text */}
+              {ttlValue !== '' && ttlValue > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {tFlavors('jobRetention.preview', { value: ttlValue, unit: tFlavors(`jobRetention.units.${ttlUnit}`) })}
+                </p>
+              )}
+
+              {/* Warning about max limit */}
+              {defaultTtlSeconds && defaultTtlSeconds > 31536000 && (
+                <Alert variant="destructive">
+                  <AlertDescription className="text-xs">
+                    {tFlavors('jobRetention.maxExceeded')}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          {!ttlEnabled && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                {tFlavors('jobRetention.neverExpires')}
+              </AlertDescription>
+            </Alert>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Advanced Configuration - Stop Sequences & Custom Params */}
       <Collapsible className="border rounded-lg p-4">

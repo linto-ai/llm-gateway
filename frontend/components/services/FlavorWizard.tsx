@@ -73,6 +73,8 @@ const STEP_FIELDS: Record<StepKey, (keyof FlavorFormData)[]> = {
     'failover_on_model_error',
     'failover_on_content_filter',
     'max_failover_depth',
+    // Job TTL
+    'default_ttl_seconds',
   ],
 };
 
@@ -128,6 +130,8 @@ export function FlavorWizard({ service, flavor, onSuccess, onCancel }: FlavorWiz
       failover_on_model_error: flavor?.failover_on_model_error ?? true,
       failover_on_content_filter: flavor?.failover_on_content_filter ?? false,
       max_failover_depth: flavor?.max_failover_depth ?? 3,
+      // Job TTL configuration
+      default_ttl_seconds: flavor?.default_ttl_seconds ?? null,
     },
   });
 
@@ -223,6 +227,8 @@ export function FlavorWizard({ service, flavor, onSuccess, onCancel }: FlavorWiz
         failover_on_model_error: data.failover_on_model_error,
         failover_on_content_filter: data.failover_on_content_filter,
         max_failover_depth: data.max_failover_depth,
+        // Job TTL configuration
+        default_ttl_seconds: data.default_ttl_seconds ?? null,
       };
 
       if (flavor) {
