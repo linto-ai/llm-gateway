@@ -93,14 +93,10 @@ class ExportService:
                 current_metadata = self._get_version_metadata(job, version_number)
                 last_extraction_template_id = self._get_version_template_id(job, version_number)
 
-                # If no cached metadata for this version, force extraction using same fields as main metadata
+                # If no cached metadata for this version, force extraction
                 if not current_metadata:
-                    main_metadata = self._get_current_metadata(job)
-                    if main_metadata:
-                        # Use the same field names from main metadata as placeholders to extract
-                        template_placeholders = list(main_metadata.keys())
-                        force_extraction = True
-                        logger.info(f"No cached metadata for version {version_number}, will extract fields: {template_placeholders}")
+                    force_extraction = True
+                    logger.info(f"No cached metadata for version {version_number}, will extract using template placeholders")
             else:
                 logger.warning(f"Version {version_number} not found for job {job.id}, using current content")
                 current_metadata = self._get_current_metadata(job)
@@ -363,6 +359,13 @@ class ExportService:
         missing = []
         standard_placeholders = set(DocumentTemplateService.STANDARD_PLACEHOLDERS)
 
+        # If template changed since last extraction, force re-extraction of all non-standard placeholders
+        template_changed = (
+            template_id is not None
+            and last_extraction_template_id is not None
+            and template_id != last_extraction_template_id
+        )
+
         for placeholder in template_placeholders:
             # Parse placeholder name
             info = self.template_service.parse_placeholder_info(placeholder)
@@ -370,6 +373,11 @@ class ExportService:
 
             # Skip standard placeholders (system-provided)
             if name in standard_placeholders:
+                continue
+
+            # Force re-extraction if template changed
+            if template_changed:
+                missing.append(placeholder)
                 continue
 
             # Only extract if the value doesn't exist in current_metadata
