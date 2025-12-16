@@ -1,3 +1,41 @@
+# 2.2.0
+
+## Feature Release - Job TTL and Export Bug Fixes (2025-12-16)
+
+### New Features
+
+**Job TTL (Time-To-Live)**
+- Jobs can now have an expiration date via `expires_at` field
+- Flavors support `default_ttl_seconds` configuration to auto-expire jobs
+- New endpoint `POST /api/v1/jobs/cleanup-expired` to delete expired jobs
+- Frontend UI to configure TTL on service flavors
+- Celery task support for automated cleanup
+
+### Bug Fixes
+
+**Version-Aware Export Extraction**
+- Fixed: JIT extraction was losing placeholder descriptions when extracting for non-current versions
+- Fixed: Template change was not triggering re-extraction (restored `template_changed` logic)
+- Fixed: Frontend metadata display now falls back to `version_extractions` when `extracted_metadata` is empty
+
+### Database Changes
+- Added `expires_at` column to `jobs` table (nullable timestamp)
+- Added `default_ttl_seconds` column to `service_flavors` table (nullable integer)
+- Migration: `002_add_job_ttl.py`
+
+### API Changes
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/jobs/cleanup-expired` | POST | Delete all jobs past their expiration date |
+
+### Frontend Changes
+- Flavor configuration now includes TTL settings
+- Jobs list shows expiration status
+- Job detail page shows expiration date
+
+---
+
 # 2.1.0
 
 ## Feature Release - User-Scoped Templates and Version-Aware Export (2025-12-14)
