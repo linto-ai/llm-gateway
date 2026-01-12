@@ -23,26 +23,20 @@ else
     fi
 fi
 
-# Configure API URL
-if [ -n "$NEXT_PUBLIC_API_URL" ]; then
-    echo "Configuring API URL: $NEXT_PUBLIC_API_URL"
-    find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${API_URL_PLACEHOLDER}|${NEXT_PUBLIC_API_URL}|g" {} + 2>/dev/null || true
-    if [ -f /app/server.js ]; then
-        sed -i "s|${API_URL_PLACEHOLDER}|${NEXT_PUBLIC_API_URL}|g" /app/server.js
-    fi
-else
-    echo "No NEXT_PUBLIC_API_URL set, using default http://localhost:8000"
+# Configure API URL (default to localhost:8000 if not set)
+API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
+echo "Configuring API URL: $API_URL"
+find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${API_URL_PLACEHOLDER}|${API_URL}|g" {} + 2>/dev/null || true
+if [ -f /app/server.js ]; then
+    sed -i "s|${API_URL_PLACEHOLDER}|${API_URL}|g" /app/server.js
 fi
 
-# Configure WebSocket URL
-if [ -n "$NEXT_PUBLIC_WS_URL" ]; then
-    echo "Configuring WebSocket URL: $NEXT_PUBLIC_WS_URL"
-    find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${WS_URL_PLACEHOLDER}|${NEXT_PUBLIC_WS_URL}|g" {} + 2>/dev/null || true
-    if [ -f /app/server.js ]; then
-        sed -i "s|${WS_URL_PLACEHOLDER}|${NEXT_PUBLIC_WS_URL}|g" /app/server.js
-    fi
-else
-    echo "No NEXT_PUBLIC_WS_URL set, using default ws://localhost:8000"
+# Configure WebSocket URL (default to localhost:8000 if not set)
+WS_URL="${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}"
+echo "Configuring WebSocket URL: $WS_URL"
+find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${WS_URL_PLACEHOLDER}|${WS_URL}|g" {} + 2>/dev/null || true
+if [ -f /app/server.js ]; then
+    sed -i "s|${WS_URL_PLACEHOLDER}|${WS_URL}|g" /app/server.js
 fi
 
 echo "Configuration complete"

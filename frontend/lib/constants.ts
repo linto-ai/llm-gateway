@@ -1,9 +1,7 @@
-// API_BASE_URL can be set at runtime via entrypoint script (replaces placeholder)
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || '__NEXT_API_URL_PLACEHOLDER__';
-export const API_BASE_URL = rawApiUrl === '__NEXT_API_URL_PLACEHOLDER__' ? 'http://localhost:8000' : rawApiUrl;
-// WS_BASE_URL can be set at runtime via entrypoint script (replaces placeholder)
-const rawWsUrl = process.env.NEXT_PUBLIC_WS_URL || '__NEXT_WS_URL_PLACEHOLDER__';
-export const WS_BASE_URL = rawWsUrl === '__NEXT_WS_URL_PLACEHOLDER__' ? 'ws://localhost:8000' : rawWsUrl;
+// API_BASE_URL and WS_BASE_URL are placeholders replaced at runtime by docker-entrypoint.sh
+// DO NOT add fallback logic here - bundler will optimize it away
+export const API_BASE_URL = '__NEXT_API_URL_PLACEHOLDER__';
+export const WS_BASE_URL = '__NEXT_WS_URL_PLACEHOLDER__';
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'LLM Gateway';
 export const DEFAULT_LOCALE = process.env.NEXT_PUBLIC_DEFAULT_LOCALE || 'en';
 // BASE_PATH can be set at runtime via entrypoint script (replaces placeholder)
