@@ -2,7 +2,7 @@
 
 import { use, useMemo, useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -232,11 +232,7 @@ export default function JobDetailPage({ params }: JobDetailPageProps) {
     try {
       await deleteJobMutation.mutateAsync(id);
       toast.success(t('deleteSuccess'));
-      // Get locale from params and redirect with locale prefix
-      const params = new URLSearchParams(window.location.search);
-      const pathParts = window.location.pathname.split('/');
-      const locale = pathParts[1] || 'en';
-      router.push(`/${locale}/jobs`);
+      router.push('/jobs');
     } catch (error: any) {
       toast.error(error.message || t('deleteError'));
     }

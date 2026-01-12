@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import Link from 'next/link';
+import { Link } from '@/lib/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProviders } from '@/hooks/use-providers';
 import { useModels } from '@/hooks/use-models';
@@ -38,7 +38,7 @@ export default function DashboardPage() {
       <DashboardHealthCard />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link href={`/${locale}/providers`}>
+        <Link href="/providers">
           <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -58,7 +58,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href={`/${locale}/models`}>
+        <Link href="/models">
           <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('models')}</CardTitle>
@@ -76,7 +76,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href={`/${locale}/services`}>
+        <Link href="/services">
           <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -96,7 +96,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Link href={`/${locale}/prompts`}>
+        <Link href="/prompts">
           <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('prompts')}</CardTitle>

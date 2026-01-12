@@ -19,6 +19,9 @@ COPY . .
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Build with placeholder - will be replaced at runtime by entrypoint script
+ENV NEXT_PUBLIC_BASE_PATH="/__NEXT_BASEPATH_PLACEHOLDER__"
+
 # Build the application
 RUN npm run build
 
@@ -38,6 +41,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy entrypoint script
+COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
 USER nextjs
 
 EXPOSE 3000
@@ -45,4 +52,9 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Runtime basePath configuration (optional)
+# Set BASE_PATH=/your-subpath to deploy under a subpath
+ENV BASE_PATH=""
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "server.js"]

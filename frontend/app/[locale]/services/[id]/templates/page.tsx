@@ -2,7 +2,7 @@
 
 import { use, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import Link from 'next/link';
+import { Link } from '@/lib/navigation';
 import { toast } from 'sonner';
 import { ArrowLeft, FileText, Check, X, Library } from 'lucide-react';
 
@@ -102,7 +102,7 @@ export default function ServiceTemplatesPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" asChild>
-            <Link href={`/${locale}/services/${serviceId}`}>
+            <Link href={`/services/${serviceId}`}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               {tCommon('back')}
             </Link>
@@ -207,7 +207,7 @@ export default function ServiceTemplatesPage({ params }: PageProps) {
                 className="px-0 h-auto mt-2"
                 asChild
               >
-                <Link href={`/${locale}/templates`}>
+                <Link href="/templates">
                   {tTemplates('title')} →
                 </Link>
               </Button>

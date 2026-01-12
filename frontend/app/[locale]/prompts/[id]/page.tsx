@@ -1,11 +1,10 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, Link } from '@/lib/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { Pencil, Trash2, Copy, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,7 +47,7 @@ export default function PromptDetailPage({ params }: PageProps) {
     try {
       await deletePrompt.mutateAsync(id);
       toast.success(t('deleteSuccess'));
-      router.push(`/${locale}/prompts`);
+      router.push('/prompts');
     } catch (error: any) {
       toast.error(error.message || t('deleteError'));
     }
@@ -83,7 +82,7 @@ export default function PromptDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" asChild>
-            <Link href={`/${locale}/prompts`}>
+            <Link href="/prompts">
               <ArrowLeft className="h-4 w-4 mr-2" />
               {tCommon('back')}
             </Link>

@@ -1,8 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import { Link, usePathname } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/ui-store';
 import {
@@ -77,11 +76,10 @@ function NavLinks({ locale }: { locale: string }) {
     <nav className="flex flex-col gap-1 p-2">
       {navItems.map((item) => {
         const Icon = item.icon;
-        const fullHref = `/${locale}${item.href}`;
-        const isActive = pathname === fullHref || (item.href !== '/' && pathname.startsWith(fullHref));
+        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
 
         return (
-          <Link key={item.href} href={fullHref}>
+          <Link key={item.href} href={item.href} locale={locale}>
             <Button
               variant={isActive ? 'secondary' : 'ghost'}
               className={cn(

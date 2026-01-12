@@ -1,7 +1,7 @@
 'use client';
 
 import { use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useTranslations } from 'next-intl';
 import { useModel, useDeleteModel, useVerifyModel } from '@/hooks/use-models';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { ModelHealthStatus } from '@/components/models/ModelHealthStatus';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { Pencil, Trash2, ArrowLeft, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/lib/navigation';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -72,7 +72,7 @@ export default function ModelDetailPage({ params }: PageProps) {
     try {
       await deleteModel.mutateAsync(id);
       toast.success(t('models.deleteSuccess'));
-      router.push(`/${locale}/models`);
+      router.push('/models');
     } catch (error: any) {
       toast.error(error.message || t('models.deleteError'));
     }
@@ -84,7 +84,7 @@ export default function ModelDetailPage({ params }: PageProps) {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <p className="text-lg text-muted-foreground">{t('errors.notFound')}</p>
         <Button asChild>
-          <Link href={`/${locale}/models`}>
+          <Link href="/models">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('common.back')}
           </Link>
@@ -98,7 +98,7 @@ export default function ModelDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-        <Link href={`/${locale}/models`} className="hover:text-foreground">
+        <Link href="/models" className="hover:text-foreground">
           {t('nav.models')}
         </Link>
         <span>/</span>
@@ -112,7 +112,7 @@ export default function ModelDetailPage({ params }: PageProps) {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href={`/${locale}/models/${id}/edit`}>
+            <Link href={`/models/${id}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
               {t('common.edit')}
             </Link>

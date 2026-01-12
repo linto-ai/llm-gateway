@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
+import { useParams } from 'next/navigation';
 import { Plus, Eye, Edit, Trash2, CheckCircle, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -78,7 +79,7 @@ export default function ProvidersPage() {
   };
 
   const handleViewProvider = (provider: ProviderResponse) => {
-    router.push(`/${locale}/providers/${provider.id}`);
+    router.push(`/providers/${provider.id}`);
   };
 
   // Table columns

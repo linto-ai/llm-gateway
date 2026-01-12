@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import type { ModelResponse } from '@/types/model';
 
 interface ModelFormProps {
@@ -78,7 +78,7 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
       if (onSuccess) {
         await onSuccess();
       } else {
-        router.push(`/${locale}/models`);
+        router.push('/models');
       }
     } catch (error: any) {
       toast.error(error.message || t('errors.generic'));
@@ -172,7 +172,7 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
           <Button
             type="button"
             variant="outline"
-            onClick={onCancel || (() => router.push(`/${locale}/models`))}
+            onClick={onCancel || (() => router.push('/models'))}
           >
             {t('common.cancel')}
           </Button>

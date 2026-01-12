@@ -2,7 +2,7 @@
 
 import type { ModelResponse } from "@/types/model";
 import { use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, Link } from '@/lib/navigation';
 import { useTranslations } from 'next-intl';
 import { useProvider, useDeleteProvider, useVerifyProviderModels } from '@/hooks/use-providers';
 import { useModels, useCreateModel } from '@/hooks/use-models';
@@ -19,7 +19,6 @@ import { useState } from 'react';
 import { Pencil, Trash2, CheckCircle, ArrowLeft, Shield, ShieldAlert, ShieldOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ProviderForm } from '@/components/providers/ProviderForm';
-import Link from 'next/link';
 import type { DiscoveredModel } from '@/types/model';
 
 interface PageProps {
@@ -92,7 +91,7 @@ export default function ProviderDetailPage({ params }: PageProps) {
     try {
       await deleteProvider.mutateAsync(id);
       toast.success(t('providers.deleteSuccess'));
-      router.push(`/${locale}/providers`);
+      router.push('/providers');
     } catch (error: any) {
       toast.error(error.message || t('providers.deleteError'));
     }
@@ -120,7 +119,7 @@ export default function ProviderDetailPage({ params }: PageProps) {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <p className="text-lg text-muted-foreground">{t('errors.notFound')}</p>
         <Button asChild>
-          <Link href={`/${locale}/providers`}>
+          <Link href="/providers">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('common.back')}
           </Link>
@@ -162,7 +161,7 @@ export default function ProviderDetailPage({ params }: PageProps) {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-        <Link href={`/${locale}/providers`} className="hover:text-foreground">
+        <Link href="/providers" className="hover:text-foreground">
           {t('nav.providers')}
         </Link>
         <span>/</span>

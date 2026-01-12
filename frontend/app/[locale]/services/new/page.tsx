@@ -1,11 +1,10 @@
 'use client';
 
 import { use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, Link } from '@/lib/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +23,7 @@ export default function NewServicePage({ params }: PageProps) {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/${locale}/services`}>
+          <Link href="/services">
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t('common.back')}
           </Link>
@@ -40,9 +39,9 @@ export default function NewServicePage({ params }: PageProps) {
           <ServiceForm
             onSuccess={() => {
               toast.success(t('services.createSuccess'));
-              router.push(`/${locale}/services`);
+              router.push('/services');
             }}
-            onCancel={() => router.push(`/${locale}/services`)}
+            onCancel={() => router.push('/services')}
           />
         </CardContent>
       </Card>

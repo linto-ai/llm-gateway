@@ -2,8 +2,7 @@
 
 import { use, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter, Link } from '@/lib/navigation';
 import { Plus, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -67,7 +66,7 @@ export default function ServicesPage({ params }: PageProps) {
   };
 
   const handleViewService = (service: ServiceResponse) => {
-    router.push(`/${locale}/services/${service.id}`);
+    router.push(`/services/${service.id}`);
   };
 
   const columns = [
@@ -75,7 +74,7 @@ export default function ServicesPage({ params }: PageProps) {
       header: t('services.fields.name'),
       accessorKey: 'name' as keyof ServiceResponse,
       cell: (row: any) => (
-        <Link href={`/${locale}/services/${row.id}`} className="text-primary hover:underline">
+        <Link href={`/services/${row.id}`} className="text-primary hover:underline">
           {row.name}
         </Link>
       ),
@@ -131,7 +130,7 @@ export default function ServicesPage({ params }: PageProps) {
           <h1 className="text-3xl font-bold">{t('services.title')}</h1>
           <p className="text-muted-foreground mt-1">{t('services.subtitle')}</p>
         </div>
-        <Button onClick={() => router.push(`/${locale}/services/new`)} data-testid="btn-create">
+        <Button onClick={() => router.push('/services/new')} data-testid="btn-create">
           <Plus className="mr-2 h-4 w-4" />
           {t('services.createNew')}
         </Button>
@@ -141,7 +140,7 @@ export default function ServicesPage({ params }: PageProps) {
         columns={columns}
         data={servicesResponse?.items || []}
         isLoading={isLoading}
-        onRowClick={(row) => router.push(`/${locale}/services/${row.id}`)}
+        onRowClick={(row) => router.push(`/services/${row.id}`)}
         getRowId={(row) => row.id}
         emptyState={{ title: t('services.emptyStateDescription'), description: t('services.emptyStateDescription') }}
       />

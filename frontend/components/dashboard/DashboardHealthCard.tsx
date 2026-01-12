@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { Activity, AlertTriangle, CheckCircle, Clock, XCircle, Zap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -145,7 +145,7 @@ export function DashboardHealthCard() {
                   <div
                     key={service.service_id}
                     className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => router.push(`/${locale}/services/${service.service_id}`)}
+                    onClick={() => router.push(`/services/${service.service_id}`)}
                   >
                     <div className="flex items-center gap-2">
                       <StatusIcon className={`h-4 w-4 ${

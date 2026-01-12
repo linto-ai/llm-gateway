@@ -2,6 +2,9 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost
 export const WS_BASE_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'LLM Gateway';
 export const DEFAULT_LOCALE = process.env.NEXT_PUBLIC_DEFAULT_LOCALE || 'en';
+// BASE_PATH can be set at runtime via entrypoint script (replaces placeholder)
+const rawBasePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+export const BASE_PATH = rawBasePath === '/__NEXT_BASEPATH_PLACEHOLDER__' ? '' : rawBasePath;
 
 export const PROVIDER_TYPES = [
   'openai',

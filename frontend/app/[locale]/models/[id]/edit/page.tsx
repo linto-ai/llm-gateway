@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useTranslations } from 'next-intl';
 import { useModel, useUpdateModel } from '@/hooks/use-models';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ModelForm } from '@/components/models/ModelForm';
 import { ModelLimitsSection } from '@/components/models/ModelLimitsSection';
 import { TokenizerSelector } from '@/components/models/TokenizerSelector';
-import Link from 'next/link';
+import { Link } from '@/lib/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -118,7 +118,7 @@ export default function ModelEditPage({ params }: PageProps) {
       }
     }
 
-    router.push(`/${locale}/models/${id}`);
+    router.push(`/models/${id}`);
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -127,7 +127,7 @@ export default function ModelEditPage({ params }: PageProps) {
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <p>{t('errors.notFound')}</p>
         <Button asChild>
-          <Link href={`/${locale}/models`}>
+          <Link href="/models">
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('common.back')}
           </Link>
@@ -139,9 +139,9 @@ export default function ModelEditPage({ params }: PageProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-        <Link href={`/${locale}/models`}>{t('nav.models')}</Link>
+        <Link href="/models">{t('nav.models')}</Link>
         <span>/</span>
-        <Link href={`/${locale}/models/${id}`}>{model.model_name}</Link>
+        <Link href={`/models/${id}`}>{model.model_name}</Link>
         <span>/</span>
         <span className="text-foreground">{t('common.edit')}</span>
       </div>

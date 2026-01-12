@@ -1,11 +1,11 @@
 'use client';
 
 import { use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/lib/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,7 @@ export default function NewModelPage({ params }: PageProps) {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/${locale}/models`}>
+          <Link href="/models">
             <ArrowLeft className="h-4 w-4 mr-2" />
             {t('common.back')}
           </Link>
@@ -41,9 +41,9 @@ export default function NewModelPage({ params }: PageProps) {
             locale={locale}
             onSuccess={() => {
               toast.success(t('models.createSuccess'));
-              router.push(`/${locale}/models`);
+              router.push('/models');
             }}
-            onCancel={() => router.push(`/${locale}/models`)}
+            onCancel={() => router.push('/models')}
           />
         </CardContent>
       </Card>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname, useRouter } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,8 +13,8 @@ import { Globe } from 'lucide-react';
 
 const locales = [
   { code: 'en', name: 'English' },
-  { code: 'fr', name: 'Français' },
-];
+  { code: 'fr', name: 'Francais' },
+] as const;
 
 export function LanguageSwitcher() {
   const locale = useLocale();
@@ -22,12 +22,8 @@ export function LanguageSwitcher() {
   const pathname = usePathname();
   const t = useTranslations('app');
 
-  const switchLocale = (newLocale: string) => {
-    // Remove current locale from pathname and add new one
-    const segments = pathname.split('/');
-    segments[1] = newLocale;
-    const newPath = segments.join('/');
-    router.push(newPath);
+  const switchLocale = (newLocale: 'en' | 'fr') => {
+    router.replace(pathname, { locale: newLocale });
   };
 
   const currentLocaleName =

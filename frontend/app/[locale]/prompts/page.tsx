@@ -2,8 +2,7 @@
 
 import { use, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter, Link } from '@/lib/navigation';
 import { Plus, Zap, RefreshCw, HelpCircle, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -121,7 +120,7 @@ export default function PromptsPage({ params }: PageProps) {
   };
 
   const handleViewPrompt = (prompt: PromptResponse) => {
-    router.push(`/${locale}/prompts/${prompt.id}`);
+    router.push(`/prompts/${prompt.id}`);
   };
 
   // Helper to get service type display name
@@ -136,7 +135,7 @@ export default function PromptsPage({ params }: PageProps) {
       header: t('prompts.fields.name'),
       accessorKey: 'name' as keyof PromptResponse,
       cell: (row: PromptResponse) => (
-        <Link href={`/${locale}/prompts/${row.id}`} className="text-primary hover:underline">
+        <Link href={`/prompts/${row.id}`} className="text-primary hover:underline">
           {row.name}
         </Link>
       ),
@@ -234,7 +233,7 @@ export default function PromptsPage({ params }: PageProps) {
           <h1 className="text-3xl font-bold">{t('prompts.title')}</h1>
           <p className="text-muted-foreground mt-1">{t('prompts.subtitle')}</p>
         </div>
-        <Button onClick={() => router.push(`/${locale}/prompts/new`)} data-testid="btn-create">
+        <Button onClick={() => router.push('/prompts/new')} data-testid="btn-create">
           <Plus className="mr-2 h-4 w-4" />
           {t('prompts.createNew')}
         </Button>
@@ -298,7 +297,7 @@ export default function PromptsPage({ params }: PageProps) {
         columns={columns}
         data={promptsResponse?.items || []}
         isLoading={isLoading}
-        onRowClick={(row) => router.push(`/${locale}/prompts/${row.id}`)}
+        onRowClick={(row) => router.push(`/prompts/${row.id}`)}
         getRowId={(row) => row.id}
         emptyState={{ title: t('prompts.emptyStateDescription'), description: t('prompts.emptyStateDescription') }}
       />

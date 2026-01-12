@@ -1,11 +1,10 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, Link } from '@/lib/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Pencil, Trash2, ArrowLeft, Plus, FileText } from 'lucide-react';
-import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,7 +58,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
     try {
       await deleteService.mutateAsync(id);
       toast.success(t('deleteSuccess'));
-      router.push(`/${locale}/services`);
+      router.push('/services');
     } catch (error: any) {
       toast.error(error.message || t('deleteError'));
     }
@@ -98,7 +97,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" asChild>
-            <Link href={`/${locale}/services`}>
+            <Link href="/services">
               <ArrowLeft className="h-4 w-4 mr-2" />
               {tCommon('back')}
             </Link>
@@ -246,7 +245,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
                   </CardDescription>
                 </div>
                 <Button variant="outline" asChild>
-                  <Link href={`/${locale}/services/${id}/templates`}>
+                  <Link href={`/services/${id}/templates`}>
                     {t('manageTemplates')}
                   </Link>
                 </Button>
@@ -271,7 +270,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground mb-4">{t('noDefaultTemplate')}</p>
                   <Button asChild>
-                    <Link href={`/${locale}/services/${id}/templates`}>
+                    <Link href={`/services/${id}/templates`}>
                       {t('selectDefaultTemplate')}
                     </Link>
                   </Button>

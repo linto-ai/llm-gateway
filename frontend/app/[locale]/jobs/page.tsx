@@ -3,7 +3,8 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
+import { useParams } from 'next/navigation';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ChevronDown, ChevronUp, Copy, Check, AlertCircle, XCircle, ExternalLink, Wifi, WifiOff, Trash2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -194,7 +195,7 @@ export default function JobsPage() {
 
   // Navigate to job detail page
   const navigateToDetail = (jobId: string) => {
-    router.push(`/${locale}/jobs/${jobId}`);
+    router.push(`/jobs/${jobId}`);
   };
 
   // Table columns

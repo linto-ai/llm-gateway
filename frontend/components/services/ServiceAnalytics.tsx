@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import {
   BarChart,
   Bar,
@@ -61,7 +60,6 @@ export function ServiceAnalytics({ serviceId, serviceName }: ServiceAnalyticsPro
   const t = useTranslations('analytics.service');
   const tPeriods = useTranslations('analytics.periods');
   const tChart = useTranslations('analytics.chart');
-  const router = useRouter();
 
   const [period, setPeriod] = useState<AnalyticsPeriod>('24h');
   const { data: stats, isLoading, error } = useServiceStats(serviceId, period);
