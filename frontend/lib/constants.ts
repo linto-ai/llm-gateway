@@ -1,4 +1,6 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// API_BASE_URL can be set at runtime via entrypoint script (replaces placeholder)
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || '__NEXT_API_URL_PLACEHOLDER__';
+export const API_BASE_URL = rawApiUrl === '__NEXT_API_URL_PLACEHOLDER__' ? 'http://localhost:8000' : rawApiUrl;
 // WS_BASE_URL can be set at runtime via entrypoint script (replaces placeholder)
 const rawWsUrl = process.env.NEXT_PUBLIC_WS_URL || '__NEXT_WS_URL_PLACEHOLDER__';
 export const WS_BASE_URL = rawWsUrl === '__NEXT_WS_URL_PLACEHOLDER__' ? 'ws://localhost:8000' : rawWsUrl;
