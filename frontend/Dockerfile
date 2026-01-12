@@ -41,8 +41,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy entrypoint script
-COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/
+# Copy entrypoint script (from builder to ensure it's available regardless of build context)
+COPY --from=builder --chown=nextjs:nodejs /app/docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
 USER nextjs
