@@ -1,33 +1,39 @@
 #!/bin/sh
 set -e
 
-# Runtime basePath substitution for Next.js
-# Replaces the build-time placeholder with the actual BASE_PATH value
+# Runtime configuration substitution for Next.js
+# Replaces build-time placeholders with actual runtime values
 
-PLACEHOLDER="/__NEXT_BASEPATH_PLACEHOLDER__"
+BASEPATH_PLACEHOLDER="/__NEXT_BASEPATH_PLACEHOLDER__"
+WS_URL_PLACEHOLDER="__NEXT_WS_URL_PLACEHOLDER__"
 
+# Configure BASE_PATH
 if [ -n "$BASE_PATH" ]; then
     echo "Configuring basePath: $BASE_PATH"
-
-    # Replace placeholder in all relevant files (standalone output)
-    find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${PLACEHOLDER}|${BASE_PATH}|g" {} + 2>/dev/null || true
-
-    # Also replace in the server.js
+    find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}|${BASE_PATH}|g" {} + 2>/dev/null || true
     if [ -f /app/server.js ]; then
-        sed -i "s|${PLACEHOLDER}|${BASE_PATH}|g" /app/server.js
+        sed -i "s|${BASEPATH_PLACEHOLDER}|${BASE_PATH}|g" /app/server.js
     fi
-
-    echo "basePath configured successfully"
 else
     echo "No BASE_PATH set, running at root path"
-
-    # Remove placeholder entirely (replace with empty string)
-    find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${PLACEHOLDER}||g" {} + 2>/dev/null || true
-
+    find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
     if [ -f /app/server.js ]; then
-        sed -i "s|${PLACEHOLDER}||g" /app/server.js
+        sed -i "s|${BASEPATH_PLACEHOLDER}||g" /app/server.js
     fi
 fi
+
+# Configure WebSocket URL
+if [ -n "$NEXT_PUBLIC_WS_URL" ]; then
+    echo "Configuring WebSocket URL: $NEXT_PUBLIC_WS_URL"
+    find /app/.next -type f \( -name "*.js" -o -name "*.html" -o -name "*.json" -o -name "*.rsc" -o -name "*.map" \) -exec sed -i "s|${WS_URL_PLACEHOLDER}|${NEXT_PUBLIC_WS_URL}|g" {} + 2>/dev/null || true
+    if [ -f /app/server.js ]; then
+        sed -i "s|${WS_URL_PLACEHOLDER}|${NEXT_PUBLIC_WS_URL}|g" /app/server.js
+    fi
+else
+    echo "No NEXT_PUBLIC_WS_URL set, using default ws://localhost:8000"
+fi
+
+echo "Configuration complete"
 
 # Execute the main command
 exec "$@"
