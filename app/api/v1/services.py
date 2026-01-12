@@ -756,6 +756,10 @@ async def execute_service(
         default_ttl_seconds=flavor.default_ttl_seconds,
     )
 
+    # Add job_id and organization_id to task_data for progress broadcasting
+    task_data["job_id"] = str(job.id)
+    task_data["organization_id"] = job.organization_id
+
     # Now dispatch Celery task with the predetermined task_id and flavor priority
     # Invert priority for Redis: higher celery priority = processed first
     # So flavor.priority=0 (urgent) becomes celery_priority=9 (highest)
@@ -1033,6 +1037,10 @@ async def _execute_with_file_internal(
         # TTL configuration from flavor
         default_ttl_seconds=flavor.default_ttl_seconds,
     )
+
+    # Add job_id and organization_id to task_data for progress broadcasting
+    task_data["job_id"] = str(job.id)
+    task_data["organization_id"] = job.organization_id
 
     # Now dispatch Celery task with the predetermined task_id and flavor priority
     # Invert priority for Redis: higher celery priority = processed first

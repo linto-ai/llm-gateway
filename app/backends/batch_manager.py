@@ -26,6 +26,8 @@ class BatchManager:
         self.prompt = prompt
         self.reduce_prompt = reduce_prompt
         self.task_id = task_data['task_id']
+        self.job_id = task_data.get('job_id')
+        self.organization_id = task_data.get('organization_id')
         self.celery_task = celery_task
         self.total_retries = 0
 
@@ -640,16 +642,30 @@ class BatchManager:
         result = AsyncResult(self.task_id)
         completed_turns = result.info['completed_turns'] + nb_turns
         percentage = round(100 * completed_turns / self.total_turns) if self.total_turns > 0 else 0
+        progress_data = {
+            'completed_turns': completed_turns,
+            'total_turns': self.total_turns,
+            'percentage': percentage,
+            'phase': self.current_phase,
+            'current': completed_turns,
+            'total': self.total_turns,
+        }
         self.celery_task.update_state(
             state='PROGRESS',
-            meta={
-                'completed_turns': completed_turns,
-                'total_turns': self.total_turns,
-                'percentage': percentage,
-                'phase': self.current_phase,
-            }
+            meta=progress_data
         )
         self.logger.info(f"Task {self.task_id} progress updated : {percentage} % (phase: {self.current_phase})")
+
+        # Publish progress to Redis pub/sub for WebSocket clients
+        if self.job_id and self.organization_id:
+            # Import here to avoid circular import
+            from app.http_server.celery_app import _publish_job_update
+            _publish_job_update(
+                job_id=self.job_id,
+                organization_id=self.organization_id,
+                status="started",
+                progress=progress_data
+            )
 
     
     @staticmethod

@@ -1,3 +1,21 @@
+# 2.2.1
+
+## Patch Release - Real-time Progress Updates (2026-01-12)
+
+### New Features
+
+**Real-time Job Progress via WebSocket**
+- Progress updates now published to Redis pub/sub during batch processing
+- Clients receive percentage and phase updates (processing, reducing, extracting, categorizing)
+- Enables real-time progress display in LinTO Studio frontend
+
+### Changes
+- `batch_manager.py`: Added Redis pub/sub publishing in `update_task()` method
+- `services.py`: Pass `job_id` and `organization_id` to task data for progress broadcasting
+- `celery_app.py`: Added `type: "job_update"` field to Redis messages for LinTO Studio compatibility
+
+---
+
 # 2.2.0
 
 ## Feature Release - Job TTL and Export Bug Fixes (2025-12-16)

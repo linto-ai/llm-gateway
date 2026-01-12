@@ -412,6 +412,7 @@ def _publish_job_update(job_id: str, organization_id: str, status: str, progress
         import json
         redis_client = _get_redis_client()
         message = json.dumps({
+            "type": "job_update",
             "job_id": job_id,
             "organization_id": organization_id,
             "status": status,
