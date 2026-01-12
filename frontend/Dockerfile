@@ -45,6 +45,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
+# Ensure nextjs user can write to /app for sed -i operations at runtime
+RUN chown -R nextjs:nodejs /app
+
 USER nextjs
 
 EXPOSE 3000
