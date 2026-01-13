@@ -19,8 +19,10 @@ COPY . .
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build with placeholder - will be replaced at runtime by entrypoint script
+# Build with placeholders - will be replaced at runtime by entrypoint script
 ENV NEXT_PUBLIC_BASE_PATH="/__NEXT_BASEPATH_PLACEHOLDER__"
+ENV NEXT_PUBLIC_API_URL="__NEXT_API_URL_PLACEHOLDER__"
+ENV NEXT_PUBLIC_WS_URL="__NEXT_WS_URL_PLACEHOLDER__"
 
 # Build the application
 RUN npm run build
