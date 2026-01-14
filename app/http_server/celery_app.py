@@ -44,6 +44,13 @@ celery_app.conf.broker_transport_options = {
 celery_app.conf.task_default_priority = 5  # Normal priority by default
 celery_app.conf.worker_prefetch_multiplier = 1  # Fetch one task at a time for priority ordering
 
+# Broker connection resilience for Kubernetes deployments
+celery_app.conf.broker_connection_retry_on_startup = True  # Retry on startup (explicit)
+celery_app.conf.broker_connection_retry = True  # Retry after connection loss (explicit)
+celery_app.conf.broker_connection_max_retries = None  # Infinite retries (k8s will restart pod if truly stuck)
+celery_app.conf.broker_heartbeat = 10  # Heartbeat every 10s (faster detection than 120s default)
+celery_app.conf.worker_cancel_long_running_tasks_on_connection_loss = True  # Cancel tasks on disconnect (prevents zombies)
+
 redis_client = redis.Redis(host=parsed_url.hostname,port= parsed_url.port, password=broker_pass)
 
 # Define the task
