@@ -61,6 +61,7 @@ async def list_flavors(
                 "provider_name": provider_name,
                 "context_length": flavor.model.context_length,
                 "max_generation_length": flavor.model.max_generation_length,
+                "security_level": flavor.model.security_level,
             }
 
         response_data = ServiceFlavorResponse.model_validate(flavor)
@@ -106,6 +107,7 @@ async def get_flavor(
             "provider_name": provider_name,
             "context_length": flavor.model.context_length,
             "max_generation_length": flavor.model.max_generation_length,
+            "security_level": flavor.model.security_level,
         }
 
     # Convert to response model with prompt names
@@ -150,6 +152,7 @@ async def update_flavor(
             "provider_name": provider_name,
             "context_length": flavor.model.context_length,
             "max_generation_length": flavor.model.max_generation_length,
+            "security_level": flavor.model.security_level,
         }
 
     # Convert to response model with prompt names

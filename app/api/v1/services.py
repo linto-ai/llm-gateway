@@ -498,6 +498,7 @@ async def update_flavor_alias(
             "provider_name": provider_name,
             "context_length": updated_flavor.model.context_length,
             "max_generation_length": updated_flavor.model.max_generation_length,
+            "security_level": updated_flavor.model.security_level,
         }
 
     # Convert to response model with prompt names
