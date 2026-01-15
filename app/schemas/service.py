@@ -349,6 +349,7 @@ class ServiceUpdate(BaseModel):
     route: Optional[str] = Field(None, min_length=1, max_length=100)
     service_type: Optional[str] = None
     description: Optional[Dict[str, str]] = None
+    organization_id: Optional[str] = Field(None, max_length=100)
     is_active: Optional[bool] = None
     flavors: Optional[List[ServiceFlavorCreate]] = None
     metadata: Optional[Dict[str, Any]] = None

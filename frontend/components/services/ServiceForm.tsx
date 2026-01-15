@@ -61,12 +61,13 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
   const onSubmit = async (data: ServiceFormData) => {
     try {
       if (service) {
-        // Update existing service (only name and description)
+        // Update existing service
         await updateMutation.mutateAsync({
           id: service.id,
           data: {
             name: data.name,
             description: data.description,
+            organization_id: data.organization_id || '',
           },
         });
       } else {

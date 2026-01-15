@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 from uuid import UUID
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload, joinedload
@@ -326,8 +326,13 @@ class ServiceService:
         if is_active is not None:
             filters.append(Service.is_active == is_active)
         if organization_id:
-            # Strict filter: only services with this exact organization_id
-            filters.append(Service.organization_id == organization_id)
+            # Visibility filter: show global services (no org) + services for this org
+            # Services with a different organization_id are excluded
+            filters.append(or_(
+                Service.organization_id.is_(None),
+                Service.organization_id == "",
+                Service.organization_id == organization_id
+            ))
 
         if filters:
             query = query.where(and_(*filters))

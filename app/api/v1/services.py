@@ -211,7 +211,7 @@ async def create_service(
 async def list_services(
     service_type: Optional[str] = Query(None, description="Filter by service type"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    organization_id: Optional[str] = Query(None, description="Filter by organization"),
+    organization_id: Optional[str] = Query(None, description="Visibility filter - returns global services + org-specific services"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db)
@@ -221,7 +221,7 @@ async def list_services(
 
     - **service_type**: Filter by service type
     - **is_active**: Filter by active status
-    - **organization_id**: Filter by organization (free-form string)
+    - **organization_id**: Visibility filter - returns global services (no org) plus services matching this org ID
     - **page**: Page number (default: 1)
     - **page_size**: Items per page (default: 50, max: 100)
     """

@@ -229,6 +229,7 @@ export interface CreateServiceRequest {
 export interface UpdateServiceRequest {
   name?: string;
   description?: Partial<I18nDescription>;
+  organization_id?: string;
   default_template_id?: string | null;
 }
 
