@@ -1,5 +1,7 @@
 // Model types based on API contract
 
+import type { SecurityLevel } from './provider';
+
 export type HealthStatus = 'available' | 'unavailable' | 'unknown' | 'error';
 
 export interface ModelResponse {
@@ -25,7 +27,7 @@ export interface ModelResponse {
 
   // Extended metadata fields
   huggingface_repo?: string | null;
-  security_level?: string | null;
+  security_level?: SecurityLevel | null;
   deployment_name?: string | null;
   description?: string | null;
   best_use?: string | null;
@@ -87,7 +89,7 @@ export interface UpdateModelRequest {
   model_metadata?: Record<string, any>;
   // Extended metadata fields
   huggingface_repo?: string | null;
-  security_level?: string | null;
+  security_level?: SecurityLevel | null;
   deployment_name?: string | null;
   description?: string | null;
   best_use?: string | null;

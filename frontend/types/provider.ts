@@ -1,7 +1,7 @@
 // Provider types based on API contract
 
 export type ProviderType = 'openai' | 'anthropic' | 'cohere' | 'openrouter' | 'custom';
-export type SecurityLevel = 'secure' | 'sensitive' | 'insecure';
+export type SecurityLevel = 0 | 1 | 2;
 
 export interface ProviderResponse {
   id: string;

@@ -136,3 +136,27 @@ export function isExpiringSoon(expiresAt: string | Date | null | undefined, with
   const hoursUntilExpiry = (expiresDate.getTime() - now.getTime()) / (1000 * 60 * 60);
   return hoursUntilExpiry < withinHours;
 }
+
+// Security Level utilities
+
+import { SECURITY_LEVEL_LABELS } from './constants';
+
+/**
+ * Get the translation key for a security level integer
+ */
+export function getSecurityLevelKey(level: number | null | undefined): string {
+  if (level === null || level === undefined) return '';
+  return SECURITY_LEVEL_LABELS[level] || '';
+}
+
+/**
+ * Get the CSS color class for a security level
+ */
+export function getSecurityLevelColor(level: number | null | undefined): string {
+  switch (level) {
+    case 2: return 'text-green-600';  // Secure
+    case 1: return 'text-yellow-600'; // Medium
+    case 0: return 'text-red-600';    // Insecure
+    default: return 'text-muted-foreground';
+  }
+}

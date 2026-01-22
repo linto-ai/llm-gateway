@@ -15,7 +15,7 @@ class TestProviderCreate:
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
             "api_key": "sk-test-key-12345",
-            "security_level": "sensitive"
+            "security_level": 1
         })
 
         assert response.status_code == 201
@@ -26,7 +26,7 @@ class TestProviderCreate:
         assert data["api_base_url"] == "https://api.openai.com/v1"
         assert data["api_key_exists"] is True
         assert "api_key" not in data  # API key should NEVER be in response
-        assert data["security_level"] == "sensitive"
+        assert data["security_level"] == 1
         assert "created_at" in data
         assert "updated_at" in data
 
@@ -43,7 +43,7 @@ class TestProviderCreate:
             "provider_type": "custom",
             "api_base_url": "https://custom.llm.local/v1",
             "api_key": "custom-key",
-            "security_level": "insecure",
+            "security_level": 0,
             "metadata": metadata
         })
 
@@ -62,7 +62,7 @@ class TestProviderCreate:
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
             "api_key": "key1",
-            "security_level": "sensitive"
+            "security_level": 1
         })
 
         # Try to create duplicate
@@ -71,7 +71,7 @@ class TestProviderCreate:
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
             "api_key": "key2",
-            "security_level": "sensitive"
+            "security_level": 1
         })
 
         assert response.status_code == 409
@@ -85,7 +85,7 @@ class TestProviderCreate:
             "provider_type": "openai",
             "api_base_url": "not-a-url",
             "api_key": "key",
-            "security_level": "sensitive"
+            "security_level": 1
         })
 
         assert response.status_code == 422  # Validation error
@@ -99,7 +99,7 @@ class TestProviderCreate:
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
             "api_key": "key",
-            "security_level": "unknown"
+            "security_level": 5
         })
 
         assert response.status_code == 422  # Validation error
@@ -110,7 +110,7 @@ class TestProviderCreate:
             "name": "missing-key",
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
-            "security_level": "sensitive"
+            "security_level": 1
             # Missing api_key
         })
 
@@ -178,12 +178,12 @@ class TestProviderUpdate:
         """Update Provider Security Level"""
         response = client.patch(
             f"/api/v1/providers/{sample_provider.id}",
-            json={"security_level": "secure"}
+            json={"security_level": 2}
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["security_level"] == "secure"
+        assert data["security_level"] == 2
 
     def test_update_provider_metadata(self, client, sample_provider):
         """Update Provider Metadata"""
@@ -208,13 +208,13 @@ class TestProviderUpdate:
             name="prov-1", provider_type="openai",
             api_base_url="https://api.openai.com/v1",
             api_key_encrypted=encrypt_api_key("key1"),
-            security_level="sensitive"
+            security_level=1
         )
         prov2 = Provider(
             name="prov-2", provider_type="openai",
             api_base_url="https://api.openai.com/v1",
             api_key_encrypted=encrypt_api_key("key2"),
-            security_level="sensitive"
+            security_level=1
         )
         db_session.add_all([prov1, prov2])
         db_session.commit()
@@ -233,7 +233,7 @@ class TestProviderUpdate:
         """Update Provider - Invalid Security Level"""
         response = client.patch(
             f"/api/v1/providers/{sample_provider.id}",
-            json={"security_level": "invalid"}
+            json={"security_level": 5}
         )
 
         assert response.status_code == 422  # Validation error

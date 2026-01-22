@@ -17,7 +17,7 @@ class ModelBase(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     # Extended fields
     huggingface_repo: Optional[str] = Field(None, max_length=500)
-    security_level: Optional[str] = Field(None, max_length=50)
+    security_level: Optional[int] = Field(None, ge=0, le=2)
     deployment_name: Optional[str] = Field(None, max_length=200)
     description: Optional[str] = None
     best_use: Optional[str] = None
@@ -42,7 +42,7 @@ class ModelUpdate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     # Extended fields
     huggingface_repo: Optional[str] = Field(None, max_length=500)
-    security_level: Optional[str] = Field(None, max_length=50)
+    security_level: Optional[int] = Field(None, ge=0, le=2)
     deployment_name: Optional[str] = Field(None, max_length=200)
     description: Optional[str] = None
     best_use: Optional[str] = None

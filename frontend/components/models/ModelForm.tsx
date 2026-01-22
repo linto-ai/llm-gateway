@@ -38,7 +38,7 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
       display_name: model.model_name || '',
       provider_id: model.provider_id || '',
       organization_id: null,
-      security_level: (model.security_level as 'secure' | 'sensitive' | 'insecure') || null,
+      security_level: model.security_level ?? null,
       metadata: model.model_metadata || {},
     } : {
       name: '',
@@ -148,8 +148,8 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
             <FormItem>
               <FormLabel>{t('models.fields.securityLevel')}</FormLabel>
               <Select
-                onValueChange={(val) => field.onChange(val === 'none' ? null : val)}
-                value={field.value || 'none'}
+                onValueChange={(val) => field.onChange(val === 'none' ? null : parseInt(val, 10))}
+                value={field.value !== null && field.value !== undefined ? String(field.value) : 'none'}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -158,9 +158,9 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
                 </FormControl>
                 <SelectContent>
                   <SelectItem value="none">-</SelectItem>
-                  <SelectItem value="secure">{t('models.securityLevels.secure')}</SelectItem>
-                  <SelectItem value="sensitive">{t('models.securityLevels.sensitive')}</SelectItem>
-                  <SelectItem value="insecure">{t('models.securityLevels.insecure')}</SelectItem>
+                  <SelectItem value="2">{t('models.securityLevels.secure')}</SelectItem>
+                  <SelectItem value="1">{t('models.securityLevels.medium')}</SelectItem>
+                  <SelectItem value="0">{t('models.securityLevels.insecure')}</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />

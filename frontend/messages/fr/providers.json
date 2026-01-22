@@ -34,7 +34,7 @@
   },
   "securityLevels": {
     "secure": "Securise",
-    "sensitive": "Sensible",
+    "medium": "Moyen",
     "insecure": "Non securise"
   },
   "placeholders": {

@@ -103,7 +103,7 @@ def create_test_providers_router():
 
     @router.get("")
     async def list_providers(
-        security_level: Optional[str] = Query(None),
+        security_level: Optional[int] = Query(None, ge=0, le=2),
         provider_type: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
         limit: int = Query(20, ge=1, le=100),
@@ -111,7 +111,7 @@ def create_test_providers_router():
     ):
         query = db.query(Provider)
         filters = []
-        if security_level:
+        if security_level is not None:
             filters.append(Provider.security_level == security_level)
         if provider_type:
             filters.append(Provider.provider_type == provider_type)
@@ -287,7 +287,7 @@ def sample_provider(db_session):
         provider_type="openai",
         api_base_url="https://api.openai.com/v1",
         api_key_encrypted=encrypt_api_key("sk-test-key"),
-        security_level="sensitive",
+        security_level=1,
         provider_metadata={"version": "1"}
     )
     db_session.add(provider)
@@ -318,7 +318,7 @@ async def async_sample_provider(async_db_session):
         provider_type="openai",
         api_base_url="https://api.openai.com/v1",
         api_key_encrypted=encrypt_api_key("sk-test-key-async"),
-        security_level="sensitive",
+        security_level=1,
         provider_metadata={"version": "1"}
     )
     async_db_session.add(provider)

@@ -81,7 +81,7 @@ class TestModelExtendedFields:
             # Update with extended fields
             update_data = {
                 "huggingface_repo": "test/test-model",
-                "security_level": "CU",
+                "security_level": 2,
                 "description": "Test description for QA",
                 "best_use": "Testing",
                 "usage_type": "chat",
@@ -99,7 +99,7 @@ class TestModelExtendedFields:
 
             # Verify extended fields were updated
             assert updated["huggingface_repo"] == "test/test-model"
-            assert updated["security_level"] == "CU"
+            assert updated["security_level"] == 2
             assert updated["description"] == "Test description for QA"
 
 

@@ -19,7 +19,7 @@ class TestValidation:
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
             "api_key": "key",
-            "security_level": "sensitive"
+            "security_level": 1
         })
 
         assert response.status_code == 201
@@ -49,7 +49,7 @@ class TestValidation:
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
             "api_key": "key",
-            "security_level": "sensitive"
+            "security_level": 1
         })
         assert response.status_code == 422
 
@@ -61,7 +61,7 @@ class TestValidation:
             "provider_type": "openai",
             "api_base_url": "api.openai.com/v1",
             "api_key": "key",
-            "security_level": "sensitive"
+            "security_level": 1
         })
         assert response.status_code == 422
 
@@ -72,7 +72,7 @@ class TestValidation:
             "provider_type": "invalid",
             "api_base_url": "https://api.test.com",
             "api_key": "key",
-            "security_level": "sensitive"
+            "security_level": 1
         })
         assert response.status_code == 422
 

@@ -41,7 +41,7 @@ async def create_provider(
     - **provider_type**: Type of provider (openai, anthropic, cohere, custom)
     - **api_base_url**: Base URL for the provider API
     - **api_key**: API key (will be encrypted)
-    - **security_level**: Security level (secure, sensitive, insecure)
+    - **security_level**: Security level (0=Insecure, 1=Medium, 2=Secure)
     - **metadata**: Optional additional configuration
     """
     try:
@@ -70,7 +70,7 @@ async def create_provider(
     }
 )
 async def list_providers(
-    security_level: Optional[str] = Query(None, description="Filter by security level"),
+    security_level: Optional[int] = Query(None, ge=0, le=2, description="Filter by security level (0, 1, or 2)"),
     provider_type: Optional[str] = Query(None, description="Filter by provider type"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
@@ -80,7 +80,7 @@ async def list_providers(
     """
     List providers with optional filtering and pagination.
 
-    - **security_level**: Filter by security level
+    - **security_level**: Filter by security level (0=Insecure, 1=Medium, 2=Secure)
     - **provider_type**: Filter by provider type
     - **page**: Page number (default: 1)
     - **page_size**: Items per page (default: 20, max: 100)

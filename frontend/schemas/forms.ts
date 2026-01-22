@@ -14,7 +14,7 @@ export const providerFormSchema = z.object({
   provider_type: z.enum(['openai', 'anthropic', 'cohere', 'openrouter', 'custom']),
   api_base_url: z.string().url('validation.invalidUrl'),
   api_key: z.string().optional(), // Optional because it can be empty when updating
-  security_level: z.enum(['secure', 'sensitive', 'insecure']),
+  security_level: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(1),
   metadata: z.record(z.any()).optional(),
 });
 
@@ -30,7 +30,7 @@ export const modelFormSchema = z.object({
   provider_id: z.string().uuid('validation.invalidUuid'),
   // Free-form organization identifier (any string up to 100 chars)
   organization_id: z.string().max(100, 'validation.maxLength').nullable().optional(),
-  security_level: z.enum(['secure', 'sensitive', 'insecure']).nullable().optional(),
+  security_level: z.union([z.literal(0), z.literal(1), z.literal(2)]).nullable().optional(),
   tokenizer_name: z.string().max(200).nullable().optional(),
   metadata: z.record(z.any()).optional(),
 });

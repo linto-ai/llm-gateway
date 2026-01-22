@@ -76,7 +76,7 @@ async def get_or_create_provider(
         provider_type=provider_type,
         api_base_url=base_url,
         api_key_encrypted=encrypted_key,
-        security_level="sensitive",
+        security_level=1,  # 1 = Medium security
     )
 
     db.add(provider)

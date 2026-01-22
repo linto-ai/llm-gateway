@@ -208,8 +208,8 @@ class ModelInfo(BaseModel):
     # Token limits - essential for processing decisions
     context_length: Optional[int] = None
     max_generation_length: Optional[int] = None
-    # Security classification for the model
-    security_level: Optional[str] = None
+    # Security classification for the model (0=Insecure, 1=Medium, 2=Secure)
+    security_level: Optional[int] = None
 
     class Config:
         from_attributes = True
