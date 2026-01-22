@@ -14,8 +14,10 @@ if [ -n "$BASE_PATH" ]; then
     # Escaped version first (for regex patterns in JSON)
     find /app/.next/static -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER_ESCAPED}|${ESCAPED_BASE_PATH}|g" {} + 2>/dev/null || true
     find /app/.next/static -type f \( -name "*.js" -o -name "*.json" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}|${BASE_PATH}|g" {} + 2>/dev/null || true
-    find /app/.next/server -type f \( -name "*.html" -o -name "*.rsc" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}|${BASE_PATH}|g" {} + 2>/dev/null || true
+    find /app/.next/server -type f \( -name "*.html" -o -name "*.rsc" -o -name "*.meta" -o -name "*.body" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}|${BASE_PATH}|g" {} + 2>/dev/null || true
     find /app/.next/server -type f -name "*client-reference-manifest.js" -exec sed -i "s|${BASEPATH_PLACEHOLDER}|${BASE_PATH}|g" {} + 2>/dev/null || true
+    # Also handle prerender manifests and action manifests
+    find /app/.next -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER}|${BASE_PATH}|g" {} + 2>/dev/null || true
 else
     echo "No BASE_PATH set, running at root path"
     sed -i "s|${BASEPATH_PLACEHOLDER}||g" /app/server.js 2>/dev/null || true
@@ -23,8 +25,10 @@ else
     # Escaped version first (for regex patterns in JSON)
     find /app/.next/static -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER_ESCAPED}||g" {} + 2>/dev/null || true
     find /app/.next/static -type f \( -name "*.js" -o -name "*.json" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
-    find /app/.next/server -type f \( -name "*.html" -o -name "*.rsc" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
+    find /app/.next/server -type f \( -name "*.html" -o -name "*.rsc" -o -name "*.meta" -o -name "*.body" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
     find /app/.next/server -type f -name "*client-reference-manifest.js" -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
+    # Also handle prerender manifests and action manifests
+    find /app/.next -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
 fi
 
 API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
