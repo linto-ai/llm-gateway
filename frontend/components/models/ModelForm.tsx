@@ -71,6 +71,7 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
           context_length: 128000,  // Default context length
           max_generation_length: 8192,  // Default max generation
           model_metadata: data.metadata,
+          security_level: data.security_level,
         });
         toast.success(t('models.createSuccess'));
       }

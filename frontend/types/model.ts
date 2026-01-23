@@ -76,6 +76,7 @@ export interface CreateModelRequest {
   tokenizer_name?: string | null;
   is_active?: boolean;
   model_metadata?: Record<string, any>;
+  security_level?: SecurityLevel | null;
 }
 
 export interface UpdateModelRequest {
