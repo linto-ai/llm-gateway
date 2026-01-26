@@ -29,13 +29,18 @@ else
     grep -o '.[^"]*__NEXT_BASEPATH_PLACEHOLDER__[^"]*.' /app/.next/routes-manifest.json 2>/dev/null | head -3 || true
 
     # Remove optional group patterns - match literal strings in JSON
-    # The regex patterns in JSON look like: (?:/__NEXT_BASEPATH_PLACEHOLDER__)?
-    # Or with escaped slash: (?:\/__NEXT_BASEPATH_PLACEHOLDER__)?
-    # Or double escaped: (?:\\/__NEXT_BASEPATH_PLACEHOLDER__)?
+    # In the file: (?:\/__NEXT_BASEPATH_PLACEHOLDER__)? where \/ is escaped slash
+    # In sed: need \\\\ to match \\ in file, and \\ to match \ in file
     find /app/.next -type f -name "*.json" -exec sed -i \
-        -e 's|(?:\\\\/__NEXT_BASEPATH_PLACEHOLDER__)?||g' \
-        -e 's|(?:\/__NEXT_BASEPATH_PLACEHOLDER__)?||g' \
+        -e 's|(?:\\\\\/__NEXT_BASEPATH_PLACEHOLDER__)?||g' \
+        -e 's|(?:\\/__NEXT_BASEPATH_PLACEHOLDER__)?||g' \
         -e 's|(?:/__NEXT_BASEPATH_PLACEHOLDER__)?||g' \
+        {} + 2>/dev/null || true
+
+    # Also remove the standalone escaped placeholder (outside of optional groups)
+    find /app/.next -type f -name "*.json" -exec sed -i \
+        -e 's|\\\/__NEXT_BASEPATH_PLACEHOLDER__||g' \
+        -e 's|\\/__NEXT_BASEPATH_PLACEHOLDER__||g' \
         {} + 2>/dev/null || true
 
     # Now handle remaining simple replacements (non-regex contexts)
