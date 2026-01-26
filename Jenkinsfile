@@ -63,5 +63,21 @@ pipeline {
                 }
             }
         }
+
+        stage('Docker build for basepath fix branch'){
+            when{
+                branch 'fix/frontend-basepath-redirect'
+            }
+            steps {
+                echo 'Publishing basepath-fix'
+                script {
+                    // Build and push frontend image only (backend unchanged)
+                    frontendImage = docker.build("${env.DOCKER_HUB_REPO_FRONTEND}", "-f frontend/Dockerfile frontend/")
+                    docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CRED) {
+                        frontendImage.push('basepath-fix')
+                    }
+                }
+            }
+        }
     }// end stages
 }
