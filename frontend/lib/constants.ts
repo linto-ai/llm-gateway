@@ -17,11 +17,13 @@ export const PROVIDER_TYPES = [
   'custom',
 ] as const;
 
-export const SECURITY_LEVELS = [
-  'secure',
-  'sensitive',
-  'insecure',
-] as const;
+export const SECURITY_LEVELS = [0, 1, 2] as const;
+
+export const SECURITY_LEVEL_LABELS: Record<number, string> = {
+  0: 'insecure',
+  1: 'medium',
+  2: 'secure',
+};
 
 export const SERVICE_TYPES = [
   'summary',

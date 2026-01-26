@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Text, CheckConstraint, UniqueConstraint, JSON
+from sqlalchemy import Column, String, DateTime, Text, CheckConstraint, UniqueConstraint, JSON, Integer
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.types import TypeDecorator, CHAR
 from .connection import Base
@@ -55,7 +55,7 @@ class Provider(Base):
     provider_type = Column(String(50), nullable=False)
     api_base_url = Column(String(500), nullable=False)
     api_key_encrypted = Column(Text, nullable=False)
-    security_level = Column(String(20), nullable=False, default="sensitive")
+    security_level = Column(Integer, nullable=False, default=1)
     provider_metadata = Column("metadata", JSON, nullable=False, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -64,7 +64,7 @@ class Provider(Base):
     __table_args__ = (
         UniqueConstraint('name', name='uq_provider_name'),
         CheckConstraint(
-            "security_level IN ('secure', 'sensitive', 'insecure')",
+            "security_level IN (0, 1, 2)",
             name='ck_security_level'
         ),
         CheckConstraint(

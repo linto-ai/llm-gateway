@@ -114,7 +114,7 @@ class ProviderService:
     async def list_providers(
         self,
         db: AsyncSession,
-        security_level: Optional[str] = None,
+        security_level: Optional[int] = None,
         provider_type: Optional[str] = None,
         page: int = 1,
         limit: int = 20
@@ -124,7 +124,7 @@ class ProviderService:
 
         Args:
             db: Database session
-            security_level: Optional security level filter
+            security_level: Optional security level filter (0, 1, or 2)
             provider_type: Optional provider type filter
             page: Page number (1-indexed)
             limit: Items per page
@@ -135,7 +135,7 @@ class ProviderService:
         query = select(Provider)
 
         # Apply filters
-        if security_level:
+        if security_level is not None:
             query = query.where(Provider.security_level == security_level)
         if provider_type:
             query = query.where(Provider.provider_type == provider_type)

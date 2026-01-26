@@ -8,7 +8,7 @@ export const providerTypeSchema = z.enum([
   'custom',
 ]);
 
-export const securityLevelSchema = z.enum(['secure', 'sensitive', 'insecure']);
+export const securityLevelSchema = z.union([z.literal(0), z.literal(1), z.literal(2)]);
 
 export const createProviderSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),

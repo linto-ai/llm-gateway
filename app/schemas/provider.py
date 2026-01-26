@@ -1,30 +1,34 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
 from uuid import UUID
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
+
 
 class CreateProviderRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     provider_type: str = Field(..., pattern="^(openai|anthropic|cohere|openrouter|custom)$")
     api_base_url: str = Field(..., min_length=1, max_length=500)
     api_key: str = Field(..., min_length=1, max_length=2000)
-    security_level: str = Field(default="sensitive", pattern="^(secure|sensitive|insecure)$")
+    security_level: int = Field(default=1, ge=0, le=2)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    @validator('api_base_url')
+    @field_validator('api_base_url')
+    @classmethod
     def validate_url(cls, v):
         if not (v.startswith('http://') or v.startswith('https://')):
             raise ValueError('API base URL must start with http:// or https://')
         return v
 
+
 class UpdateProviderRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     api_base_url: Optional[str] = Field(None, min_length=1, max_length=500)
     api_key: Optional[str] = Field(None, min_length=1, max_length=2000)
-    security_level: Optional[str] = Field(None, pattern="^(secure|sensitive|insecure)$")
+    security_level: Optional[int] = Field(None, ge=0, le=2)
     metadata: Optional[Dict[str, Any]] = None
 
-    @validator('api_base_url')
+    @field_validator('api_base_url')
+    @classmethod
     def validate_url(cls, v):
         if v is not None and not (v.startswith('http://') or v.startswith('https://')):
             raise ValueError('API base URL must start with http:// or https://')
@@ -37,7 +41,7 @@ class ProviderResponse(BaseModel):
     provider_type: str
     api_base_url: str
     api_key_exists: bool
-    security_level: str
+    security_level: int
     created_at: datetime
     updated_at: datetime
     metadata: Dict[str, Any]

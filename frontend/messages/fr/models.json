@@ -94,10 +94,9 @@
     }
   },
   "securityLevels": {
-    "secure": "Sécurisé",
-    "sensitive": "Sensible",
-    "insecure": "Non sécurisé",
-    "CU": "Usage Confidentiel"
+    "secure": "Securise",
+    "medium": "Moyen",
+    "insecure": "Non securise"
   },
   "tokenizer": {
     "title": "Tokenizer",

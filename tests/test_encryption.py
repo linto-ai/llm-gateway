@@ -14,7 +14,7 @@ class TestEncryption:
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
             "api_key": "sk-secret-key-12345",
-            "security_level": "sensitive"
+            "security_level": 1
         })
         assert create_response.status_code == 201
         create_data = create_response.json()
@@ -54,7 +54,7 @@ class TestEncryption:
             "provider_type": "openai",
             "api_base_url": "https://api.openai.com/v1",
             "api_key": plaintext_key,
-            "security_level": "sensitive"
+            "security_level": 1
         })
         assert response.status_code == 201
         provider_id = response.json()["id"]

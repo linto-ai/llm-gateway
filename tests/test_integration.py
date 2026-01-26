@@ -389,7 +389,7 @@ def setup_api_test_data():
                 "provider_type": "openai",
                 "api_base_url": "https://api.test.com",
                 "api_key": "test_key_integration_api",
-                "security_level": "public"
+                "security_level": 0
             },
             timeout=5
         )

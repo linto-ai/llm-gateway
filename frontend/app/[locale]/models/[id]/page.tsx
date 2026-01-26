@@ -217,14 +217,18 @@ export default function ModelDetailPage({ params }: PageProps) {
                 <p className="text-sm font-mono">{model.deployment_name}</p>
               </div>
             )}
-            {model.security_level && (
+            {(model.security_level !== null && model.security_level !== undefined) && (
               <div>
                 <p className="text-xs text-muted-foreground">{t('models.fields.securityLevel')}</p>
                 <div className="flex items-center gap-1.5 mt-1">
-                  {model.security_level === 'secure' && <Shield className="h-4 w-4 text-green-600" />}
-                  {model.security_level === 'sensitive' && <ShieldAlert className="h-4 w-4 text-yellow-600" />}
-                  {model.security_level === 'insecure' && <ShieldOff className="h-4 w-4 text-red-600" />}
-                  <span className="text-sm">{t(`models.securityLevels.${model.security_level}`)}</span>
+                  {model.security_level === 2 && <Shield className="h-4 w-4 text-green-600" />}
+                  {model.security_level === 1 && <ShieldAlert className="h-4 w-4 text-yellow-600" />}
+                  {model.security_level === 0 && <ShieldOff className="h-4 w-4 text-red-600" />}
+                  <span className="text-sm">
+                    {model.security_level === 2 && t('models.securityLevels.secure')}
+                    {model.security_level === 1 && t('models.securityLevels.medium')}
+                    {model.security_level === 0 && t('models.securityLevels.insecure')}
+                  </span>
                 </div>
               </div>
             )}

@@ -95,9 +95,8 @@
   },
   "securityLevels": {
     "secure": "Secure",
-    "sensitive": "Sensitive",
-    "insecure": "Insecure",
-    "CU": "Confidential Use"
+    "medium": "Medium",
+    "insecure": "Insecure"
   },
   "tokenizer": {
     "title": "Tokenizer",

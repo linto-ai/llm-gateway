@@ -236,10 +236,14 @@ export default function ProviderDetailPage({ params }: PageProps) {
                 {t('providers.fields.securityLevel')}
               </p>
               <div className="flex items-center gap-1.5 mt-1">
-                {provider.security_level === 'secure' && <Shield className="h-4 w-4 text-green-600" />}
-                {provider.security_level === 'sensitive' && <ShieldAlert className="h-4 w-4 text-yellow-600" />}
-                {provider.security_level === 'insecure' && <ShieldOff className="h-4 w-4 text-red-600" />}
-                <span className="text-sm">{t('providers.securityLevels.' + provider.security_level)}</span>
+                {provider.security_level === 2 && <Shield className="h-4 w-4 text-green-600" />}
+                {provider.security_level === 1 && <ShieldAlert className="h-4 w-4 text-yellow-600" />}
+                {provider.security_level === 0 && <ShieldOff className="h-4 w-4 text-red-600" />}
+                <span className="text-sm">
+                  {provider.security_level === 2 && t('providers.securityLevels.secure')}
+                  {provider.security_level === 1 && t('providers.securityLevels.medium')}
+                  {provider.security_level === 0 && t('providers.securityLevels.insecure')}
+                </span>
               </div>
             </div>
             <div>

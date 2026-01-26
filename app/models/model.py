@@ -44,7 +44,7 @@ class Model(Base):
 
     # Extended fields
     huggingface_repo = Column(String(500), nullable=True)
-    security_level = Column(String(50), nullable=True)
+    security_level = Column(Integer, nullable=True)
     deployment_name = Column(String(200), nullable=True)
     description = Column(Text, nullable=True)
     best_use = Column(Text, nullable=True)

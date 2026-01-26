@@ -121,19 +121,19 @@ export default function ModelsPage({ params }: PageProps) {
       accessorKey: 'security_level' as keyof ModelResponse,
       cell: (row: any) => {
         const level = row.security_level;
-        if (!level) return <span className="text-muted-foreground">-</span>;
+        if (level === null || level === undefined) return <span className="text-muted-foreground">-</span>;
 
-        const config: Record<string, { icon: typeof Shield; color: string }> = {
-          secure: { icon: Shield, color: 'text-green-600' },
-          sensitive: { icon: ShieldAlert, color: 'text-yellow-600' },
-          insecure: { icon: ShieldOff, color: 'text-red-600' },
+        const config: Record<number, { icon: typeof Shield; color: string; key: string }> = {
+          2: { icon: Shield, color: 'text-green-600', key: 'secure' },
+          1: { icon: ShieldAlert, color: 'text-yellow-600', key: 'medium' },
+          0: { icon: ShieldOff, color: 'text-red-600', key: 'insecure' },
         };
-        const { icon: Icon, color } = config[level] || { icon: Shield, color: 'text-muted-foreground' };
+        const { icon: Icon, color, key } = config[level] || { icon: Shield, color: 'text-muted-foreground', key: '' };
 
         return (
           <div className="flex items-center gap-1.5">
             <Icon className={`h-4 w-4 ${color}`} />
-            <span className="text-sm">{t(`models.securityLevels.${level}`)}</span>
+            <span className="text-sm">{key ? t(`models.securityLevels.${key}`) : '-'}</span>
           </div>
         );
       },

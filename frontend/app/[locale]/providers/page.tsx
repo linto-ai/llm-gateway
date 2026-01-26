@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 import { useProviders, useDeleteProvider, useVerifyProviderModels } from '@/hooks/use-providers';
 import type { ProviderResponse, ProviderType, SecurityLevel } from '@/types/provider';
-import { PROVIDER_TYPES, SECURITY_LEVELS } from '@/lib/constants';
+import { PROVIDER_TYPES, SECURITY_LEVELS, SECURITY_LEVEL_LABELS } from '@/lib/constants';
 
 export default function ProvidersPage() {
   const t = useTranslations('providers');
@@ -37,7 +37,7 @@ export default function ProvidersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [providerType, setProviderType] = useState<ProviderType | ''>('');
-  const [securityLevel, setSecurityLevel] = useState<SecurityLevel | ''>('');
+  const [securityLevel, setSecurityLevel] = useState<SecurityLevel | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -47,7 +47,7 @@ export default function ProvidersPage() {
   // Don't filter by organization_id to show all providers (including those with null organization_id)
   const { data, isLoading, error } = useProviders({
     provider_type: providerType || undefined,
-    security_level: securityLevel || undefined,
+    security_level: securityLevel,
     page,
     page_size: pageSize,
   });
@@ -98,17 +98,18 @@ export default function ProvidersPage() {
       header: t('fields.securityLevel'),
       cell: (row) => {
         const level = row.security_level;
-        const config: Record<string, { icon: typeof Shield; color: string }> = {
-          secure: { icon: Shield, color: 'text-green-600' },
-          sensitive: { icon: ShieldAlert, color: 'text-yellow-600' },
-          insecure: { icon: ShieldOff, color: 'text-red-600' },
+        const levelKey = SECURITY_LEVEL_LABELS[level] || '';
+        const config: Record<number, { icon: typeof Shield; color: string }> = {
+          2: { icon: Shield, color: 'text-green-600' },
+          1: { icon: ShieldAlert, color: 'text-yellow-600' },
+          0: { icon: ShieldOff, color: 'text-red-600' },
         };
         const { icon: Icon, color } = config[level] || { icon: Shield, color: 'text-muted-foreground' };
 
         return (
           <div className="flex items-center gap-1.5">
             <Icon className={`h-4 w-4 ${color}`} />
-            <span className="text-sm">{t(`securityLevels.${level}`)}</span>
+            <span className="text-sm">{t(`securityLevels.${levelKey}`)}</span>
           </div>
         );
       },
@@ -194,15 +195,18 @@ export default function ProvidersPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={securityLevel || "all"} onValueChange={(val) => setSecurityLevel(val === "all" ? "" : val as SecurityLevel)}>
+        <Select
+          value={securityLevel !== undefined ? String(securityLevel) : "all"}
+          onValueChange={(val) => setSecurityLevel(val === "all" ? undefined : parseInt(val, 10) as SecurityLevel)}
+        >
           <SelectTrigger className="w-48">
             <SelectValue placeholder={t('fields.securityLevel')} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{tCommon('all')}</SelectItem>
             {SECURITY_LEVELS.map((level) => (
-              <SelectItem key={level} value={level}>
-                {t(`securityLevels.${level}`)}
+              <SelectItem key={level} value={String(level)}>
+                {t(`securityLevels.${SECURITY_LEVEL_LABELS[level]}`)}
               </SelectItem>
             ))}
           </SelectContent>
