@@ -20,14 +20,22 @@ if [ -n "$BASE_PATH" ]; then
     find /app/.next -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER}|${BASE_PATH}|g" {} + 2>/dev/null || true
 else
     echo "No BASE_PATH set, running at root path"
+
+    # For root deployment, we need to remove the entire optional group pattern from regexes
+    # Pattern like (?:/__NEXT_BASEPATH_PLACEHOLDER__)? should become empty, not (?:)?
+    # Also handle escaped versions in JSON: (?:\\/__NEXT_BASEPATH_PLACEHOLDER__)?
+
+    # Remove optional group patterns first (before simple placeholder replacement)
+    # JSON escaped version: (?:\\\/__NEXT_BASEPATH_PLACEHOLDER__)?
+    find /app/.next -type f -name "*.json" -exec sed -i 's|(\?:\\\\/__NEXT_BASEPATH_PLACEHOLDER__)\?||g' {} + 2>/dev/null || true
+    find /app/.next -type f -name "*.json" -exec sed -i 's|(\?:/__NEXT_BASEPATH_PLACEHOLDER__)\?||g' {} + 2>/dev/null || true
+
+    # Now handle remaining simple replacements
     sed -i "s|${BASEPATH_PLACEHOLDER}||g" /app/server.js 2>/dev/null || true
     sed -i "s|${BASEPATH_PLACEHOLDER}||g" /app/.next/routes-manifest.json 2>/dev/null || true
-    # Escaped version first (for regex patterns in JSON)
-    find /app/.next/static -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER_ESCAPED}||g" {} + 2>/dev/null || true
     find /app/.next/static -type f \( -name "*.js" -o -name "*.json" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
     find /app/.next/server -type f \( -name "*.html" -o -name "*.rsc" -o -name "*.meta" -o -name "*.body" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
     find /app/.next/server -type f -name "*client-reference-manifest.js" -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
-    # Also handle prerender manifests and action manifests
     find /app/.next -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
 fi
 
