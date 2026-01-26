@@ -21,38 +21,12 @@ if [ -n "$BASE_PATH" ]; then
 else
     echo "No BASE_PATH set, running at root path"
 
-    # For root deployment, we need to remove the entire optional group pattern from regexes
-    # Pattern like (?:/__NEXT_BASEPATH_PLACEHOLDER__)? should become empty, not (?:)?
-
-    # Show what patterns exist (debug)
-    echo "Checking for placeholder patterns in routes-manifest.json:"
-    grep -o '.[^"]*__NEXT_BASEPATH_PLACEHOLDER__[^"]*.' /app/.next/routes-manifest.json 2>/dev/null | head -3 || true
-
-    # Remove optional group patterns - match literal strings in JSON
-    # In the file: (?:\/__NEXT_BASEPATH_PLACEHOLDER__)? where \/ is escaped slash
-    # In sed: need \\\\ to match \\ in file, and \\ to match \ in file
-    find /app/.next -type f -name "*.json" -exec sed -i \
-        -e 's|(?:\\\\\/__NEXT_BASEPATH_PLACEHOLDER__)?||g' \
-        -e 's|(?:\\/__NEXT_BASEPATH_PLACEHOLDER__)?||g' \
-        -e 's|(?:/__NEXT_BASEPATH_PLACEHOLDER__)?||g' \
-        {} + 2>/dev/null || true
-
-    # Also remove the standalone escaped placeholder (outside of optional groups)
-    find /app/.next -type f -name "*.json" -exec sed -i \
-        -e 's|\\\/__NEXT_BASEPATH_PLACEHOLDER__||g' \
-        -e 's|\\/__NEXT_BASEPATH_PLACEHOLDER__||g' \
-        {} + 2>/dev/null || true
-
-    # Now handle remaining simple replacements (non-regex contexts)
+    # Simple placeholder replacement - remove all occurrences
     sed -i "s|${BASEPATH_PLACEHOLDER}||g" /app/server.js 2>/dev/null || true
-    find /app/.next/static -type f \( -name "*.js" -o -name "*.json" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
+    find /app/.next -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
+    find /app/.next/static -type f -name "*.js" -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
     find /app/.next/server -type f \( -name "*.html" -o -name "*.rsc" -o -name "*.meta" -o -name "*.body" \) -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
     find /app/.next/server -type f -name "*client-reference-manifest.js" -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
-    find /app/.next -type f -name "*.json" -exec sed -i "s|${BASEPATH_PLACEHOLDER}||g" {} + 2>/dev/null || true
-
-    # Verify cleanup
-    echo "Remaining placeholders after cleanup:"
-    grep -r "__NEXT_BASEPATH_PLACEHOLDER__" /app/.next --include="*.json" 2>/dev/null | head -3 || echo "None found"
 fi
 
 API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
