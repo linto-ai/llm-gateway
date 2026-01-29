@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { api } from '@/lib/api';
-import { API_BASE_URL } from '@/lib/constants';
+import { useConfig } from '@/components/providers/ConfigProvider';
+import { buildApiUrl } from '@/lib/config';
 import type {
   TokenizerListResponse,
   TokenizerPreloadResponse,
@@ -36,15 +37,22 @@ export const usePreloadTokenizer = () => {
 };
 
 // Preload tokenizer by HuggingFace repo (with extended timeout for downloads)
+// Note: This hook requires config context, so it must be used within ConfigProvider
 export const usePreloadTokenizerByRepo = () => {
   const queryClient = useQueryClient();
+  const config = useConfig();
+
   return useMutation<TokenizerPreloadResponse, Error, string>({
     mutationFn: async (repo: string) => {
+      if (config.isLoading) {
+        throw new Error('Config not yet loaded');
+      }
+      const apiBaseUrl = buildApiUrl(config);
       const params = new URLSearchParams({ repo });
       // Use extended timeout (5 minutes) for tokenizer downloads
       try {
         const response = await axios.post<TokenizerPreloadResponse>(
-          `${API_BASE_URL}/api/v1/tokenizers/preload-repo?${params.toString()}`,
+          `${apiBaseUrl}/api/v1/tokenizers/preload-repo?${params.toString()}`,
           null,
           { timeout: 300000 }
         );

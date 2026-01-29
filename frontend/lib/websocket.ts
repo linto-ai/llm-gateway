@@ -1,4 +1,4 @@
-import { WS_BASE_URL } from './constants';
+import { getConfigSync, buildWsUrl } from './config';
 
 export interface JobUpdate {
   job_id: string;
@@ -16,6 +16,7 @@ export interface JobUpdate {
 export class JobMonitorClient {
   private ws: WebSocket | null = null;
   private jobId: string;
+  private wsBaseUrl: string;
   private onMessage: (data: JobUpdate) => void;
   private onError?: (error: Event) => void;
   private onClose?: () => void;
@@ -27,17 +28,29 @@ export class JobMonitorClient {
     jobId: string,
     onMessage: (data: JobUpdate) => void,
     onError?: (error: Event) => void,
-    onClose?: () => void
+    onClose?: () => void,
+    wsBaseUrl?: string
   ) {
     this.jobId = jobId;
     this.onMessage = onMessage;
     this.onError = onError;
     this.onClose = onClose;
+
+    // Use provided wsBaseUrl or derive from config
+    if (wsBaseUrl) {
+      this.wsBaseUrl = wsBaseUrl;
+    } else {
+      const config = getConfigSync();
+      if (!config) {
+        throw new Error('Config not loaded. Ensure ConfigProvider has initialized.');
+      }
+      this.wsBaseUrl = buildWsUrl(config);
+    }
   }
 
   connect() {
     try {
-      const wsUrl = `${WS_BASE_URL}/ws/jobs/${this.jobId}`;
+      const wsUrl = `${this.wsBaseUrl}/ws/jobs/${this.jobId}`;
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {

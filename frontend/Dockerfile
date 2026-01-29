@@ -19,13 +19,10 @@ COPY . .
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build without basePath (root deployment)
-# For subpath deployment, rebuild with NEXT_PUBLIC_BASE_PATH set
-ENV NEXT_PUBLIC_BASE_PATH=""
-ENV NEXT_PUBLIC_API_URL="__NEXT_API_URL_PLACEHOLDER__"
-ENV NEXT_PUBLIC_WS_URL="__NEXT_WS_URL_PLACEHOLDER__"
-
-# Build the application
+# Build with /llm-admin basePath (hardcoded for K3S/production deployments)
+# This image is meant for deployment behind a reverse proxy at /llm-admin
+# For local development without basePath, use docker-compose.dev.yml
+ENV BASE_PATH=/llm-admin
 RUN npm run build
 
 # Stage 3: Runner
@@ -44,11 +41,11 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy entrypoint script (from builder to ensure it's available regardless of build context)
+# Copy entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Ensure nextjs user can write to /app for sed -i operations at runtime
+# Set ownership for nextjs user
 RUN chown -R nextjs:nodejs /app
 
 USER nextjs
@@ -58,9 +55,10 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Runtime basePath configuration (optional)
-# Set BASE_PATH=/your-subpath to deploy under a subpath
-ENV BASE_PATH=""
+# Runtime configuration (set via docker-compose or K8S ConfigMap):
+# - NEXT_PUBLIC_API_URL: API endpoint (required for cross-origin, e.g., http://localhost:8000)
+# - NEXT_PUBLIC_WS_URL: WebSocket endpoint (required for cross-origin, e.g., ws://localhost:8000)
+# If not set, URLs are auto-detected from window.location (for same-origin K3S deployments)
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "server.js"]

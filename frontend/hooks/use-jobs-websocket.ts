@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { WS_BASE_URL } from '@/lib/constants';
+import { useConfig } from '@/components/providers/ConfigProvider';
+import { buildWsUrl } from '@/lib/config';
 import type {
   JobStatus,
   JobProgress,
@@ -32,6 +33,7 @@ export function useJobsWebSocket(
   options?: UseJobsWebSocketOptions
 ): UseJobsWebSocketReturn {
   const { enabled = true, onJobUpdate, onJobTerminal } = options || {};
+  const config = useConfig();
 
   const [jobs, setJobs] = useState<Map<string, ActiveJobSnapshot>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
@@ -92,10 +94,11 @@ export function useJobsWebSocket(
   );
 
   const connect = useCallback(() => {
-    if (!enabled) return;
+    if (!enabled || config.isLoading) return;
 
     try {
-      const wsUrl = `${WS_BASE_URL}/ws/jobs`;
+      const wsBaseUrl = buildWsUrl(config);
+      const wsUrl = `${wsBaseUrl}/ws/jobs`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -130,11 +133,11 @@ export function useJobsWebSocket(
     } catch {
       // WebSocket connection failed
     }
-  }, [enabled, handleMessage]);
+  }, [enabled, config, handleMessage]);
 
-  // Connect on mount
+  // Connect on mount (wait for config to load)
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || config.isLoading) return;
 
     shouldReconnectRef.current = true;
     reconnectAttemptsRef.current = 0;
@@ -147,7 +150,7 @@ export function useJobsWebSocket(
         wsRef.current = null;
       }
     };
-  }, [enabled, connect]);
+  }, [enabled, config.isLoading, connect]);
 
   // Derived state
   const activeJobIds = Array.from(jobs.keys());

@@ -3,6 +3,7 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { QueryProvider } from '@/components/providers/QueryProvider';
+import { ConfigProvider } from '@/components/providers/ConfigProvider';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
@@ -34,15 +35,17 @@ export default async function LocaleLayout({
       <body className="antialiased" suppressHydrationWarning>
         <QueryProvider>
           <NextIntlClientProvider messages={messages}>
-            <div className="flex h-screen flex-col">
-              <Header />
-              <div className="flex flex-1 overflow-hidden">
-                <Sidebar locale={locale} />
-                <main className="flex-1 overflow-auto p-6">{children}</main>
+            <ConfigProvider>
+              <div className="flex h-screen flex-col">
+                <Header />
+                <div className="flex flex-1 overflow-hidden">
+                  <Sidebar locale={locale} />
+                  <main className="flex-1 overflow-auto p-6">{children}</main>
+                </div>
+                <Footer />
               </div>
-              <Footer />
-            </div>
-            <Toaster />
+              <Toaster />
+            </ConfigProvider>
           </NextIntlClientProvider>
         </QueryProvider>
       </body>

@@ -4,15 +4,21 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { api } from '@/lib/api';
+import { useConfig } from '@/components/providers/ConfigProvider';
+import { getApi } from '@/lib/api';
 
 export function Footer() {
   const t = useTranslations('app');
+  const config = useConfig();
   const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
+    // Wait for config to load before checking connection
+    if (config.isLoading) return;
+
     const checkConnection = async () => {
       try {
+        const api = getApi();
         await api.get('/healthcheck');
         setIsConnected(true);
       } catch (error) {
@@ -24,7 +30,7 @@ export function Footer() {
     const interval = setInterval(checkConnection, 30000); // Check every 30s
 
     return () => clearInterval(interval);
-  }, []);
+  }, [config.isLoading]);
 
   return (
     <footer className="border-t bg-background">

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { WS_BASE_URL } from '@/lib/constants';
+import { useConfig } from '@/components/providers/ConfigProvider';
+import { buildWsUrl } from '@/lib/config';
 import type {
   JobStatus,
   JobProgress,
@@ -34,6 +35,7 @@ export function useJobWebSocket(
   options?: UseJobWebSocketOptions
 ): UseJobWebSocketReturn {
   const { onStatusChange, enabled = true } = options || {};
+  const config = useConfig();
 
   const [status, setStatus] = useState<JobStatus | null>(null);
   const [progress, setProgress] = useState<JobProgress | null>(null);
@@ -96,10 +98,11 @@ export function useJobWebSocket(
   );
 
   const connect = useCallback(() => {
-    if (!jobId || !enabled) return;
+    if (!jobId || !enabled || config.isLoading) return;
 
     try {
-      const wsUrl = `${WS_BASE_URL}/ws/jobs/${jobId}`;
+      const wsBaseUrl = buildWsUrl(config);
+      const wsUrl = `${wsBaseUrl}/ws/jobs/${jobId}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -136,11 +139,11 @@ export function useJobWebSocket(
     } catch {
       // WebSocket connection failed
     }
-  }, [jobId, enabled, handleMessage]);
+  }, [jobId, enabled, config, handleMessage]);
 
-  // Connect on mount or when jobId changes
+  // Connect on mount or when jobId changes (wait for config to load)
   useEffect(() => {
-    if (!jobId || !enabled) return;
+    if (!jobId || !enabled || config.isLoading) return;
 
     // Reset state for new job
     setStatus(null);
@@ -164,7 +167,7 @@ export function useJobWebSocket(
         wsRef.current = null;
       }
     };
-  }, [jobId, enabled, connect]);
+  }, [jobId, enabled, config.isLoading, connect]);
 
   return {
     status,
