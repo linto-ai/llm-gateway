@@ -5,6 +5,8 @@ export default createMiddleware(routing);
 
 export const config = {
   matcher: [
+    // Match root path for locale redirect
+    '/',
     // Match all pathnames except:
     // - API routes starting with /api
     // - Internal routes (for runtime config)
