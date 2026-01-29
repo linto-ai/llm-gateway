@@ -7,8 +7,9 @@ export const config = {
   matcher: [
     // Match all pathnames except:
     // - API routes starting with /api
+    // - Internal routes (for runtime config)
     // - Next.js internals (_next)
     // - Static files with extensions
-    '/((?!api|_next|.*\\..*).*)'
+    '/((?!api|internal|_next|.*\\..*).*)'
   ],
 };
