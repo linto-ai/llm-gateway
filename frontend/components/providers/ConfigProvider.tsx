@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { RuntimeConfig, ConfigContextValue } from '@/lib/config';
-import { setConfigCache } from '@/lib/config';
+import { getConfig, setConfigCache } from '@/lib/config';
 
 const defaultConfig: ConfigContextValue = {
   apiUrl: '',
@@ -20,11 +20,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function loadConfig() {
       try {
-        const response = await fetch('/api/config');
-        if (!response.ok) {
-          throw new Error(`Config fetch failed: ${response.status}`);
-        }
-        const data: RuntimeConfig = await response.json();
+        // Use getConfig() which handles basePath detection automatically
+        const data = await getConfig();
 
         // Update the module-level cache for synchronous access
         setConfigCache(data);
