@@ -44,7 +44,7 @@ export async function getConfig(): Promise<RuntimeConfig> {
   try {
     // Detect basePath from current URL and prepend to API route
     const basePath = detectBasePath();
-    const response = await fetch(`${basePath}/api/runtime-config`);
+    const response = await fetch(`${basePath}/internal/config`);
     if (!response.ok) {
       throw new Error(`Config fetch failed: ${response.status}`);
     }
