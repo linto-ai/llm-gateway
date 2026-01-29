@@ -194,3 +194,6 @@ linagora.txt
 docs-site/node_modules/
 docs-site/.astro/
 docs-site/dist/*.db
+
+# Sprint workflow files
+sprints/
