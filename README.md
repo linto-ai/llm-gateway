@@ -139,22 +139,25 @@ These are primarily **proxies/routers** - they forward requests to LLMs with add
 ## Quick Start
 
 ```bash
-git clone -b next https://github.com/linto-ai/llm-gateway.git
+git clone https://github.com/linto-ai/llm-gateway.git
 cd llm-gateway
 docker compose up -d
 
 # API: http://localhost:8000/docs
-# Frontend: http://localhost:8001
+# Frontend: http://localhost:8001/llm-admin
 ```
 
 That's it! The default configuration works out-of-the-box. Database migrations and seed data (prompts, presets, document templates) are applied automatically on first start.
 
 To customize settings, copy `.env.example` to `.env` and edit as needed.
 
-For development with hot-reload:
+For development with hot-reload (frontend runs at root path, no `/llm-admin`):
 ```bash
 cp .env.example .env  # Required for dev mode
 docker compose -f docker-compose.dev.yml up --build
+
+# API: http://localhost:8000/docs
+# Frontend: http://localhost:8001
 ```
 
 ## Architecture
@@ -306,12 +309,13 @@ wscat -c "ws://localhost:8000/ws/jobs/{job_id}"
 
 ### Docker Compose Deployment
 
-Two Docker Compose configurations are available:
+Three Docker Compose configurations are available:
 
-| File | Use Case | Description |
-|------|----------|-------------|
-| `docker-compose.yml` | Production (default) | Works out-of-the-box, uses published images |
-| `docker-compose.dev.yml` | Development | Hot-reload, volume mounts, requires `.env` |
+| File | Use Case | Frontend URL | Description |
+|------|----------|--------------|-------------|
+| `docker-compose.yml` | Production | `localhost:8001/llm-admin` | Published images, basePath built-in |
+| `docker-compose.dev.yml` | Development | `localhost:8001` | Hot-reload, no basePath |
+| `docker-compose.local.yml` | Standalone dev | `localhost:8011` | Avoids port conflicts with other LinTO services |
 
 ```bash
 # Quick start (works immediately with defaults)
@@ -339,10 +343,20 @@ ENCRYPTION_KEY=your-fernet-key-here
 
 # CORS origins (comma-separated)
 CORS_ORIGINS=https://your-domain.com
+```
 
-# Frontend URLs
-NEXT_PUBLIC_API_URL=https://api.your-domain.com
-NEXT_PUBLIC_WS_URL=wss://api.your-domain.com
+### Frontend Configuration
+
+The production Docker image has `/llm-admin` as the base path built-in. API and WebSocket URLs are auto-detected from the browser's location when:
+- Frontend and API are on the same origin (e.g., behind a reverse proxy)
+- API is accessible at `{origin}/llm-admin/api`
+- WebSocket is accessible at `{origin}/llm-admin/ws`
+
+For deployments where frontend and API are on different origins (e.g., different ports in development), set:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000      # API origin
+NEXT_PUBLIC_WS_URL=ws://localhost:8000         # WebSocket origin
 ```
 
 ### Scaling Celery Workers
