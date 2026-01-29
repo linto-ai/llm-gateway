@@ -18,6 +18,21 @@ export interface ConfigContextValue extends RuntimeConfig {
 let cachedConfig: RuntimeConfig | null = null;
 
 /**
+ * Detects the basePath from the current URL.
+ * In production, the app runs at /llm-admin, so we detect this from the pathname.
+ */
+function detectBasePath(): string {
+  if (typeof window === 'undefined') return '';
+
+  // Check if we're running under a known basePath
+  const pathname = window.location.pathname;
+  if (pathname.startsWith('/llm-admin')) {
+    return '/llm-admin';
+  }
+  return '';
+}
+
+/**
  * Fetches runtime configuration from the API route.
  * Caches the result for subsequent calls within the same session.
  */
@@ -27,7 +42,9 @@ export async function getConfig(): Promise<RuntimeConfig> {
   }
 
   try {
-    const response = await fetch('/api/config');
+    // Detect basePath from current URL and prepend to API route
+    const basePath = detectBasePath();
+    const response = await fetch(`${basePath}/api/config`);
     if (!response.ok) {
       throw new Error(`Config fetch failed: ${response.status}`);
     }
