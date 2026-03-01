@@ -134,8 +134,8 @@ class TestServiceTypesAPI:
         )
         data = response.json()
         assert isinstance(data, list), "Response should be a list"
-        # Exactly 6 service types (document and extraction removed)
-        assert len(data) == 6, f"Expected exactly 6 service types, got {len(data)}"
+        # 7 service types (document and extraction removed, chat added)
+        assert len(data) == 7, f"Expected exactly 7 service types, got {len(data)}"
 
         # Verify structure - updated field names for database-driven API
         for st in data:

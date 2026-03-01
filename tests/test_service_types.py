@@ -3,7 +3,7 @@
 Service Types Validation Tests
 
 Tests covering:
-1. GET /api/v1/service-types returns exactly 6 types (NO "document" or "extraction")
+1. GET /api/v1/service-types returns exactly 7 types (NO "document" or "extraction")
 2. Valid types: summary, translation, categorization, diarization_correction, speaker_correction, generic
 3. GET /api/v1/prompt-types?service_type=summary returns prompt types linked to summary
 4. Prompts API works correctly
@@ -21,7 +21,7 @@ from uuid import uuid4
 API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8000")
 API_V1_URL = f"{API_BASE_URL}/api/v1"
 
-# The EXACT 6 valid service types (extraction removed)
+# The EXACT 7 valid service types
 VALID_SERVICE_TYPES = {
     "summary",
     "translation",
@@ -29,6 +29,7 @@ VALID_SERVICE_TYPES = {
     "diarization_correction",
     "speaker_correction",
     "generic",
+    "chat",
 }
 
 # The REMOVED service types
@@ -76,11 +77,11 @@ def cleanup_prompt(prompt_id):
 # =============================================================================
 
 class TestServiceTypesCount:
-    """Verify exactly 6 service types exist (NO document or extraction)."""
+    """Verify exactly 7 service types exist (NO document or extraction)."""
 
     def test_service_types_returns_exactly_6_types(self):
         """
-        GET /service-types returns EXACTLY 6 types.
+        GET /service-types returns EXACTLY 7 types.
 
         Valid types:
         - summary, translation, categorization, diarization_correction,
@@ -94,9 +95,9 @@ class TestServiceTypesCount:
 
         codes = {st["code"] for st in data}
 
-        # Count check: EXACTLY 6 types
-        assert len(data) == 6, (
-            f"Expected EXACTLY 6 service types, got {len(data)}. "
+        # Count check: EXACTLY 7 types
+        assert len(data) == 7, (
+            f"Expected EXACTLY 7 service types, got {len(data)}. "
             f"Types found: {codes}"
         )
 
@@ -120,7 +121,7 @@ class TestServiceTypesCount:
 
     def test_service_types_has_all_valid_types(self):
         """
-        GET /service-types includes ALL 6 valid types.
+        GET /service-types includes ALL 7 valid types.
 
         Valid types:
         - summary, translation, categorization, diarization_correction,

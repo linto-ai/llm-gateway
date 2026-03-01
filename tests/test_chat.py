@@ -662,7 +662,7 @@ class TestChatEndpoint:
         assert resp.status_code == 200
         body = resp.text
         assert "event: error" in body
-        assert "Provider connection failed" in body
+        assert "Streaming error" in body
 
     @pytest.mark.asyncio
     async def test_context_with_summary_injected_into_prompt(self, client):
