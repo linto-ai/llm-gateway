@@ -1,0 +1,16 @@
+{
+  "name": "chat-system",
+  "description": {
+    "en": "System prompt for conversational chat about transcripts",
+    "fr": "Prompt systeme pour le chat conversationnel sur les transcriptions"
+  },
+  "service_type": "chat",
+  "prompt_type": "standard",
+  "version": "1.0.0",
+  "files": {
+    "system.md": {
+      "prompt_category": "system",
+      "prompt_name": "chat-system-default"
+    }
+  }
+}

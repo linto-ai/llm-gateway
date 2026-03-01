@@ -47,6 +47,7 @@ export type ServiceType =
   | 'categorization'
   | 'diarization_correction'
   | 'speaker_correction'
+  | 'chat'
   | 'generic';
 
 export interface I18nDescription {

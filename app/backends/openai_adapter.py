@@ -193,6 +193,44 @@ class OpenAIAdapter:
             with attempt:
                 return await _call()
 
+    async def stream_chat(
+        self,
+        messages: list[dict],
+        **kwargs
+    ) -> typing.AsyncGenerator[tuple[str, typing.Optional[TokenUsage]], None]:
+        """Stream chat completion tokens.
+
+        Yields tuples of (content_chunk, usage_dict_or_none).
+        The last yield has content="" and usage dict from the final chunk.
+        No retries: streaming responses cannot be retried mid-stream.
+
+        Args:
+            messages: List of message dicts with role and content.
+            **kwargs: Optional overrides for temperature, top_p, max_tokens.
+
+        Yields:
+            Tuple of (content_string, optional_usage_dict).
+        """
+        response = await self.async_client.chat.completions.create(
+            model=self.modelName,
+            messages=messages,
+            stream=True,
+            stream_options={"include_usage": True},
+            temperature=kwargs.get('temperature', self.temperature),
+            top_p=kwargs.get('top_p', self.top_p),
+            max_tokens=kwargs.get('max_tokens', self.maxGenerationLength),
+        )
+        async for chunk in response:
+            # Final chunk with usage info
+            if chunk.usage:
+                yield "", {
+                    "prompt_tokens": chunk.usage.prompt_tokens,
+                    "completion_tokens": chunk.usage.completion_tokens,
+                    "total_tokens": chunk.usage.total_tokens,
+                }
+            elif chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content, None
+
     async def generate_title(self, text: str) -> str:
         """Generate a short title for the given text."""
         from tenacity import AsyncRetrying

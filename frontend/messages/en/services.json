@@ -110,6 +110,7 @@
     "categorization": "Categorization",
     "diarization_correction": "Diarization Correction",
     "speaker_correction": "Speaker Correction",
+    "chat": "Chat",
     "generic": "Generic",
     "summarize": "Summarize"
   },
@@ -119,6 +120,7 @@
     "categorization": "Classify documents into categories",
     "diarization_correction": "Fix speaker attribution errors",
     "speaker_correction": "Correct speaker labels in transcripts",
+    "chat": "Interactive chat with context injection",
     "generic": "Generic LLM service for custom use cases"
   },
   "placeholders": {

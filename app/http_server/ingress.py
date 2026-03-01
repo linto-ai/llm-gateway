@@ -24,7 +24,7 @@ from app.api.v1 import (
     providers, health, models, services as services_api,
     prompts, service_templates, jobs, service_flavors,
     synthetic_templates, huggingface, flavor_presets, service_types, prompt_types,
-    tokenizers, analytics, templates
+    tokenizers, analytics, templates, chat as chat_api
 )
 from app.api.v1.jobs import websocket_job_status, websocket_jobs_status
 from app.core.config import settings as pydantic_settings
@@ -171,6 +171,7 @@ app.include_router(prompt_types.router, prefix=pydantic_settings.api_v1_prefix)
 app.include_router(tokenizers.router, prefix=pydantic_settings.api_v1_prefix)
 app.include_router(analytics.router, prefix=pydantic_settings.api_v1_prefix)
 app.include_router(templates.router, prefix=pydantic_settings.api_v1_prefix)
+app.include_router(chat_api.router, prefix=pydantic_settings.api_v1_prefix)
 app.include_router(health.router)
 
 

@@ -2,7 +2,8 @@
 
 export interface PromptFieldConfig {
   required: boolean;
-  template_category: string;
+  prompt_category: string;
+  prompt_type?: string;
   description_en: string;
   description_fr: string;
 }

@@ -16,6 +16,7 @@ from . import (
     tokenizers,
     analytics,
     templates,
+    chat,
 )
 
 __all__ = [
@@ -35,4 +36,5 @@ __all__ = [
     "tokenizers",
     "analytics",
     "templates",
+    "chat",
 ]

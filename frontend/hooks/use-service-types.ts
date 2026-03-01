@@ -45,32 +45,32 @@ interface ServiceTemplateListResponse {
 
 /**
  * Fetch service type config by code.
- * Used by FlavorWizard components that need processing configuration.
+ * Uses the /config/{code} endpoint which returns prompt field requirements
+ * from the backend SERVICE_TYPE_CONFIGS registry.
  */
 export function useServiceTypeConfig(serviceType: string | undefined) {
   return useQuery({
     queryKey: ['service-type-config', serviceType],
     queryFn: async (): Promise<ServiceTypeConfig | null> => {
-      // Fetch all service types and find by code
-      const serviceTypes: ServiceTypeResponse[] = await api.get('/api/v1/service-types');
-      const found = serviceTypes.find(st => st.code === serviceType);
-
-      if (!found) {
-        return null;
+      try {
+        return await api.get(`/api/v1/service-types/config/${serviceType}`);
+      } catch {
+        // Fallback: fetch from DB if config endpoint returns 404 (custom types)
+        const serviceTypes: ServiceTypeResponse[] = await api.get('/api/v1/service-types');
+        const found = serviceTypes.find(st => st.code === serviceType);
+        if (!found) return null;
+        return {
+          type: found.code,
+          name_en: found.name?.en || found.code,
+          name_fr: found.name?.fr || found.code,
+          description_en: found.description?.en || '',
+          description_fr: found.description?.fr || '',
+          prompts: {},
+          supports_reduce: found.supports_reduce,
+          supports_chunking: found.supports_chunking,
+          default_processing_mode: found.default_processing_mode,
+        };
       }
-
-      // Map ServiceTypeResponse to ServiceTypeConfig format
-      return {
-        type: found.code,
-        name_en: found.name?.en || found.code,
-        name_fr: found.name?.fr || found.code,
-        description_en: found.description?.en || '',
-        description_fr: found.description?.fr || '',
-        prompts: {}, // Prompts are managed separately via prompt_types
-        supports_reduce: found.supports_reduce,
-        supports_chunking: found.supports_chunking,
-        default_processing_mode: found.default_processing_mode,
-      };
     },
     enabled: !!serviceType,
     staleTime: 5 * 60 * 1000, // 5 minutes

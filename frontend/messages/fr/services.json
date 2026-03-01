@@ -110,6 +110,7 @@
     "categorization": "Categorisation",
     "diarization_correction": "Correction de diarisation",
     "speaker_correction": "Correction de locuteurs",
+    "chat": "Chat",
     "generic": "Générique",
     "summarize": "Résumer"
   },
@@ -119,6 +120,7 @@
     "categorization": "Classer des documents en catégories",
     "diarization_correction": "Corriger les erreurs d'attribution de locuteurs",
     "speaker_correction": "Corriger les étiquettes de locuteurs dans les transcriptions",
+    "chat": "Chat interactif avec injection de contexte",
     "generic": "Service LLM générique pour cas d'usage personnalisés"
   },
   "placeholders": {

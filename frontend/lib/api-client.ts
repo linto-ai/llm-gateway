@@ -187,7 +187,7 @@ export const apiClient = {
     },
 
     deleteFlavor: async (serviceId: string, flavorId: string): Promise<void> => {
-      return api.delete(`/api/v1/services/${serviceId}/flavors/${flavorId}`);
+      return api.delete(`/api/v1/flavors/${flavorId}`);
     },
   },
 

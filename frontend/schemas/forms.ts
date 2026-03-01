@@ -136,6 +136,7 @@ export const serviceFormSchema = z.object({
     'categorization',
     'diarization_correction',
     'speaker_correction',
+    'chat',
     'generic',
   ]),
   description: z.object({
@@ -168,6 +169,7 @@ export const promptFormSchema = z.object({
     'categorization',
     'diarization_correction',
     'speaker_correction',
+    'chat',
     'generic',
   ]),
   // prompt_category is REQUIRED (system or user)

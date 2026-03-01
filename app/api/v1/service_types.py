@@ -15,7 +15,10 @@ from app.schemas.service_type import (
     CreateServiceType,
     UpdateServiceType,
     ServiceTypeResponse,
+    ServiceTypeConfigResponse,
+    PromptFieldConfigResponse,
 )
+from app.core.service_types import get_service_type_config
 
 router = APIRouter(prefix="/service-types", tags=["Service Types"])
 
@@ -75,6 +78,39 @@ async def create_service_type(
             status_code=409,
             detail=f"Service type with code '{data.code}' already exists"
         )
+
+
+@router.get("/config/{code}", response_model=ServiceTypeConfigResponse)
+async def get_service_type_config_endpoint(code: str) -> ServiceTypeConfigResponse:
+    """Get service type configuration by code.
+
+    Returns prompt field requirements and processing capabilities
+    from the SERVICE_TYPE_CONFIGS registry.
+    """
+    config = get_service_type_config(code)
+    if not config:
+        raise HTTPException(status_code=404, detail=f"No config for service type '{code}'")
+
+    return ServiceTypeConfigResponse(
+        type=code,
+        name_en=config.name_en,
+        name_fr=config.name_fr,
+        description_en=config.description_en,
+        description_fr=config.description_fr,
+        prompts={
+            key: PromptFieldConfigResponse(
+                required=field.required,
+                prompt_category=field.prompt_category,
+                prompt_type=field.prompt_type,
+                description_en=field.description_en,
+                description_fr=field.description_fr,
+            )
+            for key, field in config.prompts.items()
+        },
+        supports_reduce=config.supports_reduce,
+        supports_chunking=config.supports_chunking,
+        default_processing_mode=config.default_processing_mode,
+    )
 
 
 @router.get("/{service_type_id}", response_model=ServiceTypeResponse)

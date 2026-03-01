@@ -51,6 +51,8 @@ export default function ServiceDetailPage({ params }: PageProps) {
     service?.default_template_id ?? undefined
   );
 
+  const isChatService = service?.service_type === 'chat';
+
   // Mutations
   const deleteService = useDeleteService();
 
@@ -126,9 +128,9 @@ export default function ServiceDetailPage({ params }: PageProps) {
         <TabsList>
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="flavors">{t('tabs.flavors')}</TabsTrigger>
-          <TabsTrigger value="execute">{t('tabs.execute')}</TabsTrigger>
+          {!isChatService && <TabsTrigger value="execute">{t('tabs.execute')}</TabsTrigger>}
           <TabsTrigger value="analytics">{t('tabs.analytics')}</TabsTrigger>
-          <TabsTrigger value="templates">{t('tabs.templates')}</TabsTrigger>
+          {!isChatService && <TabsTrigger value="templates">{t('tabs.templates')}</TabsTrigger>}
         </TabsList>
 
         {/* Overview Tab */}
@@ -218,67 +220,71 @@ export default function ServiceDetailPage({ params }: PageProps) {
           </Card>
         </TabsContent>
 
-        {/* Execute Tab */}
-        <TabsContent value="execute" className="space-y-4">
-          <ServiceExecutionForm service={service} />
-        </TabsContent>
+        {/* Execute Tab (hidden for chat services) */}
+        {!isChatService && (
+          <TabsContent value="execute" className="space-y-4">
+            <ServiceExecutionForm service={service} />
+          </TabsContent>
+        )}
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4">
           <ServiceAnalytics serviceId={id} serviceName={service.name} />
         </TabsContent>
 
-        {/* Templates Tab */}
-        <TabsContent value="templates" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    {t('tabs.templates')}
-                  </CardTitle>
-                  <CardDescription>
-                    {defaultTemplate
-                      ? getLocalizedName(defaultTemplate, locale)
-                      : t('templatesEmpty')}
-                  </CardDescription>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href={`/services/${id}/templates`}>
-                    {t('manageTemplates')}
-                  </Link>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {defaultTemplate ? (
-                <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                  <div className="p-3 rounded-lg bg-primary/10">
-                    <FileText className="h-6 w-6 text-primary" />
+        {/* Templates Tab (hidden for chat services) */}
+        {!isChatService && (
+          <TabsContent value="templates" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      {t('tabs.templates')}
+                    </CardTitle>
+                    <CardDescription>
+                      {defaultTemplate
+                        ? getLocalizedName(defaultTemplate, locale)
+                        : t('templatesEmpty')}
+                    </CardDescription>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium">{getLocalizedName(defaultTemplate, locale)}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {defaultTemplate.file_name}
-                    </p>
-                  </div>
-                  <Badge>{t('currentDefault')}</Badge>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">{t('noDefaultTemplate')}</p>
-                  <Button asChild>
+                  <Button variant="outline" asChild>
                     <Link href={`/services/${id}/templates`}>
-                      {t('selectDefaultTemplate')}
+                      {t('manageTemplates')}
                     </Link>
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardHeader>
+              <CardContent>
+                {defaultTemplate ? (
+                  <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                    <div className="p-3 rounded-lg bg-primary/10">
+                      <FileText className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium">{getLocalizedName(defaultTemplate, locale)}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {defaultTemplate.file_name}
+                      </p>
+                    </div>
+                    <Badge>{t('currentDefault')}</Badge>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-4">{t('noDefaultTemplate')}</p>
+                    <Button asChild>
+                      <Link href={`/services/${id}/templates`}>
+                        {t('selectDefaultTemplate')}
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
       </Tabs>
 

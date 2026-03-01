@@ -163,6 +163,24 @@ SERVICE_TYPE_CONFIGS: Dict[str, ServiceTypeConfig] = {
         supports_chunking=True,
         default_processing_mode="iterative"
     ),
+    "chat": ServiceTypeConfig(
+        name_en="Chat",
+        name_fr="Chat",
+        description_en="Interactive chat with context injection",
+        description_fr="Chat interactif avec injection de contexte",
+        prompts={
+            "system_prompt": PromptFieldConfig(
+                required=True,
+                prompt_category="system",
+                prompt_type="standard",
+                description_en="System prompt template with context placeholders ({transcript}, {summary}, etc.)",
+                description_fr="Template de prompt systeme avec placeholders de contexte"
+            ),
+        },
+        supports_reduce=False,
+        supports_chunking=False,
+        default_processing_mode="single_pass"
+    ),
     "generic": ServiceTypeConfig(
         name_en="Generic",
         name_fr="Generique",
