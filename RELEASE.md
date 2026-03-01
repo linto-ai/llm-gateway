@@ -1,3 +1,21 @@
+# 2.2.2
+
+_2026_03_01_
+
+- Chat service type
+  - New "chat" service type with system prompt configuration
+  - Streaming chat completions endpoint with input validation limits
+  - OpenAI adapter `stream_chat()` method with SSE token streaming
+  - DB migration and system prompt seed
+- API improvements
+  - Service type config endpoint (`GET /api/v1/service-types/config/{code}`)
+  - Fix flavor deletion URL in frontend API client
+  - Sanitized error messages (no internal details leakage)
+- Admin UI
+  - Hide execute and templates tabs for chat services
+
+---
+
 # 2.2.1
 
 ## Patch Release - Real-time Progress Updates (2026-01-12)
