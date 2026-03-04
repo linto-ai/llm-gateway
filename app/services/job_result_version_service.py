@@ -249,6 +249,45 @@ class JobResultVersionService:
             content=version.full_content or "",
         )
 
+    async def delete_version(
+        self,
+        db: AsyncSession,
+        job_id: UUID,
+        version_number: int,
+    ) -> Optional[bool]:
+        """Delete a specific version.
+
+        Cannot delete version 1 (original) or the current version.
+
+        Returns:
+            True if deleted, False if version not found, None if job not found
+        """
+        job = await self._get_job_with_versions(db, job_id)
+        if not job:
+            return None
+
+        # Find the version to delete
+        version = None
+        for v in job.versions:
+            if v.version_number == version_number:
+                version = v
+                break
+
+        if not version:
+            return False
+
+        # Delete the version record
+        delete_stmt = delete(JobResultVersion).where(
+            JobResultVersion.id == version.id
+        )
+        await db.execute(delete_stmt)
+        await db.flush()
+
+        logger.info(
+            f"Deleted version {version_number} for job {job_id}"
+        )
+        return True
+
     async def restore_version(
         self,
         db: AsyncSession,

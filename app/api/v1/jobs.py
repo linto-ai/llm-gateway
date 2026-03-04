@@ -830,7 +830,7 @@ async def update_job_result(
     db: AsyncSession = Depends(get_db),
 ) -> JobResponse:
     """
-    Update job result content. Creates a new version with diff storage.
+    Update job result content. Creates a new version.
 
     - **job_id**: Job UUID
     - **content**: New result content (required)
@@ -984,6 +984,64 @@ async def restore_job_version(
 
     # Return updated job
     return await job_service.get_job_by_id(db, job_id)
+
+
+@router.delete(
+    "/{job_id}/versions/{version_number}",
+    responses={
+        400: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def delete_job_version(
+    job_id: UUID,
+    version_number: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete a specific version from a job's version history.
+
+    - **job_id**: Job UUID
+    - **version_number**: Version to delete
+
+    Cannot delete the current version.
+    """
+    job = await job_service.get_job_by_id(db, job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+
+    if version_number == job.current_version:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete the current version"
+        )
+
+    result = await job_result_version_service.delete_version(
+        db, job_id, version_number
+    )
+
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+
+    if result is False:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Version not found"
+        )
+
+    await db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Version {version_number} deleted",
+        "version_number": version_number,
+    }
 
 
 @router.get(

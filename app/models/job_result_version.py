@@ -11,9 +11,7 @@ from app.core.database import Base
 class JobResultVersion(Base):
     """Version history for job results.
 
-    Stores diffs between versions for space-efficient version history.
-    Full snapshots are stored at version 1 and every 5th version for
-    efficient reconstruction.
+    Stores full content for each version.
     """
 
     __tablename__ = "job_result_versions"
@@ -21,8 +19,8 @@ class JobResultVersion(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     version_number = Column(Integer, nullable=False)
-    diff = Column(Text, nullable=False)  # JSON encoded diff from diff-match-patch
-    full_content = Column(Text, nullable=True)  # Full snapshot for version 1 and every 5th version
+    diff = Column(Text, nullable=False)  # Unused, kept for DB compatibility
+    full_content = Column(Text, nullable=True)  # Full version content
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by = Column(String(255), nullable=True)
 
