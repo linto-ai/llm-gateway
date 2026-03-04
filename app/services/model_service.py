@@ -1153,11 +1153,11 @@ class ModelService:
 
         # Mistral models use their own tokenizer
         if "mistral" in model_lower:
-            return ("mistral", "mistral-tokenizer")
+            return ("mistral", "mistralai/Mistral-7B-v0.1")
 
         # Llama models use sentencepiece-based tokenizer
         if "llama" in model_lower:
-            return ("sentencepiece", "llama-tokenizer")
+            return ("sentencepiece", "meta-llama/Llama-2-7b-hf")
 
         # Claude models
         if "claude" in model_lower:
