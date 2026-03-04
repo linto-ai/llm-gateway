@@ -63,6 +63,7 @@ export function TokenizerSelector({
   const preloadTokenizer = usePreloadTokenizerByRepo();
   const [tokenizerStatus, setTokenizerStatus] = useState<boolean | null>(null);
   const [customRepoInput, setCustomRepoInput] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
   // Determine current type from values
   const getTypeFromValues = (): TokenizerType => {
@@ -147,6 +148,7 @@ export function TokenizerSelector({
   const handleTypeChange = (newType: TokenizerType) => {
     setType(newType);
     setCustomRepoInput('');
+    setShowCustomInput(false);
 
     if (newType === 'auto') {
       onChange(null, null);
@@ -166,9 +168,11 @@ export function TokenizerSelector({
   const handleHuggingFaceRepoChange = async (repo: string) => {
     if (repo === 'custom') {
       // User wants to enter a custom repo - show input field
+      setShowCustomInput(true);
       setCustomRepoInput('');
       return;
     }
+    setShowCustomInput(false);
     setCustomRepoInput('');
     onChange('huggingface', repo);
     // Auto-download if not already local
@@ -309,7 +313,7 @@ export function TokenizerSelector({
             </div>
 
             {/* Custom repo input */}
-            {(!tokenizerName || !isCommonRepo(tokenizerName)) && (
+            {(showCustomInput || !tokenizerName || !isCommonRepo(tokenizerName)) && (
               <div className="space-y-2">
                 <Label>{t('tokenizer.customRepo')}</Label>
                 <div className="flex gap-2">
