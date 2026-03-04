@@ -474,6 +474,18 @@ class DocumentService:
             after_para.add_run(markdown_content)
             return
 
+        # Strip wrapping code fences (LLMs often wrap output in ```markdown ... ```)
+        stripped = markdown_content.strip()
+        if stripped.startswith("```"):
+            lines = stripped.split("\n")
+            # Remove opening fence (```markdown, ```md, ``` etc.)
+            lines = lines[1:]
+            # Remove closing fence if present
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            stripped = "\n".join(lines)
+        markdown_content = stripped
+
         # Clean trailing backslashes before conversion
         cleaned_content = self._clean_trailing_backslashes(markdown_content)
 
