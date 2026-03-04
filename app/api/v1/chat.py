@@ -169,7 +169,7 @@ async def chat_completions(
 
     try:
         adapter = OpenAIAdapter(task_data)
-    except ValueError as e:
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Provider not configured",
