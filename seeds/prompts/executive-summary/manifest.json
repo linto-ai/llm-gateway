@@ -1,0 +1,16 @@
+{
+  "name": "executive-summary",
+  "description": {
+    "en": "Concise executive summary for decision-makers",
+    "fr": "Resume executif concis pour decideurs"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "executive-summary"
+    }
+  }
+}

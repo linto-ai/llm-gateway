@@ -35,18 +35,11 @@ GLOBAL_TEMPLATES: List[Dict[str, Any]] = [
         "description_en": "Meeting notes template with participants, date, agenda, and action items. Ideal for summarization services.",
     },
     {
-        "file_name": "extraction-test.docx",
-        "name_fr": "Rapport d'extraction",
-        "name_en": "Extraction Report",
-        "description_fr": "Modele pour les resultats d'extraction de metadonnees avec des espaces reserves dynamiques pour les champs extraits.",
-        "description_en": "Template for metadata extraction results with dynamic placeholders for extracted fields.",
-    },
-    {
-        "file_name": "silly-extraction-test.docx",
-        "name_fr": "Test d'extraction fantaisiste",
-        "name_en": "Silly Extraction Test",
-        "description_fr": "Modele de test avec des espaces reserves fantaisistes pour les tests et demonstrations d'extraction.",
-        "description_en": "Test template with whimsical placeholders for extraction testing and demonstration purposes.",
+        "file_name": "linto-report.docx",
+        "name_fr": "Rapport LinTO",
+        "name_en": "LinTO Report",
+        "description_fr": "Modele professionnel avec branding LINAGORA/LinTO. En-tete et pied de page discrets avec logos.",
+        "description_en": "Professional template with LINAGORA/LinTO branding. Subtle header and footer with logos.",
     },
 ]
 

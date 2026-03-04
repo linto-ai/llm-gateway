@@ -1,0 +1,16 @@
+{
+  "name": "structured-report",
+  "description": {
+    "en": "Comprehensive analytical report with full traceability",
+    "fr": "Compte rendu analytique structure avec tracabilite complete"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "structured-report"
+    }
+  }
+}
