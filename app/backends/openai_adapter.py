@@ -223,11 +223,18 @@ class OpenAIAdapter:
         async for chunk in response:
             # Final chunk with usage info
             if chunk.usage:
-                yield "", {
+                usage: TokenUsage = {
                     "prompt_tokens": chunk.usage.prompt_tokens,
                     "completion_tokens": chunk.usage.completion_tokens,
                     "total_tokens": chunk.usage.total_tokens,
                 }
+                # Track cached tokens if provider reports them
+                details = getattr(chunk.usage, "prompt_tokens_details", None)
+                if details:
+                    cached = getattr(details, "cached_tokens", None)
+                    if cached is not None:
+                        usage["cached_tokens"] = cached
+                yield "", usage
             elif chunk.choices and chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content, None
 

@@ -40,6 +40,15 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
+def get_standalone_session() -> AsyncSession:
+    """Create a standalone async session for use outside request lifecycle.
+
+    Use this in background tasks where the request-scoped session is already closed.
+    Caller is responsible for commit/rollback/close.
+    """
+    return AsyncSessionLocal()
+
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency for getting async database sessions.

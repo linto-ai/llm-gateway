@@ -20,7 +20,7 @@ class Job(Base):
     organization_id = Column(String(100), nullable=True, index=True)
 
     status = Column(String(20), nullable=False, default="queued")
-    celery_task_id = Column(String(255), unique=True, nullable=False)
+    celery_task_id = Column(String(255), unique=True, nullable=True)
 
     input_file_name = Column(String(255), nullable=True)
     input_content_preview = Column(Text, nullable=True)

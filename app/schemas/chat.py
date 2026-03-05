@@ -25,6 +25,8 @@ class ChatCompletionRequest(BaseModel):
     messages: List[ChatMessage] = Field(..., min_length=1, max_length=100)
     context: ChatContext
     max_tokens: Optional[int] = Field(None, ge=1, le=128000)
+    session_id: Optional[str] = Field(None, max_length=255)
+    organization_id: Optional[str] = Field(None, max_length=100)
 
 
 class ChatTokenUsage(BaseModel):
