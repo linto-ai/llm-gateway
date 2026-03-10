@@ -50,15 +50,21 @@ class Settings(BaseSettings):
     # Tokenizer Storage
     tokenizer_storage_path: str = "/var/www/data/tokenizers"
 
-    # CORS
-    cors_origins: str = "*"
+    # CORS - must be configured via CORS_ORIGINS env var (comma-separated origins)
+    cors_origins: str = ""
 
     @property
     def cors_origins_list(self) -> list[str]:
         """Parse CORS origins from comma-separated string."""
         if self.cors_origins == "*":
             return ["*"]
-        return [origin.strip() for origin in self.cors_origins.split(',') if origin.strip()]
+        origins = [origin.strip() for origin in self.cors_origins.split(',') if origin.strip()]
+        if not origins:
+            raise ValueError(
+                "CORS_ORIGINS must be configured (comma-separated origins, or '*' for development). "
+                "Example: CORS_ORIGINS=http://localhost:3000,https://my-domain.com"
+            )
+        return origins
 
 
 # Global settings instance

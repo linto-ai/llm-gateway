@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 LABEL maintainer="dlaine@linagora.com"
 
 # Build arguments for UID/GID (defaults to 1000)

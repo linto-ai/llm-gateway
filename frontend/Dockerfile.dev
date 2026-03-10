@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:22-slim
 
 # Build arguments for UID/GID
 ARG USER_ID=1000

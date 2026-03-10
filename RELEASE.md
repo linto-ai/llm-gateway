@@ -1,3 +1,23 @@
+# 2.3.0
+
+_2026_03_10_
+
+- Security remediation
+  - Upgrade python-multipart 0.0.16 → 0.0.22 (CVE-2026-24486, CVE-2024-53981)
+  - Upgrade fastapi 0.115.3 → 0.115.12 (starlette transitive CVEs)
+  - Upgrade next.js >=16.1.5, axios >=1.13.5, transitive deps (rollup, ajv, devalue, lodash)
+  - Python runtime 3.11 → 3.12, Node runtime 20 → 22 LTS
+  - CORS: default changed from wildcard `*` to mandatory explicit configuration
+- Chat usage tracking and cost analytics
+- Production DOCX report template (LINAGORA/LinTO branding)
+- Bug fixes
+  - Fix custom tokenizer input not showing when switching from preset
+  - Fix tokenizer HuggingFace repo IDs for Mistral and Llama
+  - Strip wrapping code fences from LLM output before DOCX conversion
+  - DELETE endpoint for job result versions
+
+---
+
 # 2.2.2
 
 _2026_03_01_

@@ -7,10 +7,10 @@ pyyaml>=5.4.1
 plyvel==1.5.1
 # Language detection for multilingual chunking
 lingua-language-detector>=2.0.0
-fastapi==0.115.3
+fastapi==0.115.12
 aiohttp>=3.9.0
 uvicorn[standard]==0.32.0
-python-multipart==0.0.16
+python-multipart==0.0.22
 celery==5.4.0
 redis==5.2.0
 asgiref==3.8.1
