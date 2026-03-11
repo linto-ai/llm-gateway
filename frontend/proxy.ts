@@ -9,7 +9,6 @@ export default function proxy(request: NextRequest): NextResponse {
   const ip =
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     request.headers.get('x-real-ip') ||
-    request.ip ||
     '-';
   const method = request.method;
   const path = request.nextUrl.pathname;
