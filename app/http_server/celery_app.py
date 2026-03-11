@@ -26,6 +26,8 @@ logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
 
 # Celery App Setup
 celery_app = Celery("tasks")
+celery_app.conf.worker_log_format = "%(asctime)s %(name)s %(levelname)s: %(message)s"
+celery_app.conf.worker_task_log_format = "%(asctime)s %(name)s %(levelname)s: %(message)s"
 
 # Configure the broker and backend from environment variables with defaults
 parsed_url = urlparse(settings.services_broker)

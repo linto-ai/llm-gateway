@@ -1,3 +1,12 @@
+# 2.3.1
+
+_2026_03_11_
+
+- Add access logs with timestamps for API (uvicorn) and frontend (Next.js proxy)
+- Add timestamps to Celery worker logs
+
+---
+
 # 2.3.0
 
 _2026_03_10_

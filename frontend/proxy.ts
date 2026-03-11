@@ -1,7 +1,23 @@
 import createMiddleware from 'next-intl/middleware';
+import { NextRequest, NextResponse } from 'next/server';
 import { routing } from './i18n/routing';
 
-export default createMiddleware(routing);
+const intlMiddleware = createMiddleware(routing);
+
+export default function proxy(request: NextRequest): NextResponse {
+  const timestamp = new Date().toISOString();
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    request.ip ||
+    '-';
+  const method = request.method;
+  const path = request.nextUrl.pathname;
+
+  console.log(`${timestamp} ${ip} ${method} ${path}`);
+
+  return intlMiddleware(request) as NextResponse;
+}
 
 export const config = {
   matcher: [

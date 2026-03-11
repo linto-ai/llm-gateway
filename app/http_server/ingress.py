@@ -298,7 +298,39 @@ def start():
         "app.http_server.ingress:app",
         host="0.0.0.0",
         port=pydantic_settings.service_port,
-        workers=pydantic_settings.workers
+        workers=pydantic_settings.workers,
+        access_log=True,
+        log_config={
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "access": {
+                    "()": "uvicorn.logging.AccessFormatter",
+                    "fmt": '%(asctime)s %(client_addr)s "%(request_line)s" %(status_code)s',
+                    "datefmt": "%d/%m/%Y %H:%M:%S",
+                },
+            },
+            "filters": {
+                "healthcheck": {
+                    "()": "app.http_server.ingress.EndpointFilter",
+                },
+            },
+            "handlers": {
+                "access": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "access",
+                    "filters": ["healthcheck"],
+                    "stream": "ext://sys.stdout",
+                },
+            },
+            "loggers": {
+                "uvicorn.access": {
+                    "handlers": ["access"],
+                    "level": "INFO",
+                    "propagate": False,
+                },
+            },
+        },
     )
 
 
