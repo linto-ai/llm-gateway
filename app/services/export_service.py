@@ -58,6 +58,7 @@ class ExportService:
         format: str,
         llm_inference=None,
         version_number: Optional[int] = None,
+        timezone: Optional[str] = None,
     ) -> BytesIO | str:
         """
         Export job with just-in-time metadata extraction.
@@ -145,11 +146,11 @@ class ExportService:
 
         # Generate document
         if format == "docx":
-            return await self.document_service.generate_docx(job, template, version_content=version_content, version_metadata=version_metadata)
+            return await self.document_service.generate_docx(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
         elif format == "html":
-            return await self.document_service.generate_html(job, template, version_content=version_content, version_metadata=version_metadata)
+            return await self.document_service.generate_html(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
         else:
-            return await self.document_service.generate_pdf(job, template, version_content=version_content, version_metadata=version_metadata)
+            return await self.document_service.generate_pdf(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
 
     async def get_export_preview(
         self,
