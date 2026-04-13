@@ -527,6 +527,7 @@ class DocumentService:
         # Insert each element from temp_doc after the placeholder paragraph
         para_element = after_para._element
         insert_point = para_element
+        inserted_elements = []
         for element in temp_doc.element.body:
             # Skip section properties (sectPr)
             if element.tag.endswith('sectPr'):
@@ -535,6 +536,157 @@ class DocumentService:
             new_element = deepcopy(element)
             insert_point.addnext(new_element)
             insert_point = new_element
+            inserted_elements.append(new_element)
+
+        # htmldocx writes hard-coded English styleIds (Heading1, ListBullet, ...).
+        # These only resolve in templates built in English Word. For localized
+        # templates (e.g. French uses styleId=Titre1) the styleIds don't exist
+        # and Word falls back to defaults, losing the template's look and feel.
+        # Remap them to the target template's actual styleIds via the canonical
+        # <w:name> (which is invariant across languages for built-in styles).
+        self._remap_inserted_style_ids(doc, inserted_elements)
+
+    # Canonical <w:name> values used by Word for the built-in styles that
+    # htmldocx may emit. Matching is case-insensitive and space-insensitive.
+    _HTMLDOCX_STYLE_CANONICAL_NAMES = {
+        "Heading1": "heading 1",
+        "Heading2": "heading 2",
+        "Heading3": "heading 3",
+        "Heading4": "heading 4",
+        "Heading5": "heading 5",
+        "Heading6": "heading 6",
+        "Heading7": "heading 7",
+        "Heading8": "heading 8",
+        "Heading9": "heading 9",
+        "Title": "title",
+        "Subtitle": "subtitle",
+        "ListBullet": "list bullet",
+        "ListNumber": "list number",
+        "ListParagraph": "list paragraph",
+        "Quote": "quote",
+        "IntenseQuote": "intense quote",
+        "Caption": "caption",
+    }
+
+    _STYLE_OVERRIDE_PROPERTY_PREFIX = "style_"
+
+    def _remap_inserted_style_ids(self, doc, inserted_elements) -> None:
+        """Rewrite pStyle/@val on freshly inserted paragraphs so they point at
+        styles that actually exist in the target template.
+
+        Resolution order per htmldocx styleId (e.g. "Heading1"):
+          1. Document custom property `style_heading1` -> explicit override.
+          2. Style in the template whose <w:name> matches the canonical name
+             ("heading 1") case-insensitively.
+          3. Leave the original styleId untouched (legacy behavior).
+        """
+        W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        W = "{" + W_NS + "}"
+
+        def norm(s: str) -> str:
+            return (s or "").strip().lower()
+
+        name_to_id: Dict[str, str] = {}
+        for style_el in doc.styles.element.findall(W + "style"):
+            sid = style_el.get(W + "styleId")
+            if not sid:
+                continue
+            name_el = style_el.find(W + "name")
+            if name_el is None:
+                continue
+            name_val = name_el.get(W + "val")
+            if not name_val:
+                continue
+            # First entry wins so the primary style for a given name beats
+            # later duplicates (e.g. linked character styles).
+            name_to_id.setdefault(norm(name_val), sid)
+
+        overrides: Dict[str, str] = self._read_style_overrides(doc)
+
+        # Build the final mapping htmldocx_id -> resolved template styleId.
+        resolved: Dict[str, str] = {}
+        for htmldocx_id, canonical_name in self._HTMLDOCX_STYLE_CANONICAL_NAMES.items():
+            override = overrides.get(htmldocx_id.lower())
+            if override:
+                resolved[htmldocx_id] = override
+                continue
+            match = name_to_id.get(canonical_name)
+            if match and match != htmldocx_id:
+                resolved[htmldocx_id] = match
+
+        if not resolved:
+            return
+
+        for root in inserted_elements:
+            for pstyle in root.iter(W + "pStyle"):
+                current = pstyle.get(W + "val")
+                target = resolved.get(current)
+                if target:
+                    pstyle.set(W + "val", target)
+
+    _CUSTOM_PROPS_CONTENT_TYPE = (
+        "application/vnd.openxmlformats-officedocument.custom-properties+xml"
+    )
+    _CUSTOM_PROPS_NS = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
+    )
+    _CUSTOM_PROPS_VT_NS = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
+    )
+
+    def _read_style_overrides(self, doc) -> Dict[str, str]:
+        """Read style overrides from the document's custom properties.
+
+        A template author can declare, via File > Info > Properties > Advanced
+        in Word, a custom property like `style_heading1 = TitreOrange` to force
+        inserted H1 paragraphs onto that style. Keys are matched
+        case-insensitively against htmldocx styleIds (heading1, listbullet...).
+
+        python-docx 1.2 does not expose custom properties, so we read the raw
+        `/docProps/custom.xml` part directly.
+        """
+        import xml.etree.ElementTree as ET
+
+        try:
+            package = doc.part.package
+        except Exception:
+            return {}
+
+        custom_part = None
+        try:
+            for part in package.iter_parts():
+                if getattr(part, "content_type", None) == self._CUSTOM_PROPS_CONTENT_TYPE:
+                    custom_part = part
+                    break
+        except Exception:
+            return {}
+
+        if custom_part is None:
+            return {}
+
+        try:
+            blob = custom_part.blob
+            root = ET.fromstring(blob)
+        except Exception:
+            return {}
+
+        ns = {"p": self._CUSTOM_PROPS_NS, "vt": self._CUSTOM_PROPS_VT_NS}
+        overrides: Dict[str, str] = {}
+        for prop in root.findall("p:property", ns):
+            name = prop.get("name") or ""
+            if not name.lower().startswith(self._STYLE_OVERRIDE_PROPERTY_PREFIX):
+                continue
+            # Value is in a vt:* child element (lpwstr, bstr, i4, ...).
+            value_el = None
+            for child in prop:
+                if child.tag.startswith("{" + self._CUSTOM_PROPS_VT_NS + "}"):
+                    value_el = child
+                    break
+            if value_el is None or not (value_el.text or "").strip():
+                continue
+            htmldocx_key = name[len(self._STYLE_OVERRIDE_PROPERTY_PREFIX):].lower()
+            overrides[htmldocx_key] = value_el.text.strip()
+        return overrides
 
     def _get_result_content(self, job: Job) -> str:
         """Extract text content from job result."""
