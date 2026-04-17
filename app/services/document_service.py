@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 from datetime import datetime
 from io import BytesIO
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -54,6 +55,7 @@ class DocumentService:
         custom_fields: Optional[Dict[str, Any]] = None,
         version_content: Optional[str] = None,
         version_metadata: Optional[Dict[str, Any]] = None,
+        timezone: Optional[str] = None,
     ) -> BytesIO:
         """
         Generate DOCX from template with placeholder substitution.
@@ -84,7 +86,7 @@ class DocumentService:
 
         doc = Document(template_path)
 
-        placeholders = self.get_placeholders(job, custom_fields, version_content=version_content, version_metadata=version_metadata)
+        placeholders = self.get_placeholders(job, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
         self.substitute_placeholders(doc, placeholders)
 
         output = BytesIO()
@@ -99,6 +101,7 @@ class DocumentService:
         custom_fields: Optional[Dict[str, Any]] = None,
         version_content: Optional[str] = None,
         version_metadata: Optional[Dict[str, Any]] = None,
+        timezone: Optional[str] = None,
     ) -> BytesIO:
         """
         Generate PDF from job result.
@@ -111,12 +114,13 @@ class DocumentService:
             custom_fields: Optional additional fields
             version_content: Optional content from a specific version (overrides job.result)
             version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
+            timezone: Optional IANA timezone for date formatting (e.g., 'Europe/Paris')
 
         Returns:
             BytesIO containing the generated PDF
         """
         # Generate DOCX first (handles default template)
-        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata)
+        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
 
         # Convert via LibreOffice
         return await self._convert_docx_to_pdf(docx_buffer, job)
@@ -128,6 +132,7 @@ class DocumentService:
         custom_fields: Optional[Dict[str, Any]] = None,
         version_content: Optional[str] = None,
         version_metadata: Optional[Dict[str, Any]] = None,
+        timezone: Optional[str] = None,
     ) -> str:
         """
         Generate HTML preview from job result using mammoth.
@@ -158,7 +163,7 @@ class DocumentService:
             raise ImportError("mammoth is required for HTML preview generation")
 
         # Generate DOCX first (reuse existing logic)
-        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata)
+        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
 
         # Convert DOCX to HTML using mammoth
         result = mammoth.convert_to_html(docx_buffer)
@@ -285,6 +290,7 @@ class DocumentService:
         custom_fields: Optional[Dict[str, Any]] = None,
         version_content: Optional[str] = None,
         version_metadata: Optional[Dict[str, Any]] = None,
+        timezone: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get all available placeholders for template substitution.
@@ -301,15 +307,29 @@ class DocumentService:
         # Use version_content if provided, otherwise extract from job result
         output_content = version_content if version_content else self._get_result_content(job)
 
+        tz = None
+        if timezone:
+            try:
+                tz = ZoneInfo(timezone)
+            except (KeyError, ValueError):
+                logger.warning(f"Invalid timezone '{timezone}', falling back to UTC")
+                tz = ZoneInfo("UTC")
+
+        now = datetime.now(tz) if tz else datetime.now()
+        job_date = ""
+        if job.completed_at:
+            completed = job.completed_at.astimezone(tz) if tz else job.completed_at
+            job_date = completed.strftime("%Y-%m-%d")
+
         placeholders = {
             # Standard placeholders
             "output": output_content,
             "job_id": str(job.id),
-            "job_date": job.completed_at.strftime("%Y-%m-%d") if job.completed_at else "",
+            "job_date": job_date,
             "service_name": job.service.name if job.service else "",
             "flavor_name": job.flavor.name if job.flavor else "",
             "organization_name": job.organization_id or "",
-            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "generated_at": now.strftime("%Y-%m-%d %H:%M"),
         }
 
         # Add extracted metadata fields - use version_metadata if provided, else job.result.extracted_metadata

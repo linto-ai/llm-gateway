@@ -1063,21 +1063,27 @@ async def export_job_result(
     format: TypeLiteral["docx", "pdf", "html"],
     template_id: Optional[UUID] = Query(None, description="Template to use (falls back to default)"),
     version_number: Optional[int] = Query(None, description="Specific version to export (uses version content and per-version extraction cache)"),
+    timezone: Optional[str] = Query(None, description="IANA timezone for date formatting (e.g., 'Europe/Paris')"),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Export job result as DOCX, PDF, or HTML with just-in-time extraction.
 
-    Behavior:
+    **Parameters:**
+    - **template_id**: Template UUID to use for export. Falls back to the service's default template, then the global default.
+    - **version_number**: Specific version to export. Uses that version's content and per-version extraction cache.
+    - **timezone**: IANA timezone identifier (e.g., `Europe/Paris`, `Asia/Tokyo`). Used to format date placeholders (`job_date`, `generated_at`) in the exported document. Falls back to the server's local timezone if not provided.
+
+    **Behavior:**
     1. Load template (specified or default)
     2. Parse template placeholders
     3. If version_number specified, fetch that version's content and use per-version extraction cache
     4. Check which placeholders are already in extracted_metadata (main or per-version)
-    4. If missing placeholders exist AND flavor has extraction prompt configured:
+    5. If missing placeholders exist AND flavor has extraction prompt configured:
        - Perform just-in-time extraction for missing fields only
        - Update job.result.extracted_metadata with new values
        - Record extraction in job token metrics
-    5. Generate document with all available placeholder values
+    6. Generate document with all available placeholder values, dates formatted in the requested timezone
     """
     from fastapi.responses import StreamingResponse
     from app.services.document_template_service import document_template_service
@@ -1194,6 +1200,7 @@ async def export_job_result(
             format=format,
             llm_inference=llm_inference,
             version_number=version_number,
+            timezone=timezone,
         )
         await db.commit()  # Commit any JIT extraction updates
     except ImportError as e:
