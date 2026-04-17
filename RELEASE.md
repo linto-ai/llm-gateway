@@ -1,3 +1,15 @@
+# 2.3.2
+
+_2026_04_17_
+
+- Localized DOCX/PDF export
+  - Add optional `timezone` query parameter to `GET /jobs/{id}/export` (IANA, e.g. `Europe/Paris`) to format `job_date` and `generated_at` placeholders; falls back to UTC on invalid input (#20)
+  - Remap htmldocx hard-coded English styleIds (`Heading1`, `ListBullet`, `Title`, …) to the template's actual styleIds via the canonical `<w:name>`; restores look-and-feel on localized Word templates (#21)
+- Bug fixes
+  - Fix `proxy.ts` TypeScript error after Next.js 16 removed `request.ip`
+
+---
+
 # 2.3.1
 
 _2026_03_11_
