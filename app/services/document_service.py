@@ -313,6 +313,7 @@ class DocumentService:
                 tz = ZoneInfo(timezone)
             except (KeyError, ValueError):
                 logger.warning(f"Invalid timezone '{timezone}', falling back to UTC")
+                tz = ZoneInfo("UTC")
 
         now = datetime.now(tz) if tz else datetime.now()
         job_date = ""
