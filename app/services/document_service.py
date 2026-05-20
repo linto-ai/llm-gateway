@@ -366,6 +366,20 @@ class DocumentService:
 
         return placeholders
 
+    @staticmethod
+    def _set_run_text(run, new_text: str) -> None:
+        """Assign ``new_text`` to ``run.text`` only if it actually changed.
+
+        Why: python-docx's ``Run.text`` setter calls ``clear_content()`` which
+        removes every child of ``<w:r>`` except ``<w:rPr>`` - including
+        ``<w:drawing>``. Assigning the same value back therefore deletes any
+        embedded image. Runs that carry an inline image have empty ``.text``,
+        so the guard ``new_text != run.text`` skips them entirely and keeps
+        the drawing intact.
+        """
+        if new_text != run.text:
+            run.text = new_text
+
     def substitute_placeholders(self, doc, placeholders: Dict[str, Any]) -> None:
         """
         Replace {{placeholder}} in DOCX paragraphs, tables, headers, footers.
@@ -401,7 +415,7 @@ class DocumentService:
             if "{{output}}" in full_text:
                 # Clear the paragraph
                 for run in para.runs:
-                    run.text = ""
+                    self._set_run_text(run, "")
                 # Insert formatted markdown content after this paragraph
                 return True
             return False
@@ -409,7 +423,7 @@ class DocumentService:
         # First pass: replace simple placeholders
         for para in doc.paragraphs:
             for run in para.runs:
-                run.text = replace_text_simple(run.text)
+                self._set_run_text(run, replace_text_simple(run.text))
 
         # Second pass: find and replace {{output}} with formatted content
         paragraphs_to_process = []
@@ -422,7 +436,7 @@ class DocumentService:
         for idx, para in paragraphs_to_process:
             # Clear the placeholder
             for run in para.runs:
-                run.text = run.text.replace("{{output}}", "")
+                self._set_run_text(run, run.text.replace("{{output}}", ""))
             # Insert markdown as formatted DOCX content
             self._insert_markdown_content(doc, para, output_content)
 
@@ -432,20 +446,20 @@ class DocumentService:
                 for cell in row.cells:
                     for para in cell.paragraphs:
                         for run in para.runs:
-                            run.text = replace_text_simple(run.text)
+                            self._set_run_text(run, replace_text_simple(run.text))
                             # For tables, just use plain text for output
-                            run.text = run.text.replace("{{output}}", output_content)
+                            self._set_run_text(run, run.text.replace("{{output}}", output_content))
 
         # Replace in headers/footers (simple replacement only)
         for section in doc.sections:
             if section.header:
                 for para in section.header.paragraphs:
                     for run in para.runs:
-                        run.text = replace_text_simple(run.text)
+                        self._set_run_text(run, replace_text_simple(run.text))
             if section.footer:
                 for para in section.footer.paragraphs:
                     for run in para.runs:
-                        run.text = replace_text_simple(run.text)
+                        self._set_run_text(run, replace_text_simple(run.text))
 
         # Final pass: clean up any remaining unfilled placeholders
         # Matches {{anything}} or {{anything: with hint}}
@@ -457,24 +471,24 @@ class DocumentService:
 
         for para in doc.paragraphs:
             for run in para.runs:
-                run.text = clean_unfilled(run.text)
+                self._set_run_text(run, clean_unfilled(run.text))
 
         for table in doc.tables:
             for row in table.rows:
                 for cell in row.cells:
                     for para in cell.paragraphs:
                         for run in para.runs:
-                            run.text = clean_unfilled(run.text)
+                            self._set_run_text(run, clean_unfilled(run.text))
 
         for section in doc.sections:
             if section.header:
                 for para in section.header.paragraphs:
                     for run in para.runs:
-                        run.text = clean_unfilled(run.text)
+                        self._set_run_text(run, clean_unfilled(run.text))
             if section.footer:
                 for para in section.footer.paragraphs:
                     for run in para.runs:
-                        run.text = clean_unfilled(run.text)
+                        self._set_run_text(run, clean_unfilled(run.text))
 
     def _insert_markdown_content(self, doc, after_para, markdown_content: str) -> None:
         """
