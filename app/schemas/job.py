@@ -154,6 +154,8 @@ class JobResponse(BaseModel):
     progress: Optional[JobProgress] = None
     # Free-form organization identifier (any string up to 100 chars)
     organization_id: Optional[str] = None
+    conversation_name: Optional[str] = None
+    organization_name: Optional[str] = None
 
     # Fallback tracking fields
     fallback_applied: bool = Field(

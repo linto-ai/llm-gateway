@@ -132,7 +132,9 @@ export const STANDARD_PLACEHOLDERS = [
   'job_date',
   'service_name',
   'flavor_name',
+  'organization_id',
   'organization_name',
+  'conversation_name',
   'generated_at',
 ] as const;
 

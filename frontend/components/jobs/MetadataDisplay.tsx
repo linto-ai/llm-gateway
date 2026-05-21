@@ -17,7 +17,7 @@ import {
   Globe,
   Hash,
 } from 'lucide-react';
-import { parsePlaceholder } from '@/types/document-template';
+import { parsePlaceholder, STANDARD_PLACEHOLDERS } from '@/types/document-template';
 
 interface MetadataDisplayProps {
   metadata: Record<string, any>;
@@ -28,17 +28,6 @@ interface MetadataDisplayProps {
  * Renders different field types appropriately (strings, arrays, sentiment badges).
  * Skips internal fields (those starting with _).
  */
-// Standard placeholders provided by the system - not extracted metadata
-const STANDARD_PLACEHOLDERS = [
-  'output',
-  'job_id',
-  'job_date',
-  'service_name',
-  'flavor_name',
-  'organization_name',
-  'generated_at',
-];
-
 export function MetadataDisplay({ metadata }: MetadataDisplayProps) {
   const t = useTranslations('metadata');
 
@@ -48,7 +37,7 @@ export function MetadataDisplay({ metadata }: MetadataDisplayProps) {
 
   // Filter out internal fields (starting with _) and standard placeholders
   const displayFields = Object.entries(metadata).filter(
-    ([key]) => !key.startsWith('_') && !STANDARD_PLACEHOLDERS.includes(key)
+    ([key]) => !key.startsWith('_') && !(STANDARD_PLACEHOLDERS as readonly string[]).includes(key)
   );
 
   if (displayFields.length === 0) {

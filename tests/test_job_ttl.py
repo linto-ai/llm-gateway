@@ -460,6 +460,8 @@ class TestJobServiceTTLResponses:
         mock_job.error = None
         mock_job.progress = None
         mock_job.organization_id = None
+        mock_job.conversation_name = None
+        mock_job.organization_name = None
         mock_job.current_version = 1
         mock_job.last_edited_at = None
         mock_job.fallback_applied = "false"
@@ -511,6 +513,8 @@ class TestJobServiceTTLResponses:
         mock_job.error = None
         mock_job.progress = None
         mock_job.organization_id = None
+        mock_job.conversation_name = None
+        mock_job.organization_name = None
         mock_job.current_version = 1
         mock_job.last_edited_at = None
         mock_job.fallback_applied = "false"

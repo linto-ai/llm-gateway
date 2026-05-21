@@ -100,6 +100,8 @@ class JobService:
         flavor_id: UUID,
         celery_task_id: str,
         organization_id: Optional[str] = None,
+        conversation_name: Optional[str] = None,
+        organization_name: Optional[str] = None,
         input_file_name: Optional[str] = None,
         input_preview: Optional[str] = None,
         # Fallback tracking
@@ -122,6 +124,8 @@ class JobService:
             service_id=service_id,
             flavor_id=flavor_id,
             organization_id=organization_id,
+            conversation_name=conversation_name,
+            organization_name=organization_name,
             celery_task_id=celery_task_id,
             status="queued",
             input_file_name=input_file_name,
@@ -189,6 +193,8 @@ class JobService:
             error=job.error,
             progress=progress_obj,
             organization_id=job.organization_id,
+            conversation_name=job.conversation_name,
+            organization_name=job.organization_name,
             # Fallback tracking
             fallback_applied=job.fallback_applied == "true",
             original_flavor_id=job.original_flavor_id,
@@ -324,6 +330,8 @@ class JobService:
                 error=job.error,
                 progress=progress_obj,
                 organization_id=job.organization_id,
+                conversation_name=job.conversation_name,
+                organization_name=job.organization_name,
                 # Fallback tracking
                 fallback_applied=job.fallback_applied == "true",
                 original_flavor_id=job.original_flavor_id,

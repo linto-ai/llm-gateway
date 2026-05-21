@@ -19,6 +19,12 @@ class Job(Base):
     # Free-form organization identifier (no FK constraint)
     organization_id = Column(String(100), nullable=True, index=True)
 
+    # Caller-supplied human-readable names. Stored so that export templates
+    # can expose them as standard placeholders ({{conversation_name}},
+    # {{organization_name}}) without depending on caller-side resolution.
+    conversation_name = Column(String(255), nullable=True)
+    organization_name = Column(String(255), nullable=True)
+
     status = Column(String(20), nullable=False, default="queued")
     celery_task_id = Column(String(255), unique=True, nullable=True)
 

@@ -30,7 +30,9 @@ class DocumentService:
         "job_date",
         "service_name",
         "flavor_name",
+        "organization_id",
         "organization_name",
+        "conversation_name",
         "generated_at",
     ]
 
@@ -328,7 +330,9 @@ class DocumentService:
             "job_date": job_date,
             "service_name": job.service.name if job.service else "",
             "flavor_name": job.flavor.name if job.flavor else "",
-            "organization_name": job.organization_id or "",
+            "organization_id": job.organization_id or "",
+            "organization_name": job.organization_name or "",
+            "conversation_name": job.conversation_name or "",
             "generated_at": now.strftime("%Y-%m-%d %H:%M"),
         }
 
@@ -379,6 +383,55 @@ class DocumentService:
         """
         if new_text != run.text:
             run.text = new_text
+
+    def _rescue_split_placeholders(self, para, transform) -> None:
+        """Catch placeholders that Word split across multiple runs.
+
+        Per-run substitution can't match ``{{key}}`` when Word chose to break
+        the string into separate ``<w:r>`` elements (e.g. ``': {{organization_'``
+        / ``'id'`` / ``'}}'``). After the normal per-run pass, this method
+        joins the paragraph text, retries the transform, and - only if the
+        result actually changed - writes the new full text into the first
+        text-bearing run and clears the others.
+
+        Empty runs (typically inline images) are never touched, so embedded
+        drawings survive the rewrite.
+        """
+        runs = para.runs
+        if not runs:
+            return
+        full_text = "".join(run.text for run in runs)
+        if "{{" not in full_text:
+            return
+        new_text = transform(full_text)
+        if new_text == full_text:
+            return
+        target_assigned = False
+        for run in runs:
+            if not run.text:
+                continue
+            if not target_assigned:
+                self._set_run_text(run, new_text)
+                target_assigned = True
+            else:
+                self._set_run_text(run, "")
+        if not target_assigned:
+            self._set_run_text(runs[0], new_text)
+
+    def _iter_all_paragraphs(self, doc):
+        """Yield every paragraph in body, tables, headers and footers."""
+        for para in doc.paragraphs:
+            yield para
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for para in cell.paragraphs:
+                        yield para
+        for section in doc.sections:
+            for hf in (section.header, section.footer):
+                if hf is not None:
+                    for para in hf.paragraphs:
+                        yield para
 
     def substitute_placeholders(self, doc, placeholders: Dict[str, Any]) -> None:
         """
@@ -461,6 +514,14 @@ class DocumentService:
                     for run in para.runs:
                         self._set_run_text(run, replace_text_simple(run.text))
 
+        # Rescue pass: catch placeholders that Word split across multiple
+        # runs (per-run replacement can't match them). Operates at the
+        # paragraph level and only rewrites a paragraph whose joined text
+        # actually changes - so paragraphs without placeholders, and
+        # placeholders the per-run pass already filled, are left alone.
+        for para in self._iter_all_paragraphs(doc):
+            self._rescue_split_placeholders(para, replace_text_simple)
+
         # Final pass: clean up any remaining unfilled placeholders
         # Matches {{anything}} or {{anything: with hint}}
         import re
@@ -489,6 +550,11 @@ class DocumentService:
                 for para in section.footer.paragraphs:
                     for run in para.runs:
                         self._set_run_text(run, clean_unfilled(run.text))
+
+        # Final rescue: clean any split unfilled placeholders that survive
+        # the per-run cleanup (e.g. '{{' / 'unknown' / '}}').
+        for para in self._iter_all_paragraphs(doc):
+            self._rescue_split_placeholders(para, clean_unfilled)
 
     def _insert_markdown_content(self, doc, after_para, markdown_content: str) -> None:
         """

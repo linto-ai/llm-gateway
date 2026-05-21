@@ -737,6 +737,11 @@ async def execute_service(
     # Generate Celery task ID upfront so we can create the job record first
     celery_task_id = str(uuid_module.uuid4())
 
+    # Extract caller-supplied display names from the request metadata.
+    meta = request.metadata or {}
+    conversation_name = meta.get("conversation_name")
+    organization_name = meta.get("organization_name")
+
     # Create job record FIRST
     job = await job_service.create_job(
         db=db,
@@ -744,6 +749,8 @@ async def execute_service(
         flavor_id=flavor.id,
         celery_task_id=celery_task_id,
         organization_id=None,  # TODO: Extract from auth
+        organization_name=organization_name,
+        conversation_name=conversation_name,
         input_file_name=None,
         input_preview=content[:500] if isinstance(content, str) else str(content)[:500],
         # Fallback tracking
@@ -800,6 +807,8 @@ async def _execute_with_file_internal(
     organization_id: Optional[str],
     db,
     context_data: Optional[Dict[str, Any]] = None,
+    organization_name: Optional[str] = None,
+    conversation_name: Optional[str] = None,
 ):
     """
     Internal implementation for file-based execution with context validation.
@@ -1026,6 +1035,8 @@ async def _execute_with_file_internal(
         flavor_id=flavor.id,
         celery_task_id=celery_task_id,
         organization_id=organization_id,
+        organization_name=organization_name,
+        conversation_name=conversation_name,
         input_file_name=input_file_name,
         input_preview=content[:500] if content else "",
         # Fallback tracking
@@ -1090,6 +1101,8 @@ async def run_service_with_file(
     temperature: Optional[float] = Form(None),
     top_p: Optional[float] = Form(None),
     organization_id: Optional[str] = Form(None),
+    organization_name: Optional[str] = Form(None, description="Organization display name, exposed at export time as {{organization_name}}"),
+    conversation_name: Optional[str] = Form(None, description="Conversation/session display name, exposed at export time as {{conversation_name}}"),
     context: Optional[str] = Form(None, description="JSON-encoded context data for categorization (tags, metadata)"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -1134,6 +1147,8 @@ async def run_service_with_file(
         temperature=temperature,
         top_p=top_p,
         organization_id=organization_id,
+        organization_name=organization_name,
+        conversation_name=conversation_name,
         db=db,
         context_data=context_data,
     )
