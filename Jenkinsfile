@@ -23,6 +23,19 @@ def stagingDeploy(image_name, tag) {
     }
 }
 
+// Best-effort redeploy of preprod after a latest-unstable push (full CI/CD).
+// Needs a Jenkins SSH credential 'preprod-deploy-ssh' (key for ubuntu@preprod.linto.ai);
+// if absent the build still succeeds (push-only).
+def preprodDeploy(image_name) {
+    try {
+        withCredentials([sshUserPrivateKey(credentialsId: 'preprod-deploy-ssh', keyFileVariable: 'PP_SSH_KEY', usernameVariable: 'PP_SSH_USER')]) {
+            sh "ssh -i \$PP_SSH_KEY -o StrictHostKeyChecking=no \$PP_SSH_USER@preprod.linto.ai 'preprod-deploy ${image_name}'"
+        }
+    } catch (err) {
+        echo "Preprod auto-deploy skipped for ${image_name} (add the 'preprod-deploy-ssh' credential to enable): ${err}"
+    }
+}
+
 pipeline {
     agent any
     environment {
@@ -93,12 +106,14 @@ pipeline {
                     docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CRED) {
                         backendImage.push('latest-unstable')
                     }
+                    preprodDeploy('llm-gateway')
 
                     // Build and push frontend image
                     frontendImage = docker.build("${env.DOCKER_HUB_REPO_FRONTEND}", "-f frontend/Dockerfile frontend/")
                     docker.withRegistry('https://registry.hub.docker.com', env.DOCKER_HUB_CRED) {
                         frontendImage.push('latest-unstable')
                     }
+                    preprodDeploy('llm-gateway-frontend')
                 }
             }
         }
