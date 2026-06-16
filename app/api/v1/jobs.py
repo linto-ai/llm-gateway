@@ -204,7 +204,7 @@ async def list_jobs(
             page_size=page_size,
         )
     except Exception as e:
-        logger.error(f"Error listing jobs: {e}")
+        logger.exception(f"Error listing jobs: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list jobs: {str(e)}",
@@ -653,7 +653,7 @@ async def websocket_job_status(websocket: WebSocket, job_id: str):
         logger.info(f"WebSocket for job {job_id} cancelled (server shutdown)")
         raise
     except Exception as e:
-        logger.error(f"WebSocket error for job {job_id}: {e}")
+        logger.exception(f"WebSocket error for job {job_id}: {e}")
         try:
             await websocket.close(code=1011)  # Internal error
         except Exception:
@@ -773,7 +773,7 @@ async def websocket_jobs_status(websocket: WebSocket, organization_id: Optional[
                 # Timeout is normal, just continue the loop
                 continue
             except json.JSONDecodeError as e:
-                logger.warning(f"Global WS: failed to parse Redis message: {e}")
+                logger.warning(f"Global WS: failed to parse Redis message: {e}", exc_info=True)
             except WebSocketDisconnect:
                 logger.info("Client disconnected during message processing")
                 return
@@ -784,7 +784,7 @@ async def websocket_jobs_status(websocket: WebSocket, organization_id: Optional[
                     return
                 raise
             except Exception as e:
-                logger.error(f"Global WS: error processing message: {e}")
+                logger.exception(f"Global WS: error processing message: {e}")
 
     except WebSocketDisconnect:
         logger.info("Client disconnected from global jobs WebSocket")
@@ -1189,7 +1189,7 @@ async def export_job_result(
                     flavor.model.provider.api_base_url
                 )
         except Exception as e:
-            logger.warning(f"Could not prepare LLM for JIT extraction: {e}")
+            logger.warning(f"Could not prepare LLM for JIT extraction: {e}", exc_info=True)
 
     # Generate document with JIT extraction
     try:

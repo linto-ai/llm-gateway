@@ -270,7 +270,7 @@ class DocumentService:
                     timeout=60  # 60 second timeout
                 )
             except subprocess.CalledProcessError as e:
-                logger.error(f"LibreOffice conversion failed: {e.stderr.decode()}")
+                logger.exception(f"LibreOffice conversion failed: {e.stderr.decode()}")
                 raise RuntimeError("PDF conversion failed")
             except FileNotFoundError:
                 raise RuntimeError("LibreOffice not installed. PDF export unavailable.")
@@ -312,7 +312,7 @@ class DocumentService:
             try:
                 tz = ZoneInfo(timezone)
             except (KeyError, ValueError):
-                logger.warning(f"Invalid timezone '{timezone}', falling back to UTC")
+                logger.warning(f"Invalid timezone '{timezone}', falling back to UTC", exc_info=True)
                 tz = ZoneInfo("UTC")
 
         now = datetime.now(tz) if tz else datetime.now()

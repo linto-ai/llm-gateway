@@ -125,10 +125,10 @@ class OpenAIAdapter:
                     return response_content, usage
                 return response_content
             except BadRequestError as e:
-                self.logger.error(f"BadRequestError from API: {e.message}")
-                self.logger.error(f"Request params: model={self.modelName}, temp={temperature or self.temperature}, "
+                self.logger.exception(f"BadRequestError from API: {e.message}")
+                self.logger.exception(f"Request params: model={self.modelName}, temp={temperature or self.temperature}, "
                                 f"top_p={top_p or self.top_p}, max_tokens={max_tokens or self.maxGenerationLength}")
-                self.logger.error(f"Content length: {len(content)} chars")
+                self.logger.exception(f"Content length: {len(content)} chars")
                 raise
 
         for attempt in Retrying(**self._get_retry_decorator()):
@@ -183,10 +183,10 @@ class OpenAIAdapter:
                     return response_content, usage
                 return response_content
             except BadRequestError as e:
-                self.logger.error(f"BadRequestError from API: {e.message}")
-                self.logger.error(f"Request params: model={self.modelName}, temp={temperature or self.temperature}, "
+                self.logger.exception(f"BadRequestError from API: {e.message}")
+                self.logger.exception(f"Request params: model={self.modelName}, temp={temperature or self.temperature}, "
                                 f"top_p={top_p or self.top_p}, max_tokens={max_tokens or self.maxGenerationLength}")
-                self.logger.error(f"Content length: {len(content)} chars")
+                self.logger.exception(f"Content length: {len(content)} chars")
                 raise
 
         async for attempt in AsyncRetrying(**self._get_retry_decorator()):

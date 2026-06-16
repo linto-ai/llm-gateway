@@ -158,10 +158,10 @@ class MetadataExtractionService:
             return metadata
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse extraction response as JSON: {e}")
+            logger.exception(f"Failed to parse extraction response as JSON: {e}")
             return {"_extraction_error": f"JSON parse error: {str(e)}"}
         except Exception as e:
-            logger.error(f"Metadata extraction failed: {e}")
+            logger.exception(f"Metadata extraction failed: {e}")
             return {"_extraction_error": str(e)}
 
     async def extract_with_prompt(

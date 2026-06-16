@@ -95,5 +95,5 @@ async def check_db_connection() -> bool:
             await conn.execute(text("SELECT 1"))
         return True
     except Exception as e:
-        logger.error(f"Database connection check failed: {e}")
+        logger.exception(f"Database connection check failed: {e}")
         return False

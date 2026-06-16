@@ -410,7 +410,7 @@ class JobService:
                 "message": "Job cancelled successfully",
             }
         except Exception as e:
-            logger.error(f"Failed to cancel job {job_id}: {e}")
+            logger.exception(f"Failed to cancel job {job_id}: {e}")
             return {
                 "job_id": job_id,
                 "status": "failed",
@@ -523,7 +523,7 @@ class JobService:
                         f"(db_status={job.status}, celery_status={celery_status})"
                     )
             except Exception as e:
-                logger.warning(f"Error checking Celery status for job {job.id}: {e}")
+                logger.warning(f"Error checking Celery status for job {job.id}: {e}", exc_info=True)
                 # If we can't check Celery, treat old jobs as potentially orphaned
                 cutoff = datetime.utcnow() - timedelta(minutes=DEFAULT_STALE_TIMEOUT_MINUTES)
                 if job.started_at and job.started_at < cutoff:

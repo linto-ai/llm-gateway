@@ -3,7 +3,6 @@ import os
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
 import logging
-from app.core.config import settings
 from .chunking import Chunker
 
 # Logging is configured centrally at process startup (app/core/logging_config.py).
@@ -57,7 +56,7 @@ class LLMBackend:
             return True
         
         except Exception as e:
-            self.logger.error(f"Error setting up backend: {e}")
+            self.logger.exception(f"Error setting up backend: {e}")
             raise e
 
     def loadPrompt(self):
@@ -120,7 +119,7 @@ class LLMBackend:
                 self.logger.info(f"Loaded tiktoken encoding: {tokenizer_name}")
                 return TiktokenWrapper(encoding, tokenizer_name)
             except Exception as e:
-                self.logger.error(f"Failed to load tiktoken {tokenizer_name}: {e}")
+                self.logger.exception(f"Failed to load tiktoken {tokenizer_name}: {e}")
                 raise
 
         # For HuggingFace tokenizers, try TokenizerManager first
@@ -143,7 +142,7 @@ class LLMBackend:
             return wrapper
 
         except Exception as e:
-            self.logger.warning(f"TokenizerManager failed for {tokenizer_name}: {e}, falling back to direct load")
+            self.logger.warning(f"TokenizerManager failed for {tokenizer_name}: {e}, falling back to direct load", exc_info=True)
 
             # Fallback to direct AutoTokenizer loading
             try:
@@ -152,5 +151,5 @@ class LLMBackend:
                 self.logger.info(f"Loaded tokenizer directly: {tokenizer_name}")
                 return tokenizer
             except Exception as e2:
-                self.logger.error(f"Failed to load tokenizer {tokenizer_name}: {e2}")
+                self.logger.exception(f"Failed to load tokenizer {tokenizer_name}: {e2}")
                 raise

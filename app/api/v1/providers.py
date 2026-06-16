@@ -49,7 +49,7 @@ async def create_provider(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating provider: {e}")
+        logger.exception(f"Error creating provider: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
@@ -100,7 +100,7 @@ async def list_providers(
             page_size=page_size
         )
     except Exception as e:
-        logger.error(f"Error listing providers: {e}")
+        logger.exception(f"Error listing providers: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -162,7 +162,7 @@ async def get_provider(
             }
         )
     except Exception as e:
-        logger.error(f"Error getting provider: {e}")
+        logger.exception(f"Error getting provider: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -232,7 +232,7 @@ async def update_provider(
             }
         )
     except Exception as e:
-        logger.error(f"Error updating provider: {e}")
+        logger.exception(f"Error updating provider: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -295,7 +295,7 @@ async def delete_provider(
             }
         )
     except Exception as e:
-        logger.error(f"Error deleting provider: {e}")
+        logger.exception(f"Error deleting provider: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -356,7 +356,7 @@ async def discover_models(
             detail=str(e)
         )
     except Exception as e:
-        logger.error(f"Discovery failed for provider {provider_id}: {e}")
+        logger.exception(f"Discovery failed for provider {provider_id}: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Discovery failed: {str(e)}"

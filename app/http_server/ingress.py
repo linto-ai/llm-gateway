@@ -92,7 +92,7 @@ async def lifespan(app: FastAPI):
                         f"(celery={job_info['celery_status']}, action={job_info['action']})"
                     )
         except Exception as e:
-            logger.error(f"Startup orphaned job cleanup failed: {e}")
+            logger.exception(f"Startup orphaned job cleanup failed: {e}")
 
     # Startup: Model verification for all providers (non-blocking)
     async with AsyncSessionLocal() as db:
@@ -108,9 +108,9 @@ async def lifespan(app: FastAPI):
                     if verification.failed_count > 0:
                         logger.warning(f"Failed to verify {verification.failed_count} models for {provider.name}")
                 except Exception as e:
-                    logger.error(f"Error verifying models for provider {provider.name}: {e}")
+                    logger.exception(f"Error verifying models for provider {provider.name}: {e}")
         except Exception as e:
-            logger.error(f"Startup verification failed: {e}")
+            logger.exception(f"Startup verification failed: {e}")
 
     # Start periodic cleanup tasks
     cleanup_task = asyncio.create_task(periodic_cleanup())
@@ -271,7 +271,7 @@ async def periodic_orphan_monitor():
             except asyncio.CancelledError:
                 raise
             except Exception as e:
-                logger.error(f"Orphan monitor error: {e}")
+                logger.exception(f"Orphan monitor error: {e}")
 
             if shutdown_event.is_set():
                 break
