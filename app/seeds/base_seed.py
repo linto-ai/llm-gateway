@@ -44,8 +44,10 @@ from app.seeds.loader import (
     ServiceSeed,
 )
 
+from app.core.logging_config import setup_logging
+
+setup_logging(service="llm-gateway-seed")
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 async def get_or_create_provider(

@@ -286,6 +286,20 @@ The gateway automatically retries failed LLM API calls (rate limits, timeouts, 5
 | `API_RETRY_MIN_DELAY` | Minimum delay between retries (seconds) | `1`     |
 | `API_RETRY_MAX_DELAY` | Maximum delay between retries (seconds) | `60`    |
 
+### Logging
+
+Logs default to human readable text on stdout at `INFO`. Switch to structured
+JSON and ship logs to a file, an HTTP collector or Google Cloud Logging via
+environment variables.
+
+| Variable       | Description                            | Default       |
+|----------------|----------------------------------------|---------------|
+| `LOG_LEVEL`    | `DEBUG` / `INFO` / `WARNING` / `ERROR` | `INFO`        |
+| `LOG_FORMAT`   | `text` or `json`                       | `text`        |
+| `LOG_HTTP_URL` | Ship records as JSON to a collector    | (unset)       |
+
+See the **[Logging Guide](docs/LOGGING_GUIDE.md)** for every sink and option.
+
 ## API Endpoints
 
 | Endpoint                       | Method | Description          |
@@ -381,6 +395,7 @@ docker compose up -d --scale celery-worker=4
 - **[Model Limits Guide](docs/MODEL_LIMITS_GUIDE.md)** - Token limits configuration
 - **[Flavor Presets Guide](docs/FLAVOR_PRESETS_GUIDE.md)** - Pre-configured settings
 - **[Document Templates Guide](docs/DOCUMENT_TEMPLATES_GUIDE.md)** - DOCX export
+- **[Logging Guide](docs/LOGGING_GUIDE.md)** - Configurable logging and centralized log shipping
 - **[Security Guide](docs/SECURITY.md)** - Credential rotation and security
 
 ## License

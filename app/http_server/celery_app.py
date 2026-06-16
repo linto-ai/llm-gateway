@@ -6,28 +6,40 @@ from celery.app import trace
 from app.core.config import settings
 from app.backends.llm_inference import LLMInferenceEngine
 import redis
-from celery.signals import after_task_publish, task_prerun, task_postrun, task_failure
+from celery.signals import (
+    after_task_publish, task_prerun, task_postrun, task_failure,
+    setup_logging as celery_setup_logging, worker_process_init,
+)
 import time
 import asyncio
 from datetime import datetime
+from app.core.logging_config import setup_logging
 
 # Edit the celery logs format
 trace.LOG_SUCCESS = """\
 Task %(name)s[%(id)s] succeeded in %(runtime)ss\
 """
 
-# Logging Setup
-logging.basicConfig(
-    format="%(asctime)s %(name)s %(levelname)s: %(message)s",
-    datefmt="%d/%m/%Y %H:%M:%S",
-)
 logger = logging.getLogger("celery_worker")
-logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
+
+
+# Logging Setup - configured centrally (see app/core/logging_config.py).
+# Connecting setup_logging stops Celery from installing its own root logging,
+# so our configurable sinks apply to the worker. worker_process_init rebuilds
+# the handlers inside each forked child (the HTTP queue listener thread is not
+# inherited across fork).
+@celery_setup_logging.connect
+def _configure_celery_logging(**kwargs):
+    setup_logging(service="llm-gateway-worker")
+
+
+@worker_process_init.connect
+def _configure_worker_process_logging(**kwargs):
+    setup_logging(service="llm-gateway-worker", force=True)
+
 
 # Celery App Setup
 celery_app = Celery("tasks")
-celery_app.conf.worker_log_format = "%(asctime)s %(name)s %(levelname)s: %(message)s"
-celery_app.conf.worker_task_log_format = "%(asctime)s %(name)s %(levelname)s: %(message)s"
 
 # Configure the broker and backend from environment variables with defaults
 parsed_url = urlparse(settings.services_broker)

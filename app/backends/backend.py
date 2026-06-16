@@ -6,11 +6,7 @@ import logging
 from app.core.config import settings
 from .chunking import Chunker
 
-# Configure logging format and level
-logging.basicConfig(
-    format="%(asctime)s %(name)s %(levelname)s: %(message)s",
-    datefmt="%d/%m/%Y %H:%M:%S",
-)
+# Logging is configured centrally at process startup (app/core/logging_config.py).
 
 class LLMBackend:
     """
@@ -28,7 +24,6 @@ class LLMBackend:
             Exception: If any errors occur during setup.
         """
         self.logger = logging.getLogger("backend")
-        self.logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
         self.logger.info(f"Setting up backend with params: {task_data['backendParams']} for task: {task_data['task_id']}")
 
         # Store task_data reference for prompt loading
