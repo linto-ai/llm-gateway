@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SERVICE_TYPE_VALUES } from '@/types/service';
 
 /**
  * Form validation schemas for all CRUD operations
@@ -130,15 +131,7 @@ export const serviceFormSchema = z.object({
   name: z.string()
     .min(1, 'validation.required')
     .max(100, 'validation.maxLength'),
-  service_type: z.enum([
-    'summary',
-    'translation',
-    'categorization',
-    'diarization_correction',
-    'speaker_correction',
-    'chat',
-    'generic',
-  ]),
+  service_type: z.enum(SERVICE_TYPE_VALUES),
   description: z.object({
     en: z.string().optional().default(''),
     fr: z.string().optional().default(''),
@@ -163,15 +156,7 @@ export const promptFormSchema = z.object({
     fr: z.string().min(1, 'validation.required'),
   }),
   // service_type is REQUIRED
-  service_type: z.enum([
-    'summary',
-    'translation',
-    'categorization',
-    'diarization_correction',
-    'speaker_correction',
-    'chat',
-    'generic',
-  ]),
+  service_type: z.enum(SERVICE_TYPE_VALUES),
   // prompt_category is REQUIRED (system or user)
   prompt_category: z.enum(['system', 'user']),
   // prompt_type is OPTIONAL (code string, common: standard, reduce)

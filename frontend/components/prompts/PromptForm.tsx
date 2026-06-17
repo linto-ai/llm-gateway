@@ -30,6 +30,7 @@ import { useServiceTypes } from '@/hooks/use-service-types';
 import { usePromptTypes } from '@/hooks/use-prompt-types';
 import { promptFormSchema, type PromptFormData } from '@/schemas/forms';
 import type { PromptResponse } from '@/types/prompt';
+import type { ServiceType } from '@/types/service';
 
 interface PromptFormProps {
   prompt?: PromptResponse;
@@ -50,9 +51,9 @@ export function PromptForm({ prompt, onSuccess, onCancel, duplicateMode = false 
   const { data: promptTypes } = usePromptTypes({ service_type: 'summary', active_only: true });
 
   // Helper to get a valid service_type (required)
-  const getDefaultServiceType = (): 'summary' | 'translation' | 'categorization' | 'diarization_correction' | 'speaker_correction' | 'generic' => {
+  const getDefaultServiceType = (): ServiceType => {
     if (prompt?.service_type) {
-      return prompt.service_type as 'summary' | 'translation' | 'categorization' | 'diarization_correction' | 'speaker_correction' | 'generic';
+      return prompt.service_type as ServiceType;
     }
     return 'summary'; // Default for new prompts
   };

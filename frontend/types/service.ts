@@ -41,14 +41,22 @@ export interface ValidateFailoverResponse {
   chain_preview: string[];
 }
 
-export type ServiceType =
-  | 'summary'
-  | 'translation'
-  | 'categorization'
-  | 'diarization_correction'
-  | 'speaker_correction'
-  | 'chat'
-  | 'generic';
+// Single source of truth for service types on the frontend.
+// MUST stay in sync with the backend registry (app/core/service_types.py).
+// Both the ServiceType union and the Zod validation enums (schemas/forms.ts)
+// derive from this, so the create-service dropdown and its validator can never
+// diverge (the cause of the "Invalid enum value ... received 'chat'" bug).
+export const SERVICE_TYPE_VALUES = [
+  'summary',
+  'translation',
+  'categorization',
+  'diarization_correction',
+  'speaker_correction',
+  'chat',
+  'generic',
+] as const;
+
+export type ServiceType = (typeof SERVICE_TYPE_VALUES)[number];
 
 export interface I18nDescription {
   en: string;

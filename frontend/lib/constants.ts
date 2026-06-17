@@ -19,16 +19,6 @@ export const SECURITY_LEVEL_LABELS: Record<number, string> = {
   2: 'secure',
 };
 
-export const SERVICE_TYPES = [
-  'summary',
-  'translation',
-  'categorization',
-  'diarization_correction',
-  'speaker_correction',
-  'extraction',
-  'generic',
-] as const;
-
 export const JOB_STATUSES = [
   'queued',
   'started',
