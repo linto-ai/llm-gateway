@@ -31,7 +31,7 @@ class ServiceTemplate(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "service_type IN ('summary', 'translation', 'categorization', 'diarization_correction', 'speaker_correction', 'generic')",
+            "service_type IN ('summary', 'translation', 'categorization', 'diarization_correction', 'speaker_correction', 'chat', 'generic')",
             name="check_template_service_type"
         ),
         Index("idx_templates_type", "service_type"),
