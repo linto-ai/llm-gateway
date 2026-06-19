@@ -12,17 +12,13 @@ class TemplateCreate(BaseModel):
     name_en: Optional[str] = Field(None, max_length=255)
     description_fr: Optional[str] = None
     description_en: Optional[str] = None
-    # Using str instead of UUID for flexibility with external systems
-    organization_id: Optional[str] = Field(None, max_length=100)
-    user_id: Optional[str] = Field(None, max_length=100)
+    # Multi-scope access lists (free-form external IDs). Both empty => system.
+    allowed_organization_ids: List[str] = Field(default_factory=list)
+    allowed_user_ids: List[str] = Field(default_factory=list)
+    # Deprecated single-scope aliases (folded into the lists by the service layer).
+    organization_id: Optional[str] = Field(None, max_length=100, deprecated=True)
+    user_id: Optional[str] = Field(None, max_length=100, deprecated=True)
     is_default: bool = False
-
-    @model_validator(mode='after')
-    def validate_user_requires_org(self):
-        """Validate that user_id requires organization_id."""
-        if self.user_id is not None and self.organization_id is None:
-            raise ValueError("user_id requires organization_id to be set")
-        return self
 
 
 class TemplateUpdate(BaseModel):
@@ -31,6 +27,9 @@ class TemplateUpdate(BaseModel):
     name_en: Optional[str] = Field(None, max_length=255)
     description_fr: Optional[str] = None
     description_en: Optional[str] = None
+    # Scope edit: when provided, replaces the template's access lists.
+    allowed_organization_ids: Optional[List[str]] = None
+    allowed_user_ids: Optional[List[str]] = None
     is_default: Optional[bool] = None
 
 
@@ -41,7 +40,11 @@ class TemplateResponse(BaseModel):
     name_en: Optional[str]
     description_fr: Optional[str]
     description_en: Optional[str]
-    # Using str instead of UUID for flexibility with external systems
+    # Multi-scope access lists.
+    allowed_organization_ids: List[str] = Field(default_factory=list)
+    allowed_user_ids: List[str] = Field(default_factory=list)
+    # Legacy single-scope fields, derived from the lists for backward compat
+    # (LinTO Studio reads organization_id / user_id / scope).
     organization_id: Optional[str]
     user_id: Optional[str]
     file_path: str

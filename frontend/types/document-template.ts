@@ -14,6 +14,10 @@ export interface DocumentTemplate {
   name_en: string | null;
   description_fr: string | null;
   description_en: string | null;
+  // Multi-scope access lists (both empty => system template).
+  allowed_organization_ids: string[];
+  allowed_user_ids: string[];
+  // Legacy single-scope fields, derived from the lists (kept for compat).
   organization_id: string | null;
   user_id: string | null;
   file_name: string;
@@ -47,6 +51,10 @@ export interface DocumentTemplateUpload {
   name_en?: string;
   description_fr?: string;
   description_en?: string;
+  // Multi-scope access lists (both empty => system template).
+  allowed_organization_ids?: string[];
+  allowed_user_ids?: string[];
+  // Deprecated single-scope aliases.
   organization_id?: string;
   user_id?: string;
   is_default?: boolean;
@@ -61,6 +69,9 @@ export interface DocumentTemplateUpdate {
   name_en?: string;
   description_fr?: string;
   description_en?: string;
+  // Replace the template scope (pass empty arrays for system scope).
+  allowed_organization_ids?: string[];
+  allowed_user_ids?: string[];
   is_default?: boolean;
 }
 

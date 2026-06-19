@@ -35,7 +35,14 @@
   "scope": {
     "system": "System",
     "organization": "Organization",
-    "user": "Personal"
+    "user": "Personal",
+    "title": "Access scope",
+    "description": "Leave both lists empty to make this a system template visible to everyone.",
+    "allowedOrganizations": "Allowed organizations",
+    "allowedUsers": "Allowed users",
+    "addOrganizationId": "Add an organization ID…",
+    "addUserId": "Add a user ID…",
+    "globalHint": "No restrictions — system template, visible to everyone."
   },
   "fields": {
     "nameFr": "Name (French)",

@@ -36,7 +36,7 @@ export function Footer() {
     <footer className="border-t bg-background">
       <div className="flex h-12 items-center justify-between px-4">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span>{t('version')}: 0.1.0</span>
+          <span>{t('version')}: {process.env.NEXT_PUBLIC_APP_VERSION}</span>
           <Separator orientation="vertical" className="h-4" />
           <div className="flex items-center gap-2">
             <span>{t('connectionStatus')}:</span>

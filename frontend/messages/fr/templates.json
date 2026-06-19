@@ -35,7 +35,14 @@
   "scope": {
     "system": "Systeme",
     "organization": "Organisation",
-    "user": "Personnel"
+    "user": "Personnel",
+    "title": "Portée d'accès",
+    "description": "Laissez les deux listes vides pour en faire un modèle système visible par tous.",
+    "allowedOrganizations": "Organisations autorisées",
+    "allowedUsers": "Utilisateurs autorisés",
+    "addOrganizationId": "Ajouter un ID d'organisation…",
+    "addUserId": "Ajouter un ID d'utilisateur…",
+    "globalHint": "Aucune restriction — modèle système, visible par tous."
   },
   "fields": {
     "nameFr": "Nom (francais)",

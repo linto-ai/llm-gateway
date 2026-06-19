@@ -138,7 +138,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=pydantic_settings.app_name,
     description=pydantic_settings.app_description,
-    version="1.0.0",
+    version="1.1.0",
     docs_url=pydantic_settings.docs_url,
     redoc_url="/redoc",
     lifespan=lifespan,

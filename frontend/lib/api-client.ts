@@ -153,6 +153,20 @@ export const apiClient = {
       return api.delete(`/api/v1/services/${id}`);
     },
 
+    // List the document templates available for a service (linked set, or the
+    // global default as fallback when none are linked).
+    listTemplates: async (
+      serviceId: string,
+      params?: { organization_id?: string; user_id?: string }
+    ): Promise<DocumentTemplate[]> => {
+      return api.get(`/api/v1/services/${serviceId}/templates`, { params });
+    },
+
+    // Replace the full set of document templates available for a service.
+    setTemplates: async (serviceId: string, templateIds: string[]): Promise<ServiceResponse> => {
+      return api.put(`/api/v1/services/${serviceId}/templates`, { template_ids: templateIds });
+    },
+
     execute: async (serviceId: string, formData: FormData): Promise<ExecuteServiceResponse> => {
       return api.post(`/api/v1/services/${serviceId}/run`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },

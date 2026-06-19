@@ -136,13 +136,13 @@ class TestDocumentTemplateModel:
         assert "updated_at" in columns
 
     def test_model_scope_property_system(self):
-        """Verify scope property returns 'system' when org_id=null, user_id=null."""
+        """Verify scope property returns 'system' when both access lists are empty."""
         from app.models.document_template import DocumentTemplate
         template = DocumentTemplate(
             id=uuid4(),
             name_fr="Test",
-            organization_id=None,
-            user_id=None,
+            allowed_organization_ids=[],
+            allowed_user_ids=[],
             file_path="test.docx",
             file_name="test.docx",
             file_size=1000,
@@ -151,13 +151,13 @@ class TestDocumentTemplateModel:
         assert template.scope == "system"
 
     def test_model_scope_property_organization(self):
-        """Verify scope property returns 'organization' when org_id=X, user_id=null."""
+        """Verify scope property returns 'organization' when only orgs are listed."""
         from app.models.document_template import DocumentTemplate
         template = DocumentTemplate(
             id=uuid4(),
             name_fr="Test",
-            organization_id=uuid4(),
-            user_id=None,
+            allowed_organization_ids=["org-1", "org-2"],
+            allowed_user_ids=[],
             file_path="test.docx",
             file_name="test.docx",
             file_size=1000,
@@ -166,13 +166,13 @@ class TestDocumentTemplateModel:
         assert template.scope == "organization"
 
     def test_model_scope_property_user(self):
-        """Verify scope property returns 'user' when org_id=X, user_id=Y."""
+        """Verify scope property returns 'user' when users are listed."""
         from app.models.document_template import DocumentTemplate
         template = DocumentTemplate(
             id=uuid4(),
             name_fr="Test",
-            organization_id=uuid4(),
-            user_id=uuid4(),
+            allowed_organization_ids=["org-1"],
+            allowed_user_ids=["user-1"],
             file_path="test.docx",
             file_name="test.docx",
             file_size=1000,
@@ -180,13 +180,15 @@ class TestDocumentTemplateModel:
         )
         assert template.scope == "user"
 
-    def test_model_has_check_constraint_user_requires_org(self):
-        """Verify database constraint: user_id requires organization_id."""
+    def test_model_has_multi_scope_columns(self):
+        """Verify the multi-scope access-list columns exist (and the old check constraint is gone)."""
         from app.models.document_template import DocumentTemplate
+        cols = DocumentTemplate.__table__.columns.keys()
+        assert "allowed_organization_ids" in cols
+        assert "allowed_user_ids" in cols
         constraints = [c.name for c in DocumentTemplate.__table__.constraints if hasattr(c, 'name')]
-        # The constraint should exist (check_user_requires_org)
-        assert any("user_requires_org" in (c or "") for c in constraints), \
-            "Must have constraint ensuring user_id requires organization_id"
+        assert not any("user_requires_org" in (c or "") for c in constraints), \
+            "check_user_requires_org should be dropped under the multi-scope model"
 
 
 # =============================================================================
@@ -224,31 +226,25 @@ class TestTemplateSchemas:
         fields = TemplateCreate.model_fields.keys()
         assert "name_fr" in fields
         assert "name_en" in fields
+        assert "allowed_organization_ids" in fields
+        assert "allowed_user_ids" in fields
+        # Deprecated single-scope aliases kept for backward compat
         assert "organization_id" in fields
         assert "user_id" in fields
         assert "is_default" in fields
 
-    def test_template_create_validates_user_requires_org(self):
-        """Verify TemplateCreate validation: user_id requires organization_id."""
+    def test_template_create_allows_user_only_scope(self):
+        """Under multi-scope, a user-only audience is allowed (no org required)."""
         from app.schemas.template import TemplateCreate
-        from pydantic import ValidationError
 
-        # Valid: no user_id
-        valid1 = TemplateCreate(name_fr="Test")
-        assert valid1.user_id is None
+        # Multi-scope: users without orgs is valid
+        t = TemplateCreate(name_fr="Test", allowed_user_ids=["user-1"])
+        assert t.allowed_user_ids == ["user-1"]
+        assert t.allowed_organization_ids == []
 
-        # Valid: both org and user (use strings for UUID fields)
-        valid2 = TemplateCreate(
-            name_fr="Test",
-            organization_id=str(uuid4()),
-            user_id=str(uuid4())
-        )
-        assert valid2.user_id is not None
-
-        # Invalid: user_id without organization_id (use string for UUID field)
-        with pytest.raises(ValidationError) as exc_info:
-            TemplateCreate(name_fr="Test", user_id=str(uuid4()))
-        assert "user_id requires organization_id" in str(exc_info.value)
+        # Deprecated single-scope aliases still accepted
+        t2 = TemplateCreate(name_fr="Test", user_id="user-1")
+        assert t2.user_id == "user-1"
 
     def test_template_update_schema_all_optional(self):
         """Verify TemplateUpdate schema has all optional fields."""
@@ -637,46 +633,39 @@ class TestVisibilityHierarchy:
     """Tests for visibility hierarchy per api-contract.md."""
 
     def test_system_scope_definition(self):
-        """System templates: org_id=null, user_id=null."""
+        """System templates: both access lists empty."""
         from app.models.document_template import DocumentTemplate
         template = DocumentTemplate(
             id=uuid4(), name_fr="System",
-            organization_id=None, user_id=None,
+            allowed_organization_ids=[], allowed_user_ids=[],
             file_path="t.docx", file_name="t.docx", file_size=100,
             mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
         assert template.scope == "system"
-        assert template.organization_id is None
-        assert template.user_id is None
 
     def test_organization_scope_definition(self):
-        """Org templates: org_id=X, user_id=null."""
+        """Org templates: orgs listed, no users."""
         from app.models.document_template import DocumentTemplate
-        org_id = uuid4()
         template = DocumentTemplate(
             id=uuid4(), name_fr="Org",
-            organization_id=org_id, user_id=None,
+            allowed_organization_ids=["org-1", "org-2"], allowed_user_ids=[],
             file_path="t.docx", file_name="t.docx", file_size=100,
             mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
         assert template.scope == "organization"
-        assert template.organization_id == org_id
-        assert template.user_id is None
+        assert "org-2" in template.allowed_organization_ids
 
     def test_user_scope_definition(self):
-        """User templates: org_id=X, user_id=Y."""
+        """User templates: users listed."""
         from app.models.document_template import DocumentTemplate
-        org_id = uuid4()
-        user_id = uuid4()
         template = DocumentTemplate(
             id=uuid4(), name_fr="User",
-            organization_id=org_id, user_id=user_id,
+            allowed_organization_ids=["org-1"], allowed_user_ids=["user-1", "user-2"],
             file_path="t.docx", file_name="t.docx", file_size=100,
             mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
         assert template.scope == "user"
-        assert template.organization_id == org_id
-        assert template.user_id == user_id
+        assert "user-2" in template.allowed_user_ids
 
 
 # =============================================================================

@@ -2,8 +2,8 @@
 """DocumentTemplate model for document generation templates."""
 import uuid
 from typing import Literal
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, Text, Index, CheckConstraint
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, DateTime, Integer, Boolean, Text, Index
+from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -11,10 +11,13 @@ from app.core.database import Base
 class DocumentTemplate(Base):
     """Document template for generating DOCX/PDF from job results.
 
-    Visibility hierarchy:
-    - System templates: organization_id=NULL, user_id=NULL (visible to all)
-    - Organization templates: organization_id=X, user_id=NULL (visible to org X)
-    - User templates: organization_id=X, user_id=Y (visible only to user Y)
+    Visibility (multi-scope):
+    - System templates: allowed_organization_ids=[], allowed_user_ids=[] (visible to all)
+    - Organization templates: caller org in allowed_organization_ids
+    - User templates: caller user in allowed_user_ids
+    The legacy single organization_id/user_id columns are kept for backward
+    compatibility (derived from the lists) and the `scope` string is derived
+    from the lists.
     """
 
     __tablename__ = "document_templates"
@@ -41,6 +44,15 @@ class DocumentTemplate(Base):
         String(100),
         nullable=True,
         index=True
+    )
+
+    # Multi-scope access lists (free-form external IDs, no FK). Both empty =>
+    # system template (visible to all). Mirror of the Service scoping model.
+    allowed_organization_ids = Column(
+        ARRAY(String(100)), nullable=False, server_default='{}'
+    )
+    allowed_user_ids = Column(
+        ARRAY(String(100)), nullable=False, server_default='{}'
     )
 
     # File information
@@ -78,21 +90,31 @@ class DocumentTemplate(Base):
         Index("idx_templates_user_id", "user_id"),
         Index("idx_templates_scope", "organization_id", "user_id"),
         Index("idx_templates_file_hash", "file_hash"),
-        # Constraint: user_id requires organization_id
-        CheckConstraint(
-            "(user_id IS NULL) OR (organization_id IS NOT NULL)",
-            name="check_user_requires_org"
+        Index(
+            "idx_templates_allowed_orgs",
+            "allowed_organization_ids",
+            postgresql_using="gin",
+        ),
+        Index(
+            "idx_templates_allowed_users",
+            "allowed_user_ids",
+            postgresql_using="gin",
         ),
     )
 
     @property
     def scope(self) -> Literal['system', 'organization', 'user']:
-        """Return scope level: system, organization, or user."""
-        if self.organization_id is None and self.user_id is None:
+        """Return scope level derived from the access lists.
+
+        - both lists empty -> system
+        - any user listed   -> user
+        - otherwise         -> organization
+        """
+        if not self.allowed_organization_ids and not self.allowed_user_ids:
             return "system"
-        elif self.user_id is None:
-            return "organization"
-        return "user"
+        if self.allowed_user_ids:
+            return "user"
+        return "organization"
 
     def __repr__(self) -> str:
         return f"<DocumentTemplate(id={self.id}, name_fr={self.name_fr}, scope={self.scope})>"

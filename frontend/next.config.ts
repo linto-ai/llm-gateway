@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from 'next-intl/plugin';
+import pkg from './package.json';
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
@@ -11,6 +12,11 @@ const basePath = process.env.BASE_PATH || undefined;
 const nextConfig: NextConfig = {
   output: 'standalone',
   basePath,
+  // Expose the app version (single source of truth: package.json) to the client
+  // so the footer version never drifts out of sync again.
+  env: {
+    NEXT_PUBLIC_APP_VERSION: pkg.version,
+  },
   typescript: {
     ignoreBuildErrors: false,
   },

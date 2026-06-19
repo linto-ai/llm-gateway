@@ -117,8 +117,10 @@ async def seed_global_templates(db: AsyncSession) -> Dict[str, int]:
             name_en=template_config["name_en"],
             description_fr=template_config["description_fr"],
             description_en=template_config["description_en"],
-            organization_id=None,  # System scope
-            user_id=None,  # System scope
+            organization_id=None,  # System scope (legacy column)
+            user_id=None,  # System scope (legacy column)
+            allowed_organization_ids=[],  # System scope (visible to all)
+            allowed_user_ids=[],
             file_path=str(dest_file.relative_to(document_template_service.TEMPLATES_DIR)),
             file_name=safe_filename,
             file_size=file_size,

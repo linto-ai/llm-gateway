@@ -102,7 +102,10 @@
     "descriptionFr": "Description (French)",
     "organizationId": "Organization ID",
     "flavors": "Flavors",
-    "flavorCount": "{count, plural, =0 {No flavors} =1 {1 flavor} other {# flavors}}"
+    "flavorCount": "{count, plural, =0 {No flavors} =1 {1 flavor} other {# flavors}}",
+    "scope": "Access scope",
+    "allowedOrganizations": "Allowed organizations",
+    "allowedUsers": "Allowed users"
   },
   "types": {
     "summary": "Summary",
@@ -127,7 +130,9 @@
     "name": "Enter service name",
     "descriptionEn": "English description",
     "descriptionFr": "French description",
-    "organizationId": "Organization UUID (e.g., 550e8400-e29b-41d4-a716-446655440000)"
+    "organizationId": "Organization UUID (e.g., 550e8400-e29b-41d4-a716-446655440000)",
+    "addOrganizationId": "Add an organization ID…",
+    "addUserId": "Add a user ID…"
   },
   "flavors": {
     "title": "Flavors",
@@ -343,5 +348,16 @@
     "previous": "Previous",
     "finish": "Create Flavor",
     "unsavedChanges": "Unsaved changes"
+  },
+  "scope": {
+    "globalHint": "No restrictions — this service is available to everyone (global)."
+  },
+  "availableTemplates": {
+    "title": "Available templates",
+    "description": "Choose which document templates can be used to export results of this service. If none are selected, the global default template is used.",
+    "save": "Save available templates",
+    "saved": "Available templates updated",
+    "empty": "No template linked — the global default template will be used.",
+    "add": "Add templates"
   }
 }

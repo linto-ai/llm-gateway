@@ -36,9 +36,12 @@ async def upload_template(
     name_en: Optional[str] = Form(None, max_length=255, description="English name"),
     description_fr: Optional[str] = Form(None, description="French description"),
     description_en: Optional[str] = Form(None, description="English description"),
-    # Using str instead of UUID for flexibility with external systems (MongoDB ObjectIds, etc.)
-    organization_id: Optional[str] = Form(None, max_length=100, description="Organization scope (null for system)"),
-    user_id: Optional[str] = Form(None, max_length=100, description="User scope (null for org/system)"),
+    # Multi-scope access lists (repeat the field to add several IDs). Both empty => system.
+    allowed_organization_ids: List[str] = Form(default=[], description="Organizations allowed to see the template"),
+    allowed_user_ids: List[str] = Form(default=[], description="Users allowed to see the template"),
+    # Deprecated single-scope aliases (folded into the lists). Free-form string IDs.
+    organization_id: Optional[str] = Form(None, max_length=100, description="Deprecated: single organization scope"),
+    user_id: Optional[str] = Form(None, max_length=100, description="Deprecated: single user scope"),
     is_default: bool = Form(False, description="Set as default for scope"),
     db: AsyncSession = Depends(get_db),
 ) -> TemplateResponse:
@@ -48,10 +51,10 @@ async def upload_template(
     The template file must be a valid DOCX document. Placeholders in the format
     {{placeholder_name}} will be automatically extracted.
 
-    Scope hierarchy:
-    - System templates: organization_id=null, user_id=null (visible to all)
-    - Organization templates: organization_id=X, user_id=null (visible to org X)
-    - User templates: organization_id=X, user_id=Y (visible only to user Y)
+    Scope (multi):
+    - System templates: both lists empty (visible to all)
+    - Organization templates: orgs listed in allowed_organization_ids
+    - User templates: users listed in allowed_user_ids
 
     Maximum file size: 10 MB.
     """
@@ -63,6 +66,8 @@ async def upload_template(
             name_en=name_en,
             description_fr=description_fr,
             description_en=description_en,
+            allowed_organization_ids=allowed_organization_ids,
+            allowed_user_ids=allowed_user_ids,
             organization_id=organization_id,
             user_id=user_id,
             is_default=is_default,
@@ -147,15 +152,27 @@ async def update_template(
     name_en: Optional[str] = Form(None, max_length=255, description="English name"),
     description_fr: Optional[str] = Form(None, description="French description"),
     description_en: Optional[str] = Form(None, description="English description"),
+    # Scope edit: pass either list to replace the template's audience.
+    allowed_organization_ids: Optional[List[str]] = Form(None, description="Replace organizations allowed to see the template"),
+    allowed_user_ids: Optional[List[str]] = Form(None, description="Replace users allowed to see the template"),
+    # When true, the access lists are replaced even if empty (clears scope to
+    # system). Needed because multipart cannot send an explicit empty list.
+    replace_scope: bool = Form(False, description="Replace scope with the given lists, even when empty"),
     is_default: Optional[bool] = Form(None, description="Set as default"),
     db: AsyncSession = Depends(get_db),
 ) -> TemplateResponse:
     """
-    Update template metadata and/or file.
+    Update template metadata, scope and/or file.
 
     All fields are optional - only provided fields will be updated.
     If a new file is provided, placeholders will be re-extracted.
+    Passing allowed_organization_ids / allowed_user_ids (or replace_scope=true)
+    replaces the template scope.
     """
+    if replace_scope:
+        # Coerce missing lists to empty so an empty audience (system) can be set.
+        allowed_organization_ids = allowed_organization_ids or []
+        allowed_user_ids = allowed_user_ids or []
     try:
         template = await document_template_service.update_template(
             db=db,
@@ -165,6 +182,8 @@ async def update_template(
             name_en=name_en,
             description_fr=description_fr,
             description_en=description_en,
+            allowed_organization_ids=allowed_organization_ids,
+            allowed_user_ids=allowed_user_ids,
             is_default=is_default,
         )
         if not template:
