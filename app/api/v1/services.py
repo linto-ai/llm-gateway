@@ -130,7 +130,7 @@ async def _validate_context(
         manager = TokenizerManager.get_instance()
         input_tokens = manager.count_tokens(flavor.model, content)
     except Exception as e:
-        logger.warning(f"Tokenizer count failed, using estimate: {e}")
+        logger.warning(f"Tokenizer count failed, using estimate: {e}", exc_info=True)
         input_tokens = len(content) // 4  # Rough estimate
 
     # Calculate available tokens using direct model limits
@@ -194,7 +194,7 @@ async def create_service(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating service: {e}")
+        logger.exception(f"Error creating service: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create service: {str(e)}"
@@ -243,7 +243,7 @@ async def list_services(
             page_size=page_size
         )
     except Exception as e:
-        logger.error(f"Error listing services: {e}")
+        logger.exception(f"Error listing services: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list services: {str(e)}"
@@ -302,7 +302,7 @@ async def update_service(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating service: {e}")
+        logger.exception(f"Error updating service: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update service: {str(e)}"
@@ -330,7 +330,7 @@ async def delete_service(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting service: {e}")
+        logger.exception(f"Error deleting service: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to delete service: {str(e)}"
@@ -446,7 +446,7 @@ async def add_flavor_to_service(
         return flavor
     except Exception as e:
         await db.rollback()
-        logger.error(f"Error creating flavor: {e}")
+        logger.exception(f"Error creating flavor: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create flavor: {str(e)}"
@@ -1268,7 +1268,7 @@ async def validate_execution(
         manager = TokenizerManager.get_instance()
         input_tokens = manager.count_tokens(flavor.model, content)
     except Exception as e:
-        logger.warning(f"Tokenizer count failed: {e}")
+        logger.warning(f"Tokenizer count failed: {e}", exc_info=True)
         input_tokens = len(content) // 4
 
     # Iterative mode: always valid, but warn if reduce/extraction/categorization may exceed context
@@ -1313,7 +1313,7 @@ async def validate_execution(
         if flavor.prompt_user_content:
             prompt_tokens += manager.count_tokens(flavor.model, flavor.prompt_user_content)
     except Exception as e:
-        logger.warning(f"Tokenizer count failed for prompts: {e}")
+        logger.warning(f"Tokenizer count failed for prompts: {e}", exc_info=True)
         prompt_tokens = 500
 
     # Real input tokens = content + prompts

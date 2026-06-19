@@ -140,7 +140,7 @@ class SeedLoader:
                 loaded = self._load_prompts_from_manifest(prompt_subdir, manifest)
                 prompts.extend(loaded)
             except Exception as e:
-                logger.error(f"Failed to load prompts from {prompt_subdir}: {e}")
+                logger.exception(f"Failed to load prompts from {prompt_subdir}: {e}")
                 continue
 
         logger.info(f"Loaded {len(prompts)} prompts from {prompts_dir}")
@@ -173,7 +173,7 @@ class SeedLoader:
             try:
                 content = file_path.read_text(encoding="utf-8")
             except Exception as e:
-                logger.error(f"Failed to read {file_path}: {e}")
+                logger.exception(f"Failed to read {file_path}: {e}")
                 continue
 
             prompt_name = file_config.get("prompt_name", file_path.stem)
@@ -222,7 +222,7 @@ class SeedLoader:
                 if preset:
                     presets.append(preset)
             except Exception as e:
-                logger.error(f"Failed to load preset from {preset_subdir}: {e}")
+                logger.exception(f"Failed to load preset from {preset_subdir}: {e}")
                 continue
 
         logger.info(f"Loaded {len(presets)} presets from {presets_dir}")
@@ -286,7 +286,7 @@ class SeedLoader:
                 if provider:
                     providers.append(provider)
             except Exception as e:
-                logger.error(f"Failed to load provider from {provider_subdir}: {e}")
+                logger.exception(f"Failed to load provider from {provider_subdir}: {e}")
                 continue
 
         logger.info(f"Loaded {len(providers)} dev providers from {providers_dir}")
@@ -399,7 +399,7 @@ class SeedLoader:
                 if service:
                     services.append(service)
             except Exception as e:
-                logger.error(f"Failed to load service from {service_subdir}: {e}")
+                logger.exception(f"Failed to load service from {service_subdir}: {e}")
                 continue
 
         logger.info(f"Loaded {len(services)} dev services from {services_dir}")

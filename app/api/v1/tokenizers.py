@@ -116,7 +116,7 @@ async def preload_tokenizer(
             message=preload_result.message,
         )
     except Exception as e:
-        logger.error(f"Failed to preload tokenizer for model {model_id}: {e}")
+        logger.exception(f"Failed to preload tokenizer for model {model_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load tokenizer: {str(e)}",
@@ -184,7 +184,7 @@ async def preload_tokenizer_by_repo(
             message="Tokenizer downloaded and persisted",
         )
     except Exception as e:
-        logger.error(f"Failed to preload tokenizer from repo {repo}: {e}")
+        logger.exception(f"Failed to preload tokenizer from repo {repo}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load tokenizer: {str(e)}",
@@ -221,7 +221,7 @@ async def delete_tokenizer(tokenizer_id: str) -> TokenizerDeleteResponse:
             detail="Tokenizer not found",
         )
     except Exception as e:
-        logger.error(f"Failed to delete tokenizer {tokenizer_id}: {e}")
+        logger.exception(f"Failed to delete tokenizer {tokenizer_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete tokenizer: {str(e)}",

@@ -188,7 +188,7 @@ class LLMInferenceEngine(LLMBackend):
             )
 
             logger.info(f"Extraction response length: {output_chars} chars")
-            logger.debug(f"Extraction response preview: {response[:200] if response else 'EMPTY'}")
+            logger.debug(f"Extraction response preview: ({output_chars} chars)")
 
             # Handle empty response
             if not response or not response.strip():
@@ -202,10 +202,10 @@ class LLMInferenceEngine(LLMBackend):
             return metadata
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse extraction response as JSON: {e}")
+            logger.exception(f"Failed to parse extraction response as JSON: {e}")
             return {"_extraction_error": f"JSON parse error: {str(e)}"}
         except Exception as e:
-            logger.error(f"Metadata extraction failed: {e}")
+            logger.exception(f"Metadata extraction failed: {e}")
             return {"_extraction_error": str(e)}
 
     def _parse_json_response(self, response: str) -> dict:
@@ -221,7 +221,7 @@ class LLMInferenceEngine(LLMBackend):
         Raises:
             json.JSONDecodeError: If response is not valid JSON
         """
-        logger.debug(f"Raw response to parse: {response[:500] if response else 'EMPTY'}")
+        logger.debug(f"Raw response to parse: ({len(response) if response else 0} chars)")
         text = response.strip()
 
         # Remove markdown code blocks if present
@@ -238,9 +238,9 @@ class LLMInferenceEngine(LLMBackend):
         json_match = re.search(r'\{[\s\S]*\}', text)
         if json_match:
             text = json_match.group()
-            logger.debug(f"Extracted JSON: {text[:200]}")
+            logger.debug(f"Extracted JSON: ({len(text)} chars)")
         else:
-            logger.warning(f"No JSON object found in response: {text[:200]}")
+            logger.warning(f"No JSON object found in response: ({len(text)} chars)")
 
         return json.loads(text)
 
@@ -309,7 +309,7 @@ class LLMInferenceEngine(LLMBackend):
             elif "{{context[tags]}}" in categorization_prompt:
                 categorization_prompt = categorization_prompt.replace("{{context[tags]}}", tags_json)
 
-            logger.debug(f"Categorization prompt (first 500 chars): {categorization_prompt[:500]}")
+            logger.debug(f"Categorization prompt (first 500 chars): ({len(categorization_prompt)} chars)")
 
             # Call LLM for categorization using the batch manager's adapter (sync)
             from datetime import datetime
@@ -331,7 +331,7 @@ class LLMInferenceEngine(LLMBackend):
             )
 
             logger.info(f"Categorization response length: {output_chars} chars")
-            logger.debug(f"Categorization response preview: {response[:200] if response else 'EMPTY'}")
+            logger.debug(f"Categorization response preview: ({output_chars} chars)")
 
             # Handle empty response
             if not response or not response.strip():
@@ -345,8 +345,8 @@ class LLMInferenceEngine(LLMBackend):
             return result
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse categorization response as JSON: {e}")
+            logger.exception(f"Failed to parse categorization response as JSON: {e}")
             return {"_categorization_error": f"JSON parse error: {str(e)}"}
         except Exception as e:
-            logger.error(f"Document categorization failed: {e}")
+            logger.exception(f"Document categorization failed: {e}")
             return {"_categorization_error": str(e)}

@@ -256,7 +256,7 @@ class BatchManager:
                 response = result
                 usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         except Exception as e:
-            self.logger.error(f"Error in single pass: {e}")
+            self.logger.exception(f"Error in single pass: {e}")
             raise
 
         # Handle None response
@@ -329,7 +329,7 @@ class BatchManager:
                 response = result
                 usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         except Exception as e:
-            self.logger.error(f"Error publishing: {e}")
+            self.logger.exception(f"Error publishing: {e}")
             raise
 
         # Handle None response
@@ -394,7 +394,7 @@ class BatchManager:
                 self.logger.warning(
                     f"Skipping oversized turn {i}: {turn_token_count} tokens "
                     f"(max: {available_context - self.prompt_token_count}). "
-                    f"Turn preview: {turn[:100]}..."
+                    f"Turn length: {len(turn)} chars"
                 )
                 i += 1
                 continue
@@ -620,7 +620,7 @@ class BatchManager:
                 response = result
                 usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         except Exception as e:
-            self.logger.error(f"Error in reduce: {e}")
+            self.logger.exception(f"Error in reduce: {e}")
             raise
 
         if response is None:

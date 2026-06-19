@@ -25,6 +25,12 @@ alembic>=1.13.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 
+# Logging (structured JSON output for centralized log shipping)
+python-json-logger>=2.0.0
+# Optional: enable the Stackdriver / Google Cloud Logging sink
+# (LOG_STACKDRIVER_ENABLED=true). Uncomment to install.
+# google-cloud-logging>=3.0.0
+
 # Security and Encryption
 cryptography>=41.0.0
 psycopg2-binary>=2.9.0

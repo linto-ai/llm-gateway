@@ -6,28 +6,40 @@ from celery.app import trace
 from app.core.config import settings
 from app.backends.llm_inference import LLMInferenceEngine
 import redis
-from celery.signals import after_task_publish, task_prerun, task_postrun, task_failure
+from celery.signals import (
+    after_task_publish, task_prerun, task_postrun, task_failure,
+    setup_logging as celery_setup_logging, worker_process_init,
+)
 import time
 import asyncio
 from datetime import datetime
+from app.core.logging_config import setup_logging
 
 # Edit the celery logs format
 trace.LOG_SUCCESS = """\
 Task %(name)s[%(id)s] succeeded in %(runtime)ss\
 """
 
-# Logging Setup
-logging.basicConfig(
-    format="%(asctime)s %(name)s %(levelname)s: %(message)s",
-    datefmt="%d/%m/%Y %H:%M:%S",
-)
 logger = logging.getLogger("celery_worker")
-logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
+
+
+# Logging Setup - configured centrally (see app/core/logging_config.py).
+# Connecting setup_logging stops Celery from installing its own root logging,
+# so our configurable sinks apply to the worker. worker_process_init rebuilds
+# the handlers inside each forked child (the HTTP queue listener thread is not
+# inherited across fork).
+@celery_setup_logging.connect
+def _configure_celery_logging(**kwargs):
+    setup_logging(service="llm-gateway-worker")
+
+
+@worker_process_init.connect
+def _configure_worker_process_logging(**kwargs):
+    setup_logging(service="llm-gateway-worker", force=True)
+
 
 # Celery App Setup
 celery_app = Celery("tasks")
-celery_app.conf.worker_log_format = "%(asctime)s %(name)s %(levelname)s: %(message)s"
-celery_app.conf.worker_task_log_format = "%(asctime)s %(name)s %(levelname)s: %(message)s"
 
 # Configure the broker and backend from environment variables with defaults
 parsed_url = urlparse(settings.services_broker)
@@ -108,19 +120,20 @@ def _run_with_failover(celery_task, task_data, failover_depth: int):
 
         if failoverable_error is None:
             # Not a failoverable error - propagate original
-            logger.error(f"Non-failoverable error in task: {str(e)}")
+            logger.exception(f"Non-failoverable error in task: {str(e)}")
             raise
 
         # Check if failover is enabled and configured for this error type
         if not _should_failover(failover_config, failoverable_error, failover_depth, max_depth):
-            logger.error(f"Failoverable error but no failover available: {str(e)}")
+            logger.exception(f"Failoverable error but no failover available: {str(e)}")
             raise failoverable_error from e
 
         # Attempt failover
         failover_flavor_id = failover_config.get("failover_flavor_id")
         logger.warning(
             f"Failover triggered: {failoverable_error.failover_reason} at depth {failover_depth}. "
-            f"Switching to flavor {failover_flavor_id}"
+            f"Switching to flavor {failover_flavor_id}",
+            exc_info=True
         )
 
         # Update Celery state to indicate failover
@@ -137,7 +150,7 @@ def _run_with_failover(celery_task, task_data, failover_depth: int):
         # Get new task_data for the failover flavor
         new_task_data = _get_failover_task_data(task_data, failover_flavor_id)
         if new_task_data is None:
-            logger.error(f"Failed to get task data for failover flavor {failover_flavor_id}")
+            logger.exception(f"Failed to get task data for failover flavor {failover_flavor_id}")
             raise failoverable_error from e
 
         # Recursively run with failover flavor
@@ -304,7 +317,7 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
             session.close()
 
     except Exception as e:
-        logger.error(f"Error building failover task_data: {e}")
+        logger.exception(f"Error building failover task_data: {e}")
         return None
 
 # Set publish tasked status to QUEUED
@@ -379,7 +392,7 @@ def cleanup_expired_jobs_sync() -> dict:
         return {'deleted_count': result}
     except Exception as e:
         session.rollback()
-        logger.error(f"Error cleaning up expired jobs: {e}")
+        logger.exception(f"Error cleaning up expired jobs: {e}")
         raise
     finally:
         session.close()
@@ -436,7 +449,7 @@ def _publish_job_update(job_id: str, organization_id: str, status: str, progress
         redis_client.publish("job_updates:global", message)
         logger.debug(f"Published job update: job_id={job_id}, status={status}")
     except Exception as e:
-        logger.warning(f"Failed to publish job update to Redis: {e}")
+        logger.warning(f"Failed to publish job update to Redis: {e}", exc_info=True)
 
 def _update_job_status_sync(celery_task_id: str, status: str, result=None, error=None, progress=None):
     """Synchronously update job status in PostgreSQL (for Celery signals)."""
@@ -482,7 +495,7 @@ def _update_job_status_sync(celery_task_id: str, status: str, result=None, error
         finally:
             session.close()
     except Exception as e:
-        logger.error(f"Failed to update job status: {e}")
+        logger.exception(f"Failed to update job status: {e}")
 
 
 # Celery signal handlers for job status synchronization

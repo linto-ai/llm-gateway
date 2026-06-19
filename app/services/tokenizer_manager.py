@@ -204,7 +204,7 @@ class TokenizerManager:
             logger.debug(f"Loaded tiktoken encoding: {encoding_name}")
             return wrapper
         except Exception as e:
-            logger.error(f"Failed to load tiktoken encoding {encoding_name}: {e}")
+            logger.exception(f"Failed to load tiktoken encoding {encoding_name}: {e}")
             raise
 
     def _load_from_local(self, tokenizer_id: str) -> Optional[HuggingFaceWrapper]:
@@ -223,7 +223,7 @@ class TokenizerManager:
             logger.debug(f"Loaded tokenizer from local storage: {tokenizer_id}")
             return wrapper
         except Exception as e:
-            logger.error(f"Failed to load tokenizer from local: {tokenizer_id}: {e}")
+            logger.exception(f"Failed to load tokenizer from local: {tokenizer_id}: {e}")
             return None
 
     def _download_and_save(self, tokenizer_id: str) -> HuggingFaceWrapper:
@@ -244,7 +244,7 @@ class TokenizerManager:
             self._memory_cache[tokenizer_id] = wrapper
             return wrapper
         except Exception as e:
-            logger.error(f"Failed to download tokenizer {tokenizer_id}: {e}")
+            logger.exception(f"Failed to download tokenizer {tokenizer_id}: {e}")
             raise
 
     def _resolve_tokenizer_config(self, model) -> Dict[str, Any]:
@@ -324,9 +324,9 @@ class TokenizerManager:
         try:
             return self._download_and_save(repo)
         except Exception as e:
-            logger.error(f"Failed to load HuggingFace tokenizer {repo}: {e}")
+            logger.exception(f"Failed to load HuggingFace tokenizer {repo}: {e}")
             # Fallback to tiktoken
-            logger.warning(f"Falling back to tiktoken for model {model.model_identifier}")
+            logger.warning(f"Falling back to tiktoken for model {model.model_identifier}", exc_info=True)
             return self._load_tiktoken("cl100k_base")
 
     def count_tokens(self, model, text: str) -> int:
@@ -395,7 +395,7 @@ class TokenizerManager:
                     message="Tokenizer already cached locally",
                 )
             except Exception as e:
-                logger.warning(f"Cached tokenizer corrupted, re-downloading: {e}")
+                logger.warning(f"Cached tokenizer corrupted, re-downloading: {e}", exc_info=True)
 
         # Download and save
         try:
@@ -409,7 +409,7 @@ class TokenizerManager:
                 message="Tokenizer downloaded and persisted",
             )
         except Exception as e:
-            logger.error(f"Failed to preload tokenizer for {model_identifier}: {e}")
+            logger.exception(f"Failed to preload tokenizer for {model_identifier}: {e}")
             return PreloadResult(
                 success=False,
                 model_identifier=model_identifier,

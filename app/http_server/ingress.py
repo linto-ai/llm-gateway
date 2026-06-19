@@ -32,13 +32,11 @@ from app.services.model_service import model_service
 from app.services.provider_service import provider_service
 from app.services.job_service import job_service
 
-# Logging Setup
-logging.basicConfig(
-    format="%(asctime)s %(name)s %(levelname)s: %(message)s",
-    datefmt="%d/%m/%Y %H:%M:%S",
-)
+# Logging Setup - configured centrally (see app/core/logging_config.py).
+# Runs at import time so each uvicorn worker process configures its own sinks.
+from app.core.logging_config import setup_logging
+setup_logging(service="llm-gateway-api")
 logger = logging.getLogger("http_server")
-logger.setLevel(logging.DEBUG if pydantic_settings.debug else logging.INFO)
 
 # Shutdown event for clean task cancellation during hot-reload
 shutdown_event = asyncio.Event()
@@ -94,7 +92,7 @@ async def lifespan(app: FastAPI):
                         f"(celery={job_info['celery_status']}, action={job_info['action']})"
                     )
         except Exception as e:
-            logger.error(f"Startup orphaned job cleanup failed: {e}")
+            logger.exception(f"Startup orphaned job cleanup failed: {e}")
 
     # Startup: Model verification for all providers (non-blocking)
     async with AsyncSessionLocal() as db:
@@ -110,9 +108,9 @@ async def lifespan(app: FastAPI):
                     if verification.failed_count > 0:
                         logger.warning(f"Failed to verify {verification.failed_count} models for {provider.name}")
                 except Exception as e:
-                    logger.error(f"Error verifying models for provider {provider.name}: {e}")
+                    logger.exception(f"Error verifying models for provider {provider.name}: {e}")
         except Exception as e:
-            logger.error(f"Startup verification failed: {e}")
+            logger.exception(f"Startup verification failed: {e}")
 
     # Start periodic cleanup tasks
     cleanup_task = asyncio.create_task(periodic_cleanup())
@@ -273,7 +271,7 @@ async def periodic_orphan_monitor():
             except asyncio.CancelledError:
                 raise
             except Exception as e:
-                logger.error(f"Orphan monitor error: {e}")
+                logger.exception(f"Orphan monitor error: {e}")
 
             if shutdown_event.is_set():
                 break
@@ -294,43 +292,18 @@ async def periodic_orphan_monitor():
 def start():
     """Start the FastAPI application."""
     logger.info("Starting FastAPI application...")
+    # log_config=None: do not let uvicorn reconfigure logging. Its loggers
+    # (uvicorn, uvicorn.error, uvicorn.access) propagate to the root logger
+    # configured by setup_logging(), so access logs flow through the same
+    # configurable sinks (console / file / HTTP / Stackdriver). The
+    # /healthcheck noise is dropped by EndpointFilter attached above.
     uvicorn.run(
         "app.http_server.ingress:app",
         host="0.0.0.0",
         port=pydantic_settings.service_port,
         workers=pydantic_settings.workers,
         access_log=True,
-        log_config={
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "access": {
-                    "()": "uvicorn.logging.AccessFormatter",
-                    "fmt": '%(asctime)s %(client_addr)s "%(request_line)s" %(status_code)s',
-                    "datefmt": "%d/%m/%Y %H:%M:%S",
-                },
-            },
-            "filters": {
-                "healthcheck": {
-                    "()": "app.http_server.ingress.EndpointFilter",
-                },
-            },
-            "handlers": {
-                "access": {
-                    "class": "logging.StreamHandler",
-                    "formatter": "access",
-                    "filters": ["healthcheck"],
-                    "stream": "ext://sys.stdout",
-                },
-            },
-            "loggers": {
-                "uvicorn.access": {
-                    "handlers": ["access"],
-                    "level": "INFO",
-                    "propagate": False,
-                },
-            },
-        },
+        log_config=None,
     )
 
 

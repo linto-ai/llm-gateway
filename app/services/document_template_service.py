@@ -412,7 +412,7 @@ class DocumentTemplateService:
         try:
             from docx import Document
         except ImportError:
-            logger.warning("python-docx not installed, cannot extract placeholders")
+            logger.warning("python-docx not installed, cannot extract placeholders", exc_info=True)
             return []
 
         placeholders = set()
@@ -441,7 +441,7 @@ class DocumentTemplateService:
                         placeholders.update(re.findall(pattern, para.text))
 
         except Exception as e:
-            logger.warning(f"Error extracting placeholders from {file_path}: {e}")
+            logger.warning(f"Error extracting placeholders from {file_path}: {e}", exc_info=True)
 
         return sorted(list(placeholders))
 

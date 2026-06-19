@@ -44,8 +44,10 @@ from app.seeds.loader import (
     ServiceSeed,
 )
 
+from app.core.logging_config import setup_logging
+
+setup_logging(service="llm-gateway-seed")
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 async def get_or_create_provider(
@@ -529,7 +531,7 @@ async def seed_global_document_templates(db: AsyncSession) -> int:
         logger.warning("document_templates.py not found - skipping")
         return 0
     except Exception as e:
-        logger.warning(f"Failed to seed global document templates: {e}")
+        logger.warning(f"Failed to seed global document templates: {e}", exc_info=True)
         return 0
 
 
@@ -629,7 +631,7 @@ async def run_seed(dev: bool = False, only: Optional[str] = None) -> dict:
             logger.info(f"Seed completed: {result}")
             return result
         except Exception as e:
-            logger.error(f"Seed failed: {e}")
+            logger.exception(f"Seed failed: {e}")
             raise
 
 

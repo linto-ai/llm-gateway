@@ -136,7 +136,7 @@ class ExportService:
                         await self._update_job_metadata(db, job, new_metadata, template_id=template_id)
                     logger.info(f"JIT extraction completed for job {job.id}, version={version_number}, extracted: {list(new_metadata.keys())}")
             except Exception as e:
-                logger.error(f"JIT extraction failed for job {job.id}: {e}")
+                logger.exception(f"JIT extraction failed for job {job.id}: {e}")
                 # Continue with export even if extraction fails
 
         # Get version-specific metadata for document generation
@@ -505,11 +505,11 @@ class ExportService:
             end_time = datetime.utcnow()
             duration_ms = int((end_time - start_time).total_seconds() * 1000)
 
-            logger.info(f"JIT extraction LLM response ({len(response)} chars): {response[:500]}...")
+            logger.info(f"JIT extraction LLM response ({len(response)} chars)")
 
             # Parse JSON response
             metadata = self._parse_json_response(response)
-            logger.info(f"JIT extraction parsed metadata: {metadata}")
+            logger.info(f"JIT extraction parsed metadata: {list(metadata.keys())}")
 
             # Filter to requested fields only
             if field_names:
@@ -527,10 +527,10 @@ class ExportService:
             return metadata
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse extraction response as JSON: {e}")
+            logger.exception(f"Failed to parse extraction response as JSON: {e}")
             return {}
         except Exception as e:
-            logger.error(f"JIT extraction failed: {e}")
+            logger.exception(f"JIT extraction failed: {e}")
             return {}
 
     async def _update_job_metadata(
@@ -559,7 +559,7 @@ class ExportService:
         logger.info(f"Current metadata before merge: {list(current_metadata.keys())}")
         current_metadata.update(new_metadata)
         result["extracted_metadata"] = current_metadata
-        logger.info(f"Metadata after merge: {current_metadata}")
+        logger.info(f"Metadata after merge: {list(current_metadata.keys())}")
 
         # Track which template was used for extraction
         if template_id:

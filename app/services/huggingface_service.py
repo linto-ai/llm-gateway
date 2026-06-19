@@ -52,7 +52,7 @@ class HuggingFaceService:
                 }
 
             except httpx.HTTPStatusError as e:
-                logger.error(f"HuggingFace API HTTP error for {repo_path}: {e}")
+                logger.exception(f"HuggingFace API HTTP error for {repo_path}: {e}")
                 return {
                     "found": False,
                     "repo_path": repo_path,
@@ -61,7 +61,7 @@ class HuggingFaceService:
                     "error": f"HTTP {e.response.status_code}: {e.response.reason_phrase}",
                 }
             except httpx.TimeoutException:
-                logger.error(f"HuggingFace API timeout for {repo_path}")
+                logger.exception(f"HuggingFace API timeout for {repo_path}")
                 return {
                     "found": False,
                     "repo_path": repo_path,
@@ -70,7 +70,7 @@ class HuggingFaceService:
                     "error": "Request timed out",
                 }
             except Exception as e:
-                logger.error(f"HuggingFace API error for {repo_path}: {e}")
+                logger.exception(f"HuggingFace API error for {repo_path}: {e}")
                 return {
                     "found": False,
                     "repo_path": repo_path,

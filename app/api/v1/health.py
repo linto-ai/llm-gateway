@@ -33,7 +33,7 @@ async def check_redis_connection() -> bool:
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, _sync_ping)
     except Exception as e:
-        logger.error(f"Redis connection check failed: {e}")
+        logger.exception(f"Redis connection check failed: {e}")
         return False
 
 

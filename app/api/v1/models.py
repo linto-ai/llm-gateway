@@ -55,7 +55,7 @@ async def create_model(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating model: {e}")
+        logger.exception(f"Error creating model: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create model: {str(e)}"
@@ -101,7 +101,7 @@ async def list_models(
             page_size=page_size
         )
     except Exception as e:
-        logger.error(f"Error listing models: {e}")
+        logger.exception(f"Error listing models: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list models: {str(e)}"
@@ -190,7 +190,7 @@ async def update_model(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating model: {e}")
+        logger.exception(f"Error updating model: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update model: {str(e)}"
@@ -229,7 +229,7 @@ async def patch_model(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error patching model: {e}")
+        logger.exception(f"Error patching model: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to update model: {str(e)}"
@@ -260,7 +260,7 @@ async def delete_model(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting model: {e}")
+        logger.exception(f"Error deleting model: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to delete model: {str(e)}"
@@ -295,7 +295,7 @@ async def verify_provider_models(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error verifying models: {e}")
+        logger.exception(f"Error verifying models: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Model verification failed: {str(e)}"
@@ -333,7 +333,7 @@ async def list_all_models(
             page_size=page_size,
         )
     except Exception as e:
-        logger.error(f"Error listing all models: {e}")
+        logger.exception(f"Error listing all models: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list models: {str(e)}",
@@ -367,7 +367,7 @@ async def create_model_top_level(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating model: {e}")
+        logger.exception(f"Error creating model: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to create model: {str(e)}",
@@ -391,7 +391,7 @@ async def delete_model_top_level(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting model: {e}")
+        logger.exception(f"Error deleting model: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to delete model: {str(e)}",

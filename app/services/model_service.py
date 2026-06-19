@@ -329,7 +329,7 @@ class ModelService:
         try:
             api_key = self.encryption_service.decrypt(provider.api_key_encrypted)
         except Exception as e:
-            logger.error(f"Failed to decrypt API key for provider {provider_id}: {e}")
+            logger.exception(f"Failed to decrypt API key for provider {provider_id}: {e}")
             raise HTTPException(
                 status_code=500,
                 detail="Failed to decrypt provider credentials"
@@ -360,7 +360,7 @@ class ModelService:
                 timeout
             )
         except Exception as e:
-            logger.error(f"Failed to fetch models from provider API: {e}")
+            logger.exception(f"Failed to fetch models from provider API: {e}")
             raise HTTPException(
                 status_code=503,
                 detail=f"Provider API unreachable: {str(e)}"
@@ -607,7 +607,7 @@ class ModelService:
         try:
             api_key = self.encryption_service.decrypt(provider.api_key_encrypted)
         except Exception as e:
-            logger.error(f"Failed to decrypt API key: {e}")
+            logger.exception(f"Failed to decrypt API key: {e}")
             return {
                 "available": False,
                 "error": "Failed to decrypt provider credentials",
@@ -861,7 +861,7 @@ class ModelService:
                 "details": {}
             }
         except Exception as e:
-            logger.error(f"Custom model verification error: {e}")
+            logger.exception(f"Custom model verification error: {e}")
             return {
                 "available": False,
                 "error": f"Verification failed: {str(e)}",
@@ -891,7 +891,7 @@ class ModelService:
         try:
             api_key = self.encryption_service.decrypt(provider.api_key_encrypted)
         except Exception as e:
-            logger.error(f"Failed to decrypt API key: {e}")
+            logger.exception(f"Failed to decrypt API key: {e}")
             raise HTTPException(
                 status_code=500,
                 detail="Failed to decrypt provider credentials"
@@ -1191,7 +1191,7 @@ class ModelService:
                 logger.warning(f"Failed to preload tokenizer for {model.model_identifier}: {result.message}")
         except Exception as e:
             # Non-blocking: log warning but don't fail the operation
-            logger.warning(f"Tokenizer preload failed for {model.model_identifier}: {e}")
+            logger.warning(f"Tokenizer preload failed for {model.model_identifier}: {e}", exc_info=True)
 
     async def get_model_limits(
         self,

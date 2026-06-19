@@ -41,7 +41,7 @@ async def get_tokenizer_info(repo_path: str) -> HuggingFaceTokenizerResponse:
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching tokenizer info for {repo_path}: {e}")
+        logger.exception(f"Error fetching tokenizer info for {repo_path}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"HuggingFace API error: {str(e)}",

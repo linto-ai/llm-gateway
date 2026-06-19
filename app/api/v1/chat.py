@@ -112,7 +112,7 @@ async def sse_generator(
             elif content:
                 yield f"event: token\ndata: {json.dumps({'content': content})}\n\n"
     except Exception as e:
-        logger.error(f"Chat streaming error: {e}")
+        logger.exception(f"Chat streaming error: {e}")
         yield f"event: error\ndata: {json.dumps({'error': 'Streaming error'})}\n\n"
 
 
