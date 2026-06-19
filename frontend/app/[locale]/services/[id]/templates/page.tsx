@@ -1,20 +1,21 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/lib/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, FileText, Check, X, Library } from 'lucide-react';
+import { ArrowLeft, FileText, X, Library, Save } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { TemplateLibraryDialog } from '@/components/templates';
 
-import { useService, useUpdateService } from '@/hooks/use-services';
+import { useService, useUpdateService, useSetServiceTemplates } from '@/hooks/use-services';
 import { useDocumentTemplate, useDocumentTemplates } from '@/hooks/use-document-templates';
 import { getLocalizedName, getLocalizedDescription } from '@/lib/template-utils';
 
@@ -40,8 +41,38 @@ export default function ServiceTemplatesPage({ params }: PageProps) {
     service?.default_template_id ?? undefined
   );
 
+  // All templates the admin can pick from (admin view: every scope)
+  const { data: allTemplates, isLoading: allTemplatesLoading } = useDocumentTemplates({ include_all: true });
+
   // Update service mutation
   const updateService = useUpdateService();
+  const setServiceTemplates = useSetServiceTemplates();
+
+  // Local selection state for the "available templates" set, seeded from the service
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (service) setSelectedIds(service.template_ids ?? []);
+  }, [service]);
+
+  const linkedDirty = useMemo(() => {
+    const current = [...(service?.template_ids ?? [])].sort().join(',');
+    const next = [...selectedIds].sort().join(',');
+    return current !== next;
+  }, [service, selectedIds]);
+
+  const toggleTemplate = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const handleSaveAvailable = async () => {
+    try {
+      await setServiceTemplates.mutateAsync({ id: serviceId, templateIds: selectedIds });
+      toast.success(t('availableTemplates.saved'));
+      refetchService();
+    } catch (error: any) {
+      toast.error(error.message || tCommon('error'));
+    }
+  };
 
   const isLoading = serviceLoading || templateLoading;
 
@@ -184,6 +215,59 @@ export default function ServiceTemplatesPage({ params }: PageProps) {
                 {t('selectDefaultTemplate')}
               </Button>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Available templates (service <-> templates links) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Library className="h-5 w-5" />
+                {t('availableTemplates.title')}
+              </CardTitle>
+              <CardDescription>{t('availableTemplates.description')}</CardDescription>
+            </div>
+            <Button onClick={handleSaveAvailable} disabled={!linkedDirty || setServiceTemplates.isPending}>
+              <Save className="h-4 w-4 mr-2" />
+              {t('availableTemplates.save')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {allTemplatesLoading ? (
+            <LoadingSpinner />
+          ) : !allTemplates || allTemplates.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{tTemplates('noTemplates')}</p>
+          ) : (
+            <>
+              {selectedIds.length === 0 && (
+                <p className="text-sm text-muted-foreground mb-3">{t('availableTemplates.empty')}</p>
+              )}
+              <div className="space-y-2">
+                {allTemplates.map((tpl) => (
+                  <label
+                    key={tpl.id}
+                    className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/40"
+                  >
+                    <Checkbox
+                      checked={selectedIds.includes(tpl.id)}
+                      onCheckedChange={() => toggleTemplate(tpl.id)}
+                    />
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{getLocalizedName(tpl, locale)}</p>
+                      <p className="text-xs text-muted-foreground truncate">{tpl.file_name}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs capitalize shrink-0">
+                      {tpl.scope}
+                    </Badge>
+                  </label>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

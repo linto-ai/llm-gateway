@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { ScopeEditor } from '@/components/shared/ScopeEditor';
 
 import { useCreateService, useUpdateService } from '@/hooks/use-services';
 import { useServiceTypes } from '@/hooks/use-service-types';
@@ -52,7 +53,8 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
         en: service?.description.en || '',
         fr: service?.description.fr || '',
       },
-      organization_id: service?.organization_id || null,
+      allowed_organization_ids: service?.allowed_organization_ids ?? [],
+      allowed_user_ids: service?.allowed_user_ids ?? [],
       // Don't load flavors in edit mode - they are managed separately via Flavors tab
       flavors: [],
     },
@@ -67,7 +69,8 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           data: {
             name: data.name,
             description: data.description,
-            organization_id: data.organization_id || '',
+            allowed_organization_ids: data.allowed_organization_ids ?? [],
+            allowed_user_ids: data.allowed_user_ids ?? [],
           },
         });
       } else {
@@ -93,7 +96,8 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           name: data.name,
           service_type: data.service_type,
           description: data.description,
-          organization_id: data.organization_id || '',
+          allowed_organization_ids: data.allowed_organization_ids ?? [],
+          allowed_user_ids: data.allowed_user_ids ?? [],
           flavors: cleanedFlavors as CreateFlavorRequest[],
         };
 
@@ -195,27 +199,28 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           )}
         />
 
-        {/* Organization ID */}
-        <FormField
-          control={form.control}
-          name="organization_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                {t('fields.organizationId')} <span className="text-muted-foreground text-xs">({tCommon('optional')})</span>
-              </FormLabel>
-              <FormControl>
-                <Input
-                  placeholder={t('placeholders.organizationId')}
-                  {...field}
-                  value={field.value || ''}
-                  onChange={(e) => field.onChange(e.target.value || null)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Scope: allowed organizations and users (empty = global service) */}
+        <FormItem>
+          <FormLabel>
+            {t('fields.scope')}{' '}
+            <span className="text-muted-foreground text-xs">({tCommon('optional')})</span>
+          </FormLabel>
+          <ScopeEditor
+            value={{
+              organizationIds: form.watch('allowed_organization_ids') ?? [],
+              userIds: form.watch('allowed_user_ids') ?? [],
+            }}
+            onChange={(next) => {
+              form.setValue('allowed_organization_ids', next.organizationIds, { shouldDirty: true });
+              form.setValue('allowed_user_ids', next.userIds, { shouldDirty: true });
+            }}
+            orgLabel={t('fields.allowedOrganizations')}
+            userLabel={t('fields.allowedUsers')}
+            orgPlaceholder={t('placeholders.addOrganizationId')}
+            userPlaceholder={t('placeholders.addUserId')}
+            globalHint={t('scope.globalHint')}
+          />
+        </FormItem>
 
         {/* Actions */}
         <div className="flex justify-end gap-3">

@@ -320,7 +320,10 @@ class ServiceBase(BaseModel):
     route: str = Field(..., min_length=1, max_length=100)
     service_type: str = Field(..., min_length=1, max_length=50)
     description: Dict[str, str] = Field(default_factory=dict)
-    # Free-form organization identifier (any string up to 100 chars)
+    # Multi-scope access lists (free-form external IDs). Both empty => global.
+    allowed_organization_ids: List[str] = Field(default_factory=list)
+    allowed_user_ids: List[str] = Field(default_factory=list)
+    # Legacy single-org identifier, derived from the lists for backward compat.
     organization_id: Optional[str] = Field(None, max_length=100)
     is_active: bool = True
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -335,12 +338,16 @@ class ServiceCreate(BaseModel):
     route: Optional[str] = Field(None, min_length=1, max_length=100)  # Auto-generated from name if not provided
     service_type: str = Field(..., min_length=1, max_length=50)
     description: Dict[str, str] = Field(default_factory=dict)
-    # Free-form organization identifier (any string up to 100 chars)
-    organization_id: Optional[str] = Field(None, max_length=100)
+    # Multi-scope access lists (free-form external IDs). Both empty => global.
+    allowed_organization_ids: List[str] = Field(default_factory=list)
+    allowed_user_ids: List[str] = Field(default_factory=list)
+    # Deprecated single-org alias (folded into the lists by the service layer).
+    organization_id: Optional[str] = Field(None, max_length=100, deprecated=True)
     is_active: bool = True
     metadata: Dict[str, Any] = Field(default_factory=dict)
     service_category: Optional[str] = Field(None, max_length=50)
     flavors: List[ServiceFlavorCreate] = Field(default_factory=list)  # Optional, can be added later
+    template_ids: Optional[List[UUID]] = Field(None, description="Document templates available for this service")
 
 
 class ServiceUpdate(BaseModel):
@@ -349,12 +356,16 @@ class ServiceUpdate(BaseModel):
     route: Optional[str] = Field(None, min_length=1, max_length=100)
     service_type: Optional[str] = None
     description: Optional[Dict[str, str]] = None
-    organization_id: Optional[str] = Field(None, max_length=100)
+    # When provided, replaces the service's access lists.
+    allowed_organization_ids: Optional[List[str]] = None
+    allowed_user_ids: Optional[List[str]] = None
+    organization_id: Optional[str] = Field(None, max_length=100, deprecated=True)
     is_active: Optional[bool] = None
     flavors: Optional[List[ServiceFlavorCreate]] = None
     metadata: Optional[Dict[str, Any]] = None
     service_category: Optional[str] = Field(None, max_length=50)
     default_template_id: Optional[UUID] = Field(None, description="Default document template for export")
+    template_ids: Optional[List[UUID]] = Field(None, description="Document templates available for this service")
 
 
 class ServiceResponse(ServiceBase):
@@ -362,11 +373,19 @@ class ServiceResponse(ServiceBase):
     id: UUID
     flavors: List[ServiceFlavorResponse]
     default_template_id: Optional[UUID] = None
+    # IDs of document templates explicitly linked to this service (may be empty,
+    # in which case the global default template is used as fallback).
+    template_ids: List[UUID] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class ServiceTemplatesUpdate(BaseModel):
+    """Replace the set of document templates available for a service."""
+    template_ids: List[UUID] = Field(default_factory=list)
 
 
 class ServiceListResponse(BaseModel):

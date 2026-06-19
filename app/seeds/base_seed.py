@@ -226,7 +226,9 @@ async def get_or_create_service(
         service_type=service_type,
         description=description,
         is_active=is_active,
-        organization_id=None,
+        organization_id=None,  # legacy column
+        allowed_organization_ids=[],  # global service (visible to all)
+        allowed_user_ids=[],
     )
 
     db.add(service)

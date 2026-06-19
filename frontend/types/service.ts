@@ -168,8 +168,14 @@ export interface ServiceResponse {
   name: string;
   service_type: ServiceType;
   description: I18nDescription;
+  // Multi-scope access lists (both empty => global service).
+  allowed_organization_ids: string[];
+  allowed_user_ids: string[];
+  // Legacy single-org field, derived from the lists (kept for compat).
   organization_id: string;
   default_template_id?: string | null;
+  // Document templates available for this service (empty => global default).
+  template_ids?: string[];
   flavors: FlavorResponse[];
   created_at: string;
   updated_at: string;
@@ -231,15 +237,27 @@ export interface CreateServiceRequest {
   name: string;
   service_type: ServiceType;
   description: I18nDescription;
-  organization_id: string;
+  // Multi-scope access lists (both empty => global service).
+  allowed_organization_ids?: string[];
+  allowed_user_ids?: string[];
+  // Deprecated single-org alias (folded server-side into the lists).
+  organization_id?: string;
+  template_ids?: string[];
   flavors: CreateFlavorRequest[];
 }
 
 export interface UpdateServiceRequest {
   name?: string;
   description?: Partial<I18nDescription>;
+  allowed_organization_ids?: string[];
+  allowed_user_ids?: string[];
   organization_id?: string;
   default_template_id?: string | null;
+  template_ids?: string[];
+}
+
+export interface SetServiceTemplatesRequest {
+  template_ids: string[];
 }
 
 export interface UpdateFlavorRequest {
@@ -288,6 +306,7 @@ export interface UpdateFlavorRequest {
 
 export interface ServiceListFilters {
   organization_id?: string;
+  user_id?: string;
   service_type?: ServiceType;
   page?: number;
   page_size?: number;

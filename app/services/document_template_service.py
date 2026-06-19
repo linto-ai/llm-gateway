@@ -10,7 +10,7 @@ from typing import Optional, List
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, or_, and_
+from sqlalchemy import select, update, or_, and_, func
 from fastapi import UploadFile
 
 from app.models.document_template import DocumentTemplate
@@ -45,6 +45,55 @@ class DocumentTemplateService:
         # Ensure templates directory exists
         self.TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 
+    @staticmethod
+    def _normalize_ids(ids: Optional[List[str]]) -> List[str]:
+        """Strip, drop blanks/dupes and sort a list of free-form IDs (stable equality)."""
+        if not ids:
+            return []
+        seen = []
+        for raw in ids:
+            if raw is None:
+                continue
+            val = str(raw).strip()
+            if val and val not in seen:
+                seen.append(val)
+        return sorted(seen)
+
+    @classmethod
+    def _resolve_scope_lists(
+        cls,
+        allowed_organization_ids: Optional[List[str]],
+        allowed_user_ids: Optional[List[str]],
+        organization_id_alias: Optional[str] = None,
+        user_id_alias: Optional[str] = None,
+    ) -> tuple[List[str], List[str]]:
+        """Build the effective (orgs, users) access lists.
+
+        The deprecated single organization_id/user_id aliases are folded in only
+        when the explicit lists are empty, preserving backward compatibility.
+        """
+        orgs = cls._normalize_ids(allowed_organization_ids)
+        users = cls._normalize_ids(allowed_user_ids)
+        if not orgs and organization_id_alias:
+            orgs = cls._normalize_ids([organization_id_alias])
+        if not users and user_id_alias:
+            users = cls._normalize_ids([user_id_alias])
+        return orgs, users
+
+    @staticmethod
+    def _derive_legacy_scope(
+        orgs: List[str], users: List[str]
+    ) -> tuple[Optional[str], Optional[str]]:
+        """Derive the legacy single organization_id/user_id from the access lists.
+
+        Kept so clients that read a single scope (LinTO Studio) keep working.
+        """
+        if not orgs and not users:
+            return None, None
+        if users:
+            return (orgs[0] if orgs else None), users[0]
+        return orgs[0], None
+
     async def create_template(
         self,
         db: AsyncSession,
@@ -53,6 +102,8 @@ class DocumentTemplateService:
         name_en: Optional[str] = None,
         description_fr: Optional[str] = None,
         description_en: Optional[str] = None,
+        allowed_organization_ids: Optional[List[str]] = None,
+        allowed_user_ids: Optional[List[str]] = None,
         organization_id: Optional[str] = None,
         user_id: Optional[str] = None,
         is_default: bool = False,
@@ -67,19 +118,22 @@ class DocumentTemplateService:
             name_en: English name (optional)
             description_fr: French description (optional)
             description_en: English description (optional)
-            organization_id: Organization scope (NULL for system) - any string ID
-            user_id: User scope (NULL for org/system) - any string ID
+            allowed_organization_ids: Orgs allowed to see the template (empty => system)
+            allowed_user_ids: Users allowed to see the template
+            organization_id: Deprecated single-org alias (folded into the lists)
+            user_id: Deprecated single-user alias (folded into the lists)
             is_default: Whether to set as default
 
         Returns:
             Created DocumentTemplate
 
         Raises:
-            ValueError: If file is invalid or scope validation fails
+            ValueError: If file is invalid
         """
-        # Validate scope: user_id requires organization_id
-        if user_id is not None and organization_id is None:
-            raise ValueError("user_id requires organization_id to be set")
+        orgs, users = self._resolve_scope_lists(
+            allowed_organization_ids, allowed_user_ids, organization_id, user_id
+        )
+        legacy_org, legacy_user = self._derive_legacy_scope(orgs, users)
 
         # Validate file
         content = await file.read()
@@ -97,13 +151,13 @@ class DocumentTemplateService:
         # Generate unique file path
         template_id = uuid_lib.uuid4()
 
-        # Determine storage directory based on scope
-        if organization_id is None:
+        # Determine storage directory based on derived scope (cosmetic grouping)
+        if legacy_org is None:
             storage_dir = self.TEMPLATES_DIR / "global"
-        elif user_id is None:
-            storage_dir = self.TEMPLATES_DIR / f"org_{organization_id}"
+        elif legacy_user is None:
+            storage_dir = self.TEMPLATES_DIR / f"org_{legacy_org}"
         else:
-            storage_dir = self.TEMPLATES_DIR / f"org_{organization_id}" / f"user_{user_id}"
+            storage_dir = self.TEMPLATES_DIR / f"org_{legacy_org}" / f"user_{legacy_user}"
 
         storage_dir.mkdir(parents=True, exist_ok=True)
 
@@ -120,7 +174,7 @@ class DocumentTemplateService:
 
         # If setting as default, unset any existing default at the same scope
         if is_default:
-            await self._clear_default_for_scope(db, organization_id, user_id)
+            await self._clear_default_for_scope(db, orgs, users)
 
         # Create database record
         template = DocumentTemplate(
@@ -129,8 +183,10 @@ class DocumentTemplateService:
             name_en=name_en,
             description_fr=description_fr,
             description_en=description_en,
-            organization_id=organization_id,
-            user_id=user_id,
+            allowed_organization_ids=orgs,
+            allowed_user_ids=users,
+            organization_id=legacy_org,
+            user_id=legacy_user,
             file_path=str(file_path.relative_to(self.TEMPLATES_DIR)),
             file_name=safe_filename,
             file_size=len(content),
@@ -192,31 +248,20 @@ class DocumentTemplateService:
 
         conditions = []
 
-        # Always include system templates if requested
+        # System templates: both access lists empty.
         if include_system:
-            conditions.append(
-                and_(
-                    DocumentTemplate.organization_id.is_(None),
-                    DocumentTemplate.user_id.is_(None)
-                )
-            )
+            conditions.append(self._is_system_template())
 
-        # Include org templates if org_id provided
+        # Org templates: caller org is in allowed_organization_ids.
         if organization_id:
             conditions.append(
-                and_(
-                    DocumentTemplate.organization_id == organization_id,
-                    DocumentTemplate.user_id.is_(None)
-                )
+                DocumentTemplate.allowed_organization_ids.any(organization_id)
             )
 
-        # Include user templates if both provided
-        if organization_id and user_id:
+        # User templates: caller user is in allowed_user_ids.
+        if user_id:
             conditions.append(
-                and_(
-                    DocumentTemplate.organization_id == organization_id,
-                    DocumentTemplate.user_id == user_id
-                )
+                DocumentTemplate.allowed_user_ids.any(user_id)
             )
 
         # If no conditions, return empty list
@@ -228,6 +273,14 @@ class DocumentTemplateService:
         result = await db.execute(query)
         return list(result.scalars().all())
 
+    @staticmethod
+    def _is_system_template():
+        """SQLAlchemy condition: template visible to everyone (both lists empty)."""
+        return and_(
+            func.cardinality(DocumentTemplate.allowed_organization_ids) == 0,
+            func.cardinality(DocumentTemplate.allowed_user_ids) == 0,
+        )
+
     async def update_template(
         self,
         db: AsyncSession,
@@ -237,10 +290,12 @@ class DocumentTemplateService:
         name_en: Optional[str] = None,
         description_fr: Optional[str] = None,
         description_en: Optional[str] = None,
+        allowed_organization_ids: Optional[List[str]] = None,
+        allowed_user_ids: Optional[List[str]] = None,
         is_default: Optional[bool] = None,
     ) -> Optional[DocumentTemplate]:
         """
-        Update template metadata and/or file.
+        Update template metadata, scope and/or file.
 
         Args:
             db: Database session
@@ -250,6 +305,8 @@ class DocumentTemplateService:
             name_en: New English name (optional)
             description_fr: New French description (optional)
             description_en: New English description (optional)
+            allowed_organization_ids: Replace the org access list (optional)
+            allowed_user_ids: Replace the user access list (optional)
             is_default: Set as default (optional)
 
         Returns:
@@ -268,6 +325,21 @@ class DocumentTemplateService:
             template.description_fr = description_fr
         if description_en is not None:
             template.description_en = description_en
+
+        # Update scope (access lists) if either list was provided
+        if allowed_organization_ids is not None or allowed_user_ids is not None:
+            orgs, users = self._resolve_scope_lists(
+                allowed_organization_ids
+                if allowed_organization_ids is not None
+                else template.allowed_organization_ids,
+                allowed_user_ids
+                if allowed_user_ids is not None
+                else template.allowed_user_ids,
+            )
+            template.allowed_organization_ids = orgs
+            template.allowed_user_ids = users
+            # Keep legacy single-scope columns in sync for backward compat.
+            template.organization_id, template.user_id = self._derive_legacy_scope(orgs, users)
 
         # Handle file update
         if file:
@@ -307,7 +379,9 @@ class DocumentTemplateService:
         if is_default is not None and is_default != template.is_default:
             if is_default:
                 # Clear existing default at same scope
-                await self._clear_default_for_scope(db, template.organization_id, template.user_id)
+                await self._clear_default_for_scope(
+                    db, template.allowed_organization_ids, template.allowed_user_ids
+                )
             template.is_default = is_default
 
         await db.flush()
@@ -364,15 +438,14 @@ class DocumentTemplateService:
             Default DocumentTemplate or None
         """
         # First try user-level default
-        if organization_id and user_id:
+        if user_id:
             result = await db.execute(
                 select(DocumentTemplate).where(
-                    DocumentTemplate.organization_id == organization_id,
-                    DocumentTemplate.user_id == user_id,
+                    DocumentTemplate.allowed_user_ids.any(user_id),
                     DocumentTemplate.is_default.is_(True)
                 )
             )
-            template = result.scalar_one_or_none()
+            template = result.scalars().first()
             if template:
                 return template
 
@@ -380,24 +453,22 @@ class DocumentTemplateService:
         if organization_id:
             result = await db.execute(
                 select(DocumentTemplate).where(
-                    DocumentTemplate.organization_id == organization_id,
-                    DocumentTemplate.user_id.is_(None),
+                    DocumentTemplate.allowed_organization_ids.any(organization_id),
                     DocumentTemplate.is_default.is_(True)
                 )
             )
-            template = result.scalar_one_or_none()
+            template = result.scalars().first()
             if template:
                 return template
 
-        # Finally try system-level default
+        # Finally try system-level default (both access lists empty)
         result = await db.execute(
             select(DocumentTemplate).where(
-                DocumentTemplate.organization_id.is_(None),
-                DocumentTemplate.user_id.is_(None),
+                self._is_system_template(),
                 DocumentTemplate.is_default.is_(True)
             )
         )
-        return result.scalar_one_or_none()
+        return result.scalars().first()
 
     def extract_placeholders(self, file_path: Path) -> List[str]:
         """
@@ -484,43 +555,25 @@ class DocumentTemplateService:
     async def _clear_default_for_scope(
         self,
         db: AsyncSession,
-        organization_id: Optional[str],
-        user_id: Optional[str],
+        allowed_organization_ids: List[str],
+        allowed_user_ids: List[str],
     ) -> None:
-        """Clear is_default flag for all templates at the same scope."""
-        if organization_id is None and user_id is None:
-            # System scope
-            await db.execute(
-                update(DocumentTemplate)
-                .where(
-                    DocumentTemplate.organization_id.is_(None),
-                    DocumentTemplate.user_id.is_(None),
-                    DocumentTemplate.is_default.is_(True)
-                )
-                .values(is_default=False)
+        """Clear is_default flag for all templates sharing the exact same scope.
+
+        Scope identity is the pair of (sorted) access lists, so only one template
+        is the default within a given audience.
+        """
+        orgs = self._normalize_ids(allowed_organization_ids)
+        users = self._normalize_ids(allowed_user_ids)
+        await db.execute(
+            update(DocumentTemplate)
+            .where(
+                DocumentTemplate.allowed_organization_ids == orgs,
+                DocumentTemplate.allowed_user_ids == users,
+                DocumentTemplate.is_default.is_(True)
             )
-        elif user_id is None:
-            # Organization scope
-            await db.execute(
-                update(DocumentTemplate)
-                .where(
-                    DocumentTemplate.organization_id == organization_id,
-                    DocumentTemplate.user_id.is_(None),
-                    DocumentTemplate.is_default.is_(True)
-                )
-                .values(is_default=False)
-            )
-        else:
-            # User scope
-            await db.execute(
-                update(DocumentTemplate)
-                .where(
-                    DocumentTemplate.organization_id == organization_id,
-                    DocumentTemplate.user_id == user_id,
-                    DocumentTemplate.is_default.is_(True)
-                )
-                .values(is_default=False)
-            )
+            .values(is_default=False)
+        )
 
     def _sanitize_filename(self, filename: str) -> str:
         """Sanitize filename to prevent path traversal."""
@@ -610,14 +663,20 @@ class DocumentTemplateService:
         file_size = dest_path.stat().st_size
 
         # Create new template record
+        orgs, users = self._resolve_scope_lists(
+            None, None, target_organization_id, target_user_id
+        )
+        legacy_org, legacy_user = self._derive_legacy_scope(orgs, users)
         new_template = DocumentTemplate(
             id=new_id,
             name_fr=new_name_fr or source.name_fr,
             name_en=new_name_en or source.name_en,
             description_fr=source.description_fr,
             description_en=source.description_en,
-            organization_id=target_organization_id,
-            user_id=target_user_id,
+            allowed_organization_ids=orgs,
+            allowed_user_ids=users,
+            organization_id=legacy_org,
+            user_id=legacy_user,
             file_path=str(dest_path.relative_to(self.TEMPLATES_DIR)),
             file_name=safe_filename,
             file_size=file_size,

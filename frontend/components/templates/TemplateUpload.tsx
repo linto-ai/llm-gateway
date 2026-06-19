@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useUploadDocumentTemplate } from '@/hooks/use-document-templates';
 import { formatFileSize } from '@/lib/template-utils';
+import { ScopeEditor, type ScopeValue } from '@/components/shared/ScopeEditor';
 import type { DocumentTemplate } from '@/types/document-template';
 
 // Max file size: 10MB
@@ -43,6 +44,8 @@ interface TemplateUploadProps {
   serviceId?: string;
   /** Whether to show the "set as default" checkbox. Only relevant in service context. */
   showDefaultOption?: boolean;
+  /** Whether to show the access-scope editor (orgs/users). Default: true. */
+  showScopeEditor?: boolean;
   onSuccess: (template: DocumentTemplate) => void;
   onCancel?: () => void;
 }
@@ -55,6 +58,7 @@ export function TemplateUpload({
   userId,
   serviceId: _serviceId,
   showDefaultOption = true,
+  showScopeEditor = true,
   onSuccess,
   onCancel,
 }: TemplateUploadProps) {
@@ -64,6 +68,11 @@ export function TemplateUpload({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  // Access scope - seeded from the (optional) context props.
+  const [scope, setScope] = useState<ScopeValue>({
+    organizationIds: organizationId ? [organizationId] : [],
+    userIds: userId ? [userId] : [],
+  });
 
   const uploadMutation = useUploadDocumentTemplate();
 
@@ -175,12 +184,9 @@ export function TemplateUpload({
     if (data.description_en) {
       formData.append('description_en', data.description_en);
     }
-    if (organizationId) {
-      formData.append('organization_id', organizationId);
-    }
-    if (userId) {
-      formData.append('user_id', userId);
-    }
+    // Multi-scope access lists (repeat the field per ID). Empty => system template.
+    scope.organizationIds.forEach((id) => formData.append('allowed_organization_ids', id));
+    scope.userIds.forEach((id) => formData.append('allowed_user_ids', id));
 
     try {
       const template = await uploadMutation.mutateAsync(formData);
@@ -333,6 +339,23 @@ export function TemplateUpload({
             />
           </TabsContent>
         </Tabs>
+
+        {/* Access scope (orgs/users). Both empty => system template. */}
+        {showScopeEditor && (
+          <div className="rounded-md border p-4">
+            <p className="text-sm font-medium">{t('scope.title')}</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">{t('scope.description')}</p>
+            <ScopeEditor
+              value={scope}
+              onChange={setScope}
+              orgLabel={t('scope.allowedOrganizations')}
+              userLabel={t('scope.allowedUsers')}
+              orgPlaceholder={t('scope.addOrganizationId')}
+              userPlaceholder={t('scope.addUserId')}
+              globalHint={t('scope.globalHint')}
+            />
+          </div>
+        )}
 
         {/* Set as Default - only shown in service context */}
         {showDefaultOption && (

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import uuid as uuid_module
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,7 @@ from app.schemas.service import (
     ServiceCreate,
     ServiceUpdate,
     ServiceResponse,
+    ServiceTemplatesUpdate,
     ServiceFlavorCreate,
     ServiceFlavorUpdate,
     ServiceFlavorResponse,
@@ -29,6 +30,7 @@ from app.schemas.service import (
     ValidateFailoverRequest,
     ValidateFailoverResponse,
 )
+from app.schemas.template import TemplateResponse
 from app.schemas.common import ErrorResponse, PaginatedResponse
 
 logger = logging.getLogger(__name__)
@@ -211,7 +213,8 @@ async def create_service(
 async def list_services(
     service_type: Optional[str] = Query(None, description="Filter by service type"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    organization_id: Optional[str] = Query(None, description="Visibility filter - returns global services + org-specific services"),
+    organization_id: Optional[str] = Query(None, description="Visibility filter - returns global services + services allowing this org"),
+    user_id: Optional[str] = Query(None, description="Visibility filter - also returns services allowing this user"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db)
@@ -221,7 +224,8 @@ async def list_services(
 
     - **service_type**: Filter by service type
     - **is_active**: Filter by active status
-    - **organization_id**: Visibility filter - returns global services (no org) plus services matching this org ID
+    - **organization_id**: Visibility filter - returns global services (no scope) plus services whose allowed orgs include this ID
+    - **user_id**: Visibility filter - also returns services whose allowed users include this ID
     - **page**: Page number (default: 1)
     - **page_size**: Items per page (default: 50, max: 100)
     """
@@ -232,6 +236,7 @@ async def list_services(
             service_type=service_type,
             is_active=is_active,
             organization_id=organization_id,
+            user_id=user_id,
             skip=skip,
             limit=page_size
         )
@@ -335,6 +340,71 @@ async def delete_service(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to delete service: {str(e)}"
         )
+
+
+# =============================================================================
+# Service <-> Document Template links
+# =============================================================================
+
+@router.get(
+    "/services/{service_id}/templates",
+    response_model=List[TemplateResponse],
+    responses={404: {"model": ErrorResponse}},
+)
+async def list_service_templates(
+    service_id: UUID,
+    organization_id: Optional[str] = Query(None, description="Visibility filter by organization"),
+    user_id: Optional[str] = Query(None, description="Visibility filter by user"),
+    db: AsyncSession = Depends(get_db),
+) -> List[TemplateResponse]:
+    """
+    List the document templates available for a service.
+
+    - If the service has explicitly linked templates, returns those (filtered by
+      the caller's org/user visibility when provided).
+    - If it has none, falls back to the global default template.
+    """
+    try:
+        return await service_service.get_service_templates(
+            db, service_id, organization_id=organization_id, user_id=user_id
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing service templates: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list service templates: {str(e)}"
+        )
+
+
+@router.put(
+    "/services/{service_id}/templates",
+    response_model=ServiceResponse,
+    responses={404: {"model": ErrorResponse}},
+)
+async def set_service_templates(
+    service_id: UUID,
+    request: ServiceTemplatesUpdate,
+    db: AsyncSession = Depends(get_db),
+) -> ServiceResponse:
+    """
+    Replace the set of document templates available for a service.
+
+    - **template_ids**: full list of template IDs to link (empty clears all links,
+      which makes the service fall back to the global default template).
+    """
+    try:
+        return await service_service.set_service_templates(db, service_id, request.template_ids)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting service templates: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to set service templates: {str(e)}"
+        )
+
 
 # Flavor CRUD endpoints
 

@@ -136,8 +136,9 @@ export const serviceFormSchema = z.object({
     en: z.string().optional().default(''),
     fr: z.string().optional().default(''),
   }),
-  // Free-form organization identifier (any string up to 100 chars)
-  organization_id: z.string().max(100, 'validation.maxLength').nullable().optional(),
+  // Multi-scope access lists (free-form external IDs). Both empty => global service.
+  allowed_organization_ids: z.array(z.string().max(100)).optional().default([]),
+  allowed_user_ids: z.array(z.string().max(100)).optional().default([]),
   // Flavors are optional during creation - can be added later via Flavors tab
   flavors: z.array(flavorFormSchema).optional().default([]),
 });

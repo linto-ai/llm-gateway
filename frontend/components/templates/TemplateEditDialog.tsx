@@ -35,6 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUpdateDocumentTemplate } from '@/hooks/use-document-templates';
 import { formatFileSize } from '@/lib/template-utils';
 import { getPlaceholderName } from '@/types/document-template';
+import { ScopeEditor, type ScopeValue } from '@/components/shared/ScopeEditor';
 import type { DocumentTemplate } from '@/types/document-template';
 
 // Max file size: 10MB
@@ -70,6 +71,7 @@ export function TemplateEditDialog({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [scope, setScope] = useState<ScopeValue>({ organizationIds: [], userIds: [] });
 
   const updateMutation = useUpdateDocumentTemplate();
 
@@ -104,6 +106,10 @@ export function TemplateEditDialog({
         description_fr: template.description_fr || '',
         description_en: template.description_en || '',
         is_default: template.is_default,
+      });
+      setScope({
+        organizationIds: template.allowed_organization_ids ?? [],
+        userIds: template.allowed_user_ids ?? [],
       });
     }
     setSelectedFile(null);
@@ -191,6 +197,12 @@ export function TemplateEditDialog({
     if (data.is_default !== template.is_default) {
       formData.append('is_default', String(data.is_default));
     }
+
+    // Always replace the access scope with the editor's current value (supports
+    // clearing to a system template). replace_scope makes empty lists explicit.
+    formData.append('replace_scope', 'true');
+    scope.organizationIds.forEach((id) => formData.append('allowed_organization_ids', id));
+    scope.userIds.forEach((id) => formData.append('allowed_user_ids', id));
 
     // Append file if selected
     if (selectedFile) {
@@ -373,6 +385,21 @@ export function TemplateEditDialog({
                 />
               </TabsContent>
             </Tabs>
+
+            {/* Access scope (orgs/users). Both empty => system template. */}
+            <div className="rounded-md border p-4">
+              <p className="text-sm font-medium">{t('scope.title')}</p>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">{t('scope.description')}</p>
+              <ScopeEditor
+                value={scope}
+                onChange={setScope}
+                orgLabel={t('scope.allowedOrganizations')}
+                userLabel={t('scope.allowedUsers')}
+                orgPlaceholder={t('scope.addOrganizationId')}
+                userPlaceholder={t('scope.addUserId')}
+                globalHint={t('scope.globalHint')}
+              />
+            </div>
 
             {/* Set as Default - only show in service context */}
             {showDefaultOption && (

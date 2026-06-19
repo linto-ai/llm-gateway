@@ -73,6 +73,19 @@ export const useDeleteService = () => {
   });
 };
 
+// Replace the set of document templates available for a service
+export const useSetServiceTemplates = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, templateIds }: { id: string; templateIds: string[] }) =>
+      apiClient.services.setTemplates(id, templateIds),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['services', variables.id] });
+    },
+  });
+};
+
 // Execute service mutation
 export const useExecuteService = () => {
   return useMutation({

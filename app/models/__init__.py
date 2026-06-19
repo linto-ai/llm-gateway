@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from app.core.database import Base
+from .associations import service_document_templates
 from .organization import Organization
 from .provider import Provider
 from .model import Model
@@ -17,6 +18,7 @@ from .prompt_type import PromptType
 
 __all__ = [
     "Base",
+    "service_document_templates",
     "Organization",
     "Provider",
     "Model",
