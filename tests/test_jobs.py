@@ -1398,6 +1398,8 @@ class TestJobServiceIntegrationTests:
             "percentage": 100.0,
         }
         mock_job.organization_id = None
+        mock_job.conversation_name = None
+        mock_job.organization_name = None
         mock_job.current_version = 1
         mock_job.last_edited_at = None
         # Fallback tracking fields (use the actual model field names)

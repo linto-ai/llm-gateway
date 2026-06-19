@@ -14,6 +14,7 @@ from sqlalchemy import select, update, or_, and_
 from fastapi import UploadFile
 
 from app.models.document_template import DocumentTemplate
+from app.services.document_service import DocumentService
 
 logger = logging.getLogger(__name__)
 
@@ -33,16 +34,9 @@ class DocumentTemplateService:
     ]
     DOCX_MAGIC_BYTES = b"PK"  # DOCX is a ZIP file
 
-    # Standard placeholders that are system-provided, not extracted
-    STANDARD_PLACEHOLDERS = [
-        "output",
-        "job_id",
-        "job_date",
-        "service_name",
-        "flavor_name",
-        "organization_name",
-        "generated_at",
-    ]
+    # Standard placeholders that are system-provided, not extracted.
+    # Single source of truth lives in DocumentService.
+    STANDARD_PLACEHOLDERS = DocumentService.STANDARD_PLACEHOLDERS
 
     def __init__(self):
         """Initialize template service."""

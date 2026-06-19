@@ -30,7 +30,9 @@ class DocumentService:
         "job_date",
         "service_name",
         "flavor_name",
+        "organization_id",
         "organization_name",
+        "conversation_name",
         "generated_at",
     ]
 
@@ -328,7 +330,9 @@ class DocumentService:
             "job_date": job_date,
             "service_name": job.service.name if job.service else "",
             "flavor_name": job.flavor.name if job.flavor else "",
-            "organization_name": job.organization_id or "",
+            "organization_id": job.organization_id or "",
+            "organization_name": job.organization_name or "",
+            "conversation_name": job.conversation_name or "",
             "generated_at": now.strftime("%Y-%m-%d %H:%M"),
         }
 
@@ -366,6 +370,69 @@ class DocumentService:
 
         return placeholders
 
+    @staticmethod
+    def _set_run_text(run, new_text: str) -> None:
+        """Assign ``new_text`` to ``run.text`` only if it actually changed.
+
+        Why: python-docx's ``Run.text`` setter calls ``clear_content()`` which
+        removes every child of ``<w:r>`` except ``<w:rPr>`` - including
+        ``<w:drawing>``. Assigning the same value back therefore deletes any
+        embedded image. Runs that carry an inline image have empty ``.text``,
+        so the guard ``new_text != run.text`` skips them entirely and keeps
+        the drawing intact.
+        """
+        if new_text != run.text:
+            run.text = new_text
+
+    def _rescue_split_placeholders(self, para, transform) -> None:
+        """Catch placeholders that Word split across multiple runs.
+
+        Per-run substitution can't match ``{{key}}`` when Word chose to break
+        the string into separate ``<w:r>`` elements (e.g. ``': {{organization_'``
+        / ``'id'`` / ``'}}'``). After the normal per-run pass, this method
+        joins the paragraph text, retries the transform, and - only if the
+        result actually changed - writes the new full text into the first
+        text-bearing run and clears the others.
+
+        Empty runs (typically inline images) are never touched, so embedded
+        drawings survive the rewrite.
+        """
+        runs = para.runs
+        if not runs:
+            return
+        full_text = "".join(run.text for run in runs)
+        if "{{" not in full_text:
+            return
+        new_text = transform(full_text)
+        if new_text == full_text:
+            return
+        target_assigned = False
+        for run in runs:
+            if not run.text:
+                continue
+            if not target_assigned:
+                self._set_run_text(run, new_text)
+                target_assigned = True
+            else:
+                self._set_run_text(run, "")
+        if not target_assigned:
+            self._set_run_text(runs[0], new_text)
+
+    def _iter_all_paragraphs(self, doc):
+        """Yield every paragraph in body, tables, headers and footers."""
+        for para in doc.paragraphs:
+            yield para
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for para in cell.paragraphs:
+                        yield para
+        for section in doc.sections:
+            for hf in (section.header, section.footer):
+                if hf is not None:
+                    for para in hf.paragraphs:
+                        yield para
+
     def substitute_placeholders(self, doc, placeholders: Dict[str, Any]) -> None:
         """
         Replace {{placeholder}} in DOCX paragraphs, tables, headers, footers.
@@ -401,7 +468,7 @@ class DocumentService:
             if "{{output}}" in full_text:
                 # Clear the paragraph
                 for run in para.runs:
-                    run.text = ""
+                    self._set_run_text(run, "")
                 # Insert formatted markdown content after this paragraph
                 return True
             return False
@@ -409,7 +476,7 @@ class DocumentService:
         # First pass: replace simple placeholders
         for para in doc.paragraphs:
             for run in para.runs:
-                run.text = replace_text_simple(run.text)
+                self._set_run_text(run, replace_text_simple(run.text))
 
         # Second pass: find and replace {{output}} with formatted content
         paragraphs_to_process = []
@@ -422,7 +489,7 @@ class DocumentService:
         for idx, para in paragraphs_to_process:
             # Clear the placeholder
             for run in para.runs:
-                run.text = run.text.replace("{{output}}", "")
+                self._set_run_text(run, run.text.replace("{{output}}", ""))
             # Insert markdown as formatted DOCX content
             self._insert_markdown_content(doc, para, output_content)
 
@@ -432,20 +499,28 @@ class DocumentService:
                 for cell in row.cells:
                     for para in cell.paragraphs:
                         for run in para.runs:
-                            run.text = replace_text_simple(run.text)
+                            self._set_run_text(run, replace_text_simple(run.text))
                             # For tables, just use plain text for output
-                            run.text = run.text.replace("{{output}}", output_content)
+                            self._set_run_text(run, run.text.replace("{{output}}", output_content))
 
         # Replace in headers/footers (simple replacement only)
         for section in doc.sections:
             if section.header:
                 for para in section.header.paragraphs:
                     for run in para.runs:
-                        run.text = replace_text_simple(run.text)
+                        self._set_run_text(run, replace_text_simple(run.text))
             if section.footer:
                 for para in section.footer.paragraphs:
                     for run in para.runs:
-                        run.text = replace_text_simple(run.text)
+                        self._set_run_text(run, replace_text_simple(run.text))
+
+        # Rescue pass: catch placeholders that Word split across multiple
+        # runs (per-run replacement can't match them). Operates at the
+        # paragraph level and only rewrites a paragraph whose joined text
+        # actually changes - so paragraphs without placeholders, and
+        # placeholders the per-run pass already filled, are left alone.
+        for para in self._iter_all_paragraphs(doc):
+            self._rescue_split_placeholders(para, replace_text_simple)
 
         # Final pass: clean up any remaining unfilled placeholders
         # Matches {{anything}} or {{anything: with hint}}
@@ -457,24 +532,29 @@ class DocumentService:
 
         for para in doc.paragraphs:
             for run in para.runs:
-                run.text = clean_unfilled(run.text)
+                self._set_run_text(run, clean_unfilled(run.text))
 
         for table in doc.tables:
             for row in table.rows:
                 for cell in row.cells:
                     for para in cell.paragraphs:
                         for run in para.runs:
-                            run.text = clean_unfilled(run.text)
+                            self._set_run_text(run, clean_unfilled(run.text))
 
         for section in doc.sections:
             if section.header:
                 for para in section.header.paragraphs:
                     for run in para.runs:
-                        run.text = clean_unfilled(run.text)
+                        self._set_run_text(run, clean_unfilled(run.text))
             if section.footer:
                 for para in section.footer.paragraphs:
                     for run in para.runs:
-                        run.text = clean_unfilled(run.text)
+                        self._set_run_text(run, clean_unfilled(run.text))
+
+        # Final rescue: clean any split unfilled placeholders that survive
+        # the per-run cleanup (e.g. '{{' / 'unknown' / '}}').
+        for para in self._iter_all_paragraphs(doc):
+            self._rescue_split_placeholders(para, clean_unfilled)
 
     def _insert_markdown_content(self, doc, after_para, markdown_content: str) -> None:
         """

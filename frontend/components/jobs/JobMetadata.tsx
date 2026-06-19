@@ -135,6 +135,22 @@ export function JobMetadata({ job }: JobMetadataProps) {
             </div>
           )}
 
+          {/* Organization Name (if provided by caller) */}
+          {job.organization_name && (
+            <div className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('organizationName')}</span>
+              <p className="font-medium">{job.organization_name}</p>
+            </div>
+          )}
+
+          {/* Conversation Name (if provided by caller) */}
+          {job.conversation_name && (
+            <div className="space-y-1">
+              <span className="text-sm text-muted-foreground">{t('conversationName')}</span>
+              <p className="font-medium">{job.conversation_name}</p>
+            </div>
+          )}
+
           {/* Fallback Applied Info */}
           {job.fallback_applied && (
             <>

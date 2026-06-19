@@ -675,8 +675,12 @@ class ExportService:
             return job.service.name if job.service else None
         elif name == "flavor_name":
             return job.flavor.name if job.flavor else None
-        elif name == "organization_name":
+        elif name == "organization_id":
             return job.organization_id
+        elif name == "organization_name":
+            return job.organization_name
+        elif name == "conversation_name":
+            return job.conversation_name
         elif name == "generated_at":
             return datetime.now().strftime("%Y-%m-%d %H:%M")
         return None

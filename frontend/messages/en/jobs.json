@@ -64,6 +64,8 @@
   "noInput": "No input data available",
   "metadata": "Metadata",
   "organizationId": "Organization ID",
+  "organizationName": "Organization name",
+  "conversationName": "Conversation name",
   "renderedView": "Rendered",
   "rawView": "Raw",
   "phase": {

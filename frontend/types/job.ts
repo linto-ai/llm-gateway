@@ -117,6 +117,8 @@ export interface JobResponse {
   error: string | null; // Error message if failed
   progress: JobProgress | null;
   organization_id: string | null; // Free-form string (max 100 chars)
+  conversation_name?: string | null;
+  organization_name?: string | null;
 
   // Fallback tracking fields (populated at job creation)
   fallback_applied?: boolean;

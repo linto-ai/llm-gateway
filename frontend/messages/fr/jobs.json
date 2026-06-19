@@ -64,6 +64,8 @@
   "noInput": "Aucune donnee d'entree disponible",
   "metadata": "Metadonnees",
   "organizationId": "ID d'organisation",
+  "organizationName": "Nom d'organisation",
+  "conversationName": "Nom de conversation",
   "renderedView": "Formaté",
   "rawView": "Brut",
   "phase": {
