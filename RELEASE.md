@@ -1,3 +1,26 @@
+# 2.5.0
+
+_2026_06_26_
+
+- Multi-organization / user scoping for services and templates
+  - `services` and `document_templates` can be granted to several organizations and/or users via list-based scoping (`allowed_organization_ids` / `allowed_user_ids`); legacy scalar `organization_id` / `user_id` columns are kept and back-compat-derived so existing clients (LinTO Studio) keep working
+  - Service ↔ template links
+- Template rework (#25)
+  - New `conversation_name` and `organization_name` placeholders
+  - Preserve embedded images during placeholder substitution
+  - Template export fix
+- Configurable logging
+  - Selectable log sinks
+  - Preserve tracebacks in error logs and stop logging user content
+- Service types
+  - Single source of truth for service types (drop dead divergent enums)
+  - Allow `chat` in the `service_templates` service_type CHECK constraint
+- API version 1.0.0 → 1.1.0; admin footer now reads the version from `package.json`
+- DB migrations: 006 (chat service template constraint), 007 (job name metadata), 008 (multi-scope + service/template links)
+- CI/CD: staging deploy stage, preprod auto-redeploy on `latest-unstable`, deploy SSH host/user moved to Jenkins credentials
+
+---
+
 # 2.3.2
 
 _2026_04_17_
