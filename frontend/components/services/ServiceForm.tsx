@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -200,11 +201,11 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
         />
 
         {/* Scope: allowed organizations and users (empty = global service) */}
-        <FormItem>
-          <FormLabel>
+        <div className="space-y-2">
+          <Label>
             {t('fields.scope')}{' '}
             <span className="text-muted-foreground text-xs">({tCommon('optional')})</span>
-          </FormLabel>
+          </Label>
           <ScopeEditor
             value={{
               organizationIds: form.watch('allowed_organization_ids') ?? [],
@@ -220,7 +221,7 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
             userPlaceholder={t('placeholders.addUserId')}
             globalHint={t('scope.globalHint')}
           />
-        </FormItem>
+        </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
