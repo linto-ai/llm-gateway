@@ -14,6 +14,12 @@ import typing
 # Type for retry callback: (attempt, max_attempts, delay, error_type, error_message) -> None
 RetryCallback = Callable[[int, int, float, str, str], None]
 
+# Provider/model pairs whose client configuration was already logged by this
+# process. Batch jobs build one adapter per task, but chat builds one per
+# request: without this the "Provider client ready" line would repeat at INFO
+# for every chat message.
+_LOGGED_CLIENT_CONFIGS: set = set()
+
 # Type alias for token usage dict returned from API calls
 TokenUsage = Dict[str, int]  # {"prompt_tokens": int, "completion_tokens": int, "total_tokens": int}
 
@@ -56,7 +62,10 @@ class OpenAIAdapter:
             api_key=self.api_key, base_url=self.api_base,
             timeout=request_timeout, max_retries=0,
         )
-        self.logger.info(
+        config_key = (self.api_base, self.modelName)
+        log_config = self.logger.info if config_key not in _LOGGED_CLIENT_CONFIGS else self.logger.debug
+        _LOGGED_CLIENT_CONFIGS.add(config_key)
+        log_config(
             f"Provider client ready: url={self.api_base} model={self.modelName} "
             f"request_timeout={settings.provider_request_timeout}s "
             f"connect_timeout={settings.provider_connect_timeout}s"
