@@ -70,6 +70,23 @@ class Settings(BaseSettings):
     api_retry_min_delay: int = 1  # seconds
     api_retry_max_delay: int = 60  # seconds
 
+    # LLM provider guardrails. Without a client timeout, a provider that accepts
+    # the connection but never answers (dead endpoint, proxy black-holing the
+    # request...) blocks the Celery worker forever: the job stays "started" with
+    # no error and no log, and with prefetch=1 the worker never takes another
+    # task. PROVIDER_REQUEST_TIMEOUT bounds every HTTP call to the provider
+    # (also the per-chunk read timeout on streaming); PROVIDER_CONNECT_TIMEOUT
+    # bounds the TCP/TLS handshake.
+    provider_request_timeout: float = 300.0  # seconds per provider HTTP request
+    provider_connect_timeout: float = 10.0  # seconds to establish the connection
+
+    # Celery last-resort backstop: kills a task that is still running after this
+    # long, whatever the reason. The soft limit raises inside the task so the
+    # job is marked "failed" with a readable error; the hard limit terminates
+    # the worker process shortly after if the task ignored the soft one.
+    task_soft_time_limit: int = 5400  # 90 min
+    task_time_limit: int = 5700  # soft + 5 min
+
     # Tokenizer Storage
     tokenizer_storage_path: str = "/var/www/data/tokenizers"
 

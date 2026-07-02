@@ -65,12 +65,26 @@ celery_app.conf.broker_connection_max_retries = None  # Infinite retries (k8s wi
 celery_app.conf.broker_heartbeat = 10  # Heartbeat every 10s (faster detection than 120s default)
 celery_app.conf.worker_cancel_long_running_tasks_on_connection_loss = True  # Cancel tasks on disconnect (prevents zombies)
 
+# Last-resort backstop for stuck tasks. Whatever blocks a task (provider that
+# never answers despite the client timeout, deadlock...), the soft limit raises
+# SoftTimeLimitExceeded inside the task so the failure handler marks the job
+# "failed" with a readable error, and the hard limit kills the worker process
+# shortly after. Without this, a stuck task holds its worker forever and, with
+# prefetch=1, the worker never takes another task.
+celery_app.conf.task_soft_time_limit = settings.task_soft_time_limit
+celery_app.conf.task_time_limit = settings.task_time_limit
+
 redis_client = redis.Redis(host=parsed_url.hostname,port= parsed_url.port, password=broker_pass)
 
 # Define the task
 @celery_app.task(bind=True)
 def process_task(self, task_data):
-    logger.info(f"Starting celery task : {self.request.id}")
+    logger.info(
+        f"Starting celery task {self.request.id}: "
+        f"job_id={task_data.get('job_id')} "
+        f"model={(task_data.get('backendParams') or {}).get('modelName')} "
+        f"provider={(task_data.get('providerConfig') or {}).get('api_url')}"
+    )
     self.update_state(state='STARTED')
     task_data['task_id'] = self.request.id
 

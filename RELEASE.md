@@ -1,3 +1,31 @@
+# 2.5.1
+
+_2026_07_02_
+
+Hotfix: guardrails against unresponsive LLM providers. Before this release, a
+provider endpoint that accepted the connection but never answered (dead
+backend, proxy black-holing the request...) blocked the Celery worker forever:
+the job stayed "started" with no error and no log, and the worker never took
+another task.
+
+- Explicit timeout on every provider HTTP call (`PROVIDER_REQUEST_TIMEOUT`,
+  default 300 s; `PROVIDER_CONNECT_TIMEOUT`, default 10 s). Applies to all
+  call paths, including streaming (read timeout between chunks)
+- Celery task time limits as last-resort backstop (`TASK_SOFT_TIME_LIMIT`,
+  default 90 min; `TASK_TIME_LIMIT`, soft + 5 min): a stuck task now ends as a
+  `failed` job with a readable error instead of holding the worker forever
+- SDK-internal silent retries disabled: tenacity owns the retry policy and logs
+  every attempt (`LLM API retry n/N: <error>`)
+- Surface the real provider exception in the job error ("Request timed out"
+  instead of tenacity's opaque `RetryError[...]`)
+- Debug-friendly logs across the chain:
+  - API: `Dispatched job <id>: celery_task_id=... service=... flavor=... model=... provider=...`
+  - worker: task start now logs job_id, model and provider URL
+  - adapter: `LLM request ->` / `LLM response <- ... in N s (n retries)` /
+    `LLM request FAILED` with duration, retry count and error
+
+---
+
 # 2.5.0
 
 _2026_06_26_

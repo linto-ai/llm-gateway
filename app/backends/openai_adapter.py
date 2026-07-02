@@ -1,5 +1,7 @@
 from openai import OpenAI, AsyncOpenAI, BadRequestError
+import httpx
 import logging
+import time
 from typing import Optional, Callable, Tuple, Dict
 from tenacity import (
     stop_after_attempt, wait_random_exponential,
@@ -35,8 +37,30 @@ class OpenAIAdapter:
         self.top_p = task_data["backendParams"]["top_p"]
         self.maxGenerationLength = task_data["backendParams"]["maxGenerationLength"]
 
-        self.client = OpenAI(api_key=self.api_key, base_url=self.api_base)
-        self.async_client = AsyncOpenAI(api_key=self.api_key, base_url=self.api_base)
+        # Explicit timeout on every provider call: without it a provider that
+        # accepts the connection but never answers blocks the worker forever
+        # (job stuck in "started", zero log, zero error). On streaming calls the
+        # same value acts as the read timeout between chunks. SDK-internal
+        # retries are disabled: tenacity owns the retry policy and logs every
+        # attempt (see _get_retry_decorator), silent double-retries would
+        # multiply the time a dead provider holds a worker.
+        request_timeout = httpx.Timeout(
+            settings.provider_request_timeout,
+            connect=settings.provider_connect_timeout,
+        )
+        self.client = OpenAI(
+            api_key=self.api_key, base_url=self.api_base,
+            timeout=request_timeout, max_retries=0,
+        )
+        self.async_client = AsyncOpenAI(
+            api_key=self.api_key, base_url=self.api_base,
+            timeout=request_timeout, max_retries=0,
+        )
+        self.logger.info(
+            f"Provider client ready: url={self.api_base} model={self.modelName} "
+            f"request_timeout={settings.provider_request_timeout}s "
+            f"connect_timeout={settings.provider_connect_timeout}s"
+        )
 
     def _on_retry(self, retry_state) -> None:
         """Called before each retry attempt. Notifies via callback if configured."""
@@ -71,6 +95,10 @@ class OpenAIAdapter:
             'wait': wait_random_exponential(min=settings.api_retry_min_delay, max=settings.api_retry_max_delay),
             'stop': stop_after_attempt(settings.api_max_retries),
             'before_sleep': self._on_retry,
+            # Propagate the real exception (e.g. APITimeoutError, APIConnectionError)
+            # instead of tenacity's opaque RetryError: it ends up verbatim in the
+            # job error shown to the user, "Request timed out" beats "RetryError[...]".
+            'reraise': True,
         }
         if exclude_bad_request:
             kwargs['retry'] = retry_if_not_exception_type(BadRequestError)
@@ -131,9 +159,29 @@ class OpenAIAdapter:
                 self.logger.exception(f"Content length: {len(content)} chars")
                 raise
 
-        for attempt in Retrying(**self._get_retry_decorator()):
-            with attempt:
-                return _call()
+        started = time.monotonic()
+        retries_before = self.total_retries
+        self.logger.info(
+            f"LLM request -> {self.api_base} model={self.modelName} input={len(content)} chars"
+        )
+        try:
+            for attempt in Retrying(**self._get_retry_decorator()):
+                with attempt:
+                    result = _call()
+        except BaseException as e:
+            self.logger.error(
+                f"LLM request FAILED -> {self.api_base} model={self.modelName} "
+                f"after {time.monotonic() - started:.1f}s "
+                f"({self.total_retries - retries_before} retries): "
+                f"{type(e).__name__}: {str(e)[:200]}"
+            )
+            raise
+        self.logger.info(
+            f"LLM response <- {self.api_base} model={self.modelName} "
+            f"in {time.monotonic() - started:.1f}s "
+            f"({self.total_retries - retries_before} retries)"
+        )
+        return result
 
     async def async_publish(
         self,
@@ -189,9 +237,29 @@ class OpenAIAdapter:
                 self.logger.exception(f"Content length: {len(content)} chars")
                 raise
 
-        async for attempt in AsyncRetrying(**self._get_retry_decorator()):
-            with attempt:
-                return await _call()
+        started = time.monotonic()
+        retries_before = self.total_retries
+        self.logger.info(
+            f"LLM request -> {self.api_base} model={self.modelName} input={len(content)} chars"
+        )
+        try:
+            async for attempt in AsyncRetrying(**self._get_retry_decorator()):
+                with attempt:
+                    result = await _call()
+        except BaseException as e:
+            self.logger.error(
+                f"LLM request FAILED -> {self.api_base} model={self.modelName} "
+                f"after {time.monotonic() - started:.1f}s "
+                f"({self.total_retries - retries_before} retries): "
+                f"{type(e).__name__}: {str(e)[:200]}"
+            )
+            raise
+        self.logger.info(
+            f"LLM response <- {self.api_base} model={self.modelName} "
+            f"in {time.monotonic() - started:.1f}s "
+            f"({self.total_retries - retries_before} retries)"
+        )
+        return result
 
     async def stream_chat(
         self,

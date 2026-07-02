@@ -847,6 +847,16 @@ async def execute_service(
         task_id=celery_task_id,
         priority=celery_priority
     )
+    # One line to correlate everything when debugging: job <-> celery task <->
+    # service/flavor <-> provider actually targeted. Grep the same task id in the
+    # worker logs to follow the execution.
+    logger.info(
+        f"Dispatched job {job.id}: celery_task_id={celery_task_id} "
+        f"service={service.name} flavor={flavor.name} "
+        f"model={(task_data.get('backendParams') or {}).get('modelName')} "
+        f"provider={(task_data.get('providerConfig') or {}).get('api_url')} "
+        f"priority={celery_priority}"
+    )
 
     return ServiceExecuteResponse(
         job_id=str(job.id),
@@ -1132,6 +1142,16 @@ async def _execute_with_file_internal(
         args=[task_data],
         task_id=celery_task_id,
         priority=celery_priority
+    )
+    # One line to correlate everything when debugging: job <-> celery task <->
+    # service/flavor <-> provider actually targeted. Grep the same task id in the
+    # worker logs to follow the execution.
+    logger.info(
+        f"Dispatched job {job.id}: celery_task_id={celery_task_id} "
+        f"service={service.name} flavor={flavor.name} "
+        f"model={(task_data.get('backendParams') or {}).get('modelName')} "
+        f"provider={(task_data.get('providerConfig') or {}).get('api_url')} "
+        f"priority={celery_priority}"
     )
 
     return ServiceExecuteResponse(
