@@ -75,10 +75,34 @@ export function TokenizerSelector({
 
   const [type, setType] = useState<TokenizerType>(getTypeFromValues);
 
-  // Check if current tokenizer is available locally
+  // Check if current tokenizer is available locally (cache or bundled)
   const isTokenizerLocal = (repo: string) => {
     return tokenizersResponse?.tokenizers.some(t => t.source_repo === repo) ?? false;
   };
+
+  // Baked into the image: resolves offline, no download needed
+  const isTokenizerBundled = (repo: string) => {
+    return tokenizersResponse?.tokenizers.some(t => t.source_repo === repo && t.bundled) ?? false;
+  };
+
+  // Curated list merged with whatever the server actually has (bundled/cached),
+  // offline-ready ones first, so admins pick something that won't need a fetch.
+  const hfOptions = (() => {
+    const known = new Map<string, string>(
+      COMMON_HF_TOKENIZERS.map((t) => [t.value, t.label])
+    );
+    (tokenizersResponse?.tokenizers ?? []).forEach((t) => {
+      if (!known.has(t.source_repo)) known.set(t.source_repo, t.source_repo);
+    });
+    return Array.from(known, ([value, label]) => ({
+      value,
+      label,
+      bundled: isTokenizerBundled(value),
+      cached: isTokenizerLocal(value),
+    })).sort(
+      (a, b) => Number(b.bundled || b.cached) - Number(a.bundled || a.cached)
+    );
+  })();
 
   // Update local state when props change
   useEffect(() => {
@@ -210,9 +234,9 @@ export function TokenizerSelector({
     return t('tokenizer.autoDetect');
   };
 
-  // Check if current repo is in common list
+  // Check if current repo is offered in the dropdown (curated or server-known)
   const isCommonRepo = (repo: string) => {
-    return COMMON_HF_TOKENIZERS.some(tok => tok.value === repo);
+    return hfOptions.some(tok => tok.value === repo);
   };
 
   return (
@@ -294,14 +318,21 @@ export function TokenizerSelector({
                   <SelectValue placeholder={t('tokenizer.selectRepo')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {COMMON_HF_TOKENIZERS.map((tok) => (
+                  {hfOptions.map((tok) => (
                     <SelectItem key={tok.value} value={tok.value}>
                       <div className="flex items-center gap-2">
-                        {isTokenizerLocal(tok.value) && (
+                        {(tok.bundled || tok.cached) && (
                           <Check className="h-3 w-3 text-green-500" />
                         )}
                         <span>{tok.label}</span>
-                        <span className="text-xs text-muted-foreground">({tok.value})</span>
+                        {tok.bundled ? (
+                          <Badge variant="secondary" className="text-xs">{t('tokenizer.bundled')}</Badge>
+                        ) : tok.cached ? (
+                          <Badge variant="outline" className="text-xs">{t('tokenizer.cached')}</Badge>
+                        ) : null}
+                        {tok.label !== tok.value && (
+                          <span className="text-xs text-muted-foreground">({tok.value})</span>
+                        )}
                       </div>
                     </SelectItem>
                   ))}

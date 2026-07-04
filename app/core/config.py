@@ -80,15 +80,19 @@ class Settings(BaseSettings):
     provider_request_timeout: float = 300.0  # seconds per provider HTTP request
     provider_connect_timeout: float = 10.0  # seconds to establish the connection
 
-    # Celery last-resort backstop: kills a task that is still running after this
-    # long, whatever the reason. The soft limit raises inside the task so the
-    # job is marked "failed" with a readable error; the hard limit terminates
-    # the worker process shortly after if the task ignored the soft one.
-    task_soft_time_limit: int = 5400  # 90 min
-    task_time_limit: int = 5700  # soft + 5 min
+    # Celery backstop for stuck tasks. Soft limit raises inside the task (-> failed);
+    # hard limit kills the worker. Tight on purpose: a healthy job finishes well under.
+    task_soft_time_limit: int = 540  # 9 min
+    task_time_limit: int = 600  # 10 min hard cap
+    # MUST stay > task_time_limit, else an in-flight/prefetched message is redelivered
+    # before its task is killed (kombu default 3600).
+    broker_visibility_timeout: int = 900  # 15 min
 
-    # Tokenizer Storage
-    tokenizer_storage_path: str = "/var/www/data/tokenizers"
+    # Tokenizer storage & resolution.
+    tokenizer_storage_path: str = "/var/www/data/tokenizers"  # writable cache / mount
+    tokenizer_bundled_path: str = "/opt/linto/tokenizers"  # read-only, baked into image
+    tokenizer_offline: bool = False  # true = no HF fetch at job time, fall back to tiktoken
+    tokenizer_download_timeout: int = 30  # seconds, hard cap on one download
 
     # CORS - must be configured via CORS_ORIGINS env var (comma-separated origins)
     cors_origins: str = ""

@@ -55,6 +55,7 @@ async def list_tokenizers() -> TokenizerListResponse:
                 type=t.type,
                 size_bytes=t.size_bytes,
                 created_at=t.created_at,
+                bundled=t.bundled,
             )
             for t in tokenizers
         ],

@@ -19,6 +19,9 @@ class TokenizerInfo(BaseModel):
     )
     size_bytes: int = Field(..., description="Size in bytes")
     created_at: datetime = Field(..., description="When the tokenizer was downloaded")
+    bundled: bool = Field(
+        default=False, description="Baked into the image (read-only) vs writable cache"
+    )
 
     class Config:
         from_attributes = True

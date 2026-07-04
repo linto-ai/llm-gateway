@@ -54,6 +54,8 @@ celery_app.conf.broker_transport_options = {
     'priority_steps': list(range(10)),  # 0-9 priority levels
     'sep': ':',
     'queue_order_strategy': 'priority',
+    # > task_time_limit so an in-flight/prefetched message isn't redelivered early.
+    'visibility_timeout': settings.broker_visibility_timeout,
 }
 celery_app.conf.task_default_priority = 5  # Normal priority by default
 celery_app.conf.worker_prefetch_multiplier = 1  # Fetch one task at a time for priority ordering

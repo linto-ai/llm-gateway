@@ -313,7 +313,7 @@ export default function JobsPage() {
           >
             <ExternalLink className="h-4 w-4" />
           </Button>
-          {(job.status === 'queued' || job.status === 'processing') && (
+          {(job.status === 'queued' || job.status === 'started' || job.status === 'processing') && (
             <Button
               variant="ghost"
               size="sm"

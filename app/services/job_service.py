@@ -364,7 +364,6 @@ class JobService:
             Dict with job_id, status, and message, or None if job not found
         """
         from datetime import datetime
-        from app.http_server.celery_app import celery_app
 
         # Get job by ID
         stmt = select(Job).where(Job.id == job_id)
@@ -382,29 +381,12 @@ class JobService:
                 "message": f"Cannot cancel job: already {job.status}",
             }
 
-        # Revoke the Celery task
+        # Best-effort revoke (never raises). Done first so a stuck/running task is
+        # killed and its worker slot freed; the DB update below runs regardless so
+        # a job wedged in "started" reliably leaves the active state.
+        await self._revoke_celery_task(job.celery_task_id)
+
         try:
-            import asyncio
-            from app.http_server.celery_app import redis_client
-
-            # Run blocking Redis/Celery operations in thread pool to avoid blocking event loop
-            loop = asyncio.get_event_loop()
-
-            # Add to revoked_tasks set in Redis for graceful cancellation
-            # This allows running tasks to check and stop between batches
-            await loop.run_in_executor(None, redis_client.sadd, "revoked_tasks", job.celery_task_id)
-            # Set expiry on the revoked task entry (1 hour)
-            await loop.run_in_executor(None, redis_client.expire, "revoked_tasks", 3600)
-            logger.info(f"Added task {job.celery_task_id} to revoked_tasks set")
-
-            # Also send Celery revoke signal (for tasks not yet started)
-            await loop.run_in_executor(
-                None,
-                lambda: celery_app.control.revoke(job.celery_task_id, terminate=True)
-            )
-            logger.info(f"Revoked Celery task {job.celery_task_id} for job {job_id}")
-
-            # Update job status
             job.status = "failed"
             job.error = "Cancelled by user"
             job.completed_at = datetime.utcnow()
@@ -418,7 +400,8 @@ class JobService:
                 "message": "Job cancelled successfully",
             }
         except Exception as e:
-            logger.exception(f"Failed to cancel job {job_id}: {e}")
+            logger.exception(f"Failed to update job {job_id} after revoke: {e}")
+            await db.rollback()
             return {
                 "job_id": job_id,
                 "status": "failed",
@@ -448,6 +431,29 @@ class JobService:
 
         logger.info(f"Deleted job {job_id}")
         return True
+
+    async def _revoke_celery_task(self, celery_task_id: Optional[str]) -> None:
+        """Terminate a Celery task so its worker slot is freed.
+
+        Marking a job failed in the DB does not stop a task still running on a
+        worker; without this the slot stays busy until the hard time limit. Best
+        effort, never raises.
+        """
+        if not celery_task_id:
+            return
+        try:
+            import asyncio
+            from app.http_server.celery_app import celery_app, redis_client
+
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, redis_client.sadd, "revoked_tasks", celery_task_id)
+            await loop.run_in_executor(None, redis_client.expire, "revoked_tasks", 3600)
+            await loop.run_in_executor(
+                None, lambda: celery_app.control.revoke(celery_task_id, terminate=True)
+            )
+            logger.info(f"Revoked Celery task {celery_task_id} to free its worker slot")
+        except Exception as e:
+            logger.warning(f"Failed to revoke Celery task {celery_task_id}: {e}", exc_info=True)
 
     async def detect_stale_jobs(
         self,
@@ -593,6 +599,8 @@ class JobService:
                 job.error = f"Job orphaned: Celery task state is '{celery_status}' (worker may have died)"
                 job.completed_at = datetime.utcnow()
                 action = "marked_orphaned"
+                # Kill any lingering execution so the worker slot is freed.
+                await self._revoke_celery_task(job.celery_task_id)
 
             cleaned_jobs.append({
                 "job_id": str(job.id),
@@ -642,6 +650,9 @@ class JobService:
             job.status = "failed"
             job.error = f"Job marked as failed: stale after {timeout_minutes} minutes in '{previous_status}' state (worker may have died)"
             job.completed_at = datetime.utcnow()
+
+            # Free the worker slot in case the task is still running.
+            await self._revoke_celery_task(job.celery_task_id)
 
             marked_jobs.append({
                 "job_id": str(job.id),

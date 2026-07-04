@@ -113,6 +113,8 @@
     "download": "Telecharger le tokenizer",
     "downloaded": "Tokenizer telecharge avec succès",
     "downloading": "Telechargement du tokenizer...",
+    "bundled": "Embarque",
+    "cached": "En cache",
     "alreadyCached": "Tokenizer deja disponible localement",
     "downloadFailed": "Échec du telechargement du tokenizer",
     "enterRepo": "Entrez d'abord un depot HuggingFace",

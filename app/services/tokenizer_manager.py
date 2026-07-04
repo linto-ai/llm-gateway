@@ -7,6 +7,14 @@ It supports both tiktoken (for OpenAI/Anthropic/Google) and HuggingFace tokenize
 """
 
 import os
+
+# Force classic HTTP downloads (the xet CDN path has no usable timeout). Must be
+# set before transformers is imported; Dockerfile sets the same, env can override.
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+os.environ.setdefault("HF_HUB_ETAG_TIMEOUT", "10")
+
+import concurrent.futures
 import logging
 import shutil
 import threading
@@ -22,6 +30,20 @@ from app.core.tokenizer_mappings import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Bounded-download executor: a download overrunning the timeout is abandoned by
+# the caller (moves on to fallback), the thread unwinds when its HTTP call times out.
+_DOWNLOAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(
+    max_workers=4, thread_name_prefix="tok-download"
+)
+
+
+class TokenizerLoadError(Exception):
+    """Tokenizer could not be loaded; caller falls back to tiktoken."""
+
+
+# Built-in tiktoken encodings (no download / no I/O).
+_TIKTOKEN_ENCODINGS = {"cl100k_base", "o200k_base", "p50k_base", "r50k_base"}
 
 
 class TokenizerWrapper(Protocol):
@@ -96,12 +118,14 @@ class TokenizerInfo:
         tokenizer_type: str,
         size_bytes: int,
         created_at: datetime,
+        bundled: bool = False,
     ):
         self.id = id
         self.source_repo = source_repo
         self.type = tokenizer_type
         self.size_bytes = size_bytes
         self.created_at = created_at
+        self.bundled = bundled  # baked into the image (read-only) vs writable cache
 
 
 class PreloadResult:
@@ -159,19 +183,52 @@ class TokenizerManager:
         # Fallback to environment variable or default
         return Path(os.getenv("TOKENIZER_STORAGE_PATH", "/var/www/data/tokenizers"))
 
+    @staticmethod
+    def _get_bundled_path() -> Path:
+        """Get the read-only bundled (baked-in) tokenizer path."""
+        try:
+            from app.core.config import settings
+            return Path(settings.tokenizer_bundled_path)
+        except Exception:
+            pass
+        return Path(os.getenv("TOKENIZER_BUNDLED_PATH", "/opt/linto/tokenizers"))
+
+    @staticmethod
+    def _is_offline() -> bool:
+        """Whether network fetches are disabled at job time."""
+        try:
+            from app.core.config import settings
+            return bool(settings.tokenizer_offline)
+        except Exception:
+            return os.getenv("TOKENIZER_OFFLINE", "false").lower() in ("1", "true", "yes")
+
+    @staticmethod
+    def _download_timeout() -> int:
+        """Hard cap (seconds) on a single tokenizer download."""
+        try:
+            from app.core.config import settings
+            return int(settings.tokenizer_download_timeout)
+        except Exception:
+            return int(os.getenv("TOKENIZER_DOWNLOAD_TIMEOUT", "30"))
+
     def __init__(self):
         """Initialize TokenizerManager (private, use get_instance())."""
         # Memory caches
         self._memory_cache: Dict[str, Any] = {}  # HuggingFace tokenizers
         self._tiktoken_cache: Dict[str, TiktokenWrapper] = {}  # tiktoken encodings
 
-        # Storage path (resolved once on init)
-        self.TOKENIZER_STORAGE_PATH = self._get_storage_path()
+        # Storage paths (resolved once on init)
+        self.TOKENIZER_STORAGE_PATH = self._get_storage_path()  # writable cache / mount
+        self.TOKENIZER_BUNDLED_PATH = self._get_bundled_path()  # read-only, baked
 
-        # Ensure storage directory exists
+        # Only the writable cache is guaranteed to exist; bundled may be absent in dev.
         self.TOKENIZER_STORAGE_PATH.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"TokenizerManager initialized with storage: {self.TOKENIZER_STORAGE_PATH}")
+        logger.info(
+            f"TokenizerManager initialized with storage: {self.TOKENIZER_STORAGE_PATH}, "
+            f"bundled: {self.TOKENIZER_BUNDLED_PATH} "
+            f"(exists={self.TOKENIZER_BUNDLED_PATH.exists()}), offline={self._is_offline()}"
+        )
 
     @classmethod
     def get_instance(cls) -> "TokenizerManager":
@@ -183,10 +240,25 @@ class TokenizerManager:
         return cls._instance
 
     def _get_local_path(self, tokenizer_id: str) -> Path:
-        """Get the local storage path for a tokenizer."""
+        """Writable-cache path for a tokenizer (mount-friendly, downloads land here)."""
         # Replace slashes with double dashes for filesystem safety
         safe_id = tokenizer_id.replace("/", "--")
         return self.TOKENIZER_STORAGE_PATH / safe_id
+
+    def _get_bundled_local_path(self, tokenizer_id: str) -> Path:
+        """Read-only baked-in path for a tokenizer."""
+        safe_id = tokenizer_id.replace("/", "--")
+        return self.TOKENIZER_BUNDLED_PATH / safe_id
+
+    def _find_on_disk(self, tokenizer_id: str) -> Optional[Path]:
+        """Return the on-disk dir for a tokenizer, writable cache first then bundled."""
+        cache_path = self._get_local_path(tokenizer_id)
+        if cache_path.exists():
+            return cache_path
+        bundled_path = self._get_bundled_local_path(tokenizer_id)
+        if bundled_path.exists():
+            return bundled_path
+        return None
 
     def _tokenizer_id_from_path(self, path: Path) -> str:
         """Convert path back to tokenizer ID."""
@@ -208,10 +280,9 @@ class TokenizerManager:
             raise
 
     def _load_from_local(self, tokenizer_id: str) -> Optional[HuggingFaceWrapper]:
-        """Load a HuggingFace tokenizer from local storage."""
-        local_path = self._get_local_path(tokenizer_id)
-
-        if not local_path.exists():
+        """Load a HuggingFace tokenizer from disk (writable cache, then bundled)."""
+        local_path = self._find_on_disk(tokenizer_id)
+        if local_path is None:
             return None
 
         try:
@@ -220,32 +291,76 @@ class TokenizerManager:
             tokenizer = AutoTokenizer.from_pretrained(str(local_path))
             wrapper = HuggingFaceWrapper(tokenizer, tokenizer_id)
             self._memory_cache[tokenizer_id] = wrapper
-            logger.debug(f"Loaded tokenizer from local storage: {tokenizer_id}")
+            logger.debug(f"Loaded tokenizer from disk ({local_path}): {tokenizer_id}")
             return wrapper
         except Exception as e:
-            logger.exception(f"Failed to load tokenizer from local: {tokenizer_id}: {e}")
+            logger.exception(f"Failed to load tokenizer from disk {local_path}: {tokenizer_id}: {e}")
             return None
 
     def _download_and_save(self, tokenizer_id: str) -> HuggingFaceWrapper:
-        """Download a HuggingFace tokenizer and save to local storage."""
-        from transformers import AutoTokenizer
-
+        """Download a HuggingFace tokenizer to the writable cache, bounded by
+        tokenizer_download_timeout. Raises TokenizerLoadError on timeout/failure."""
         local_path = self._get_local_path(tokenizer_id)
+        timeout = self._download_timeout()
 
-        try:
+        def _do_download() -> Any:
+            from transformers import AutoTokenizer
             logger.info(f"Downloading tokenizer: {tokenizer_id}")
             tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
-
-            # Save to local storage
             tokenizer.save_pretrained(str(local_path))
-            logger.info(f"Saved tokenizer to: {local_path}")
+            return tokenizer
 
-            wrapper = HuggingFaceWrapper(tokenizer, tokenizer_id)
-            self._memory_cache[tokenizer_id] = wrapper
-            return wrapper
+        future = _DOWNLOAD_EXECUTOR.submit(_do_download)
+        try:
+            tokenizer = future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            future.cancel()  # thread keeps running until its HTTP call times out, then exits
+            raise TokenizerLoadError(
+                f"Tokenizer download timed out after {timeout}s: {tokenizer_id}"
+            )
         except Exception as e:
-            logger.exception(f"Failed to download tokenizer {tokenizer_id}: {e}")
-            raise
+            raise TokenizerLoadError(f"Failed to download tokenizer {tokenizer_id}: {e}") from e
+
+        logger.info(f"Saved tokenizer to: {local_path}")
+        wrapper = HuggingFaceWrapper(tokenizer, tokenizer_id)
+        self._memory_cache[tokenizer_id] = wrapper
+        return wrapper
+
+    def load(self, tokenizer_name: str) -> Union[TiktokenWrapper, HuggingFaceWrapper]:
+        """Resolve a concrete tokenizer identifier to a wrapper. Never hangs,
+        never raises: tiktoken name / memory / disk (cache then bundled) /
+        bounded download (skipped when offline) / tiktoken estimate fallback."""
+        # tiktoken encodings are built in, no I/O
+        if tokenizer_name in self._tiktoken_cache or tokenizer_name in _TIKTOKEN_ENCODINGS:
+            try:
+                return self._load_tiktoken(tokenizer_name)
+            except Exception:
+                logger.warning(f"tiktoken '{tokenizer_name}' failed, using cl100k_base", exc_info=True)
+                return self._load_tiktoken("cl100k_base")
+
+        # HuggingFace repo
+        if tokenizer_name in self._memory_cache:
+            return self._memory_cache[tokenizer_name]
+
+        local = self._load_from_local(tokenizer_name)
+        if local:
+            return local
+
+        if self._is_offline():
+            logger.warning(
+                f"Tokenizer '{tokenizer_name}' not bundled/cached and offline mode is on; "
+                "using tiktoken cl100k_base estimate"
+            )
+            return self._load_tiktoken("cl100k_base")
+
+        try:
+            return self._download_and_save(tokenizer_name)
+        except Exception as e:
+            logger.warning(
+                f"Tokenizer '{tokenizer_name}' unavailable ({e}); using tiktoken cl100k_base estimate",
+                exc_info=True,
+            )
+            return self._load_tiktoken("cl100k_base")
 
     def _resolve_tokenizer_config(self, model) -> Dict[str, Any]:
         """
@@ -308,26 +423,8 @@ class TokenizerManager:
                 )
             return self._load_tiktoken(encoding_name)
 
-        # HuggingFace tokenizer
-        repo = config["repo"]
-
-        # Check memory cache
-        if repo in self._memory_cache:
-            return self._memory_cache[repo]
-
-        # Check local storage
-        local_tokenizer = self._load_from_local(repo)
-        if local_tokenizer:
-            return local_tokenizer
-
-        # Download and save
-        try:
-            return self._download_and_save(repo)
-        except Exception as e:
-            logger.exception(f"Failed to load HuggingFace tokenizer {repo}: {e}")
-            # Fallback to tiktoken
-            logger.warning(f"Falling back to tiktoken for model {model.model_identifier}", exc_info=True)
-            return self._load_tiktoken("cl100k_base")
+        # HuggingFace tokenizer: single non-hanging, non-raising path.
+        return self.load(config["repo"])
 
     def count_tokens(self, model, text: str) -> int:
         """
@@ -380,10 +477,9 @@ class TokenizerManager:
 
         # HuggingFace tokenizer
         repo = config["repo"]
-        local_path = self._get_local_path(repo)
 
-        # Check if already cached locally
-        if local_path.exists():
+        # Check if already available on disk (writable cache or bundled)
+        if self._find_on_disk(repo) is not None:
             try:
                 self._load_from_local(repo)
                 return PreloadResult(
@@ -392,7 +488,7 @@ class TokenizerManager:
                     tokenizer_id=repo,
                     tokenizer_type="huggingface",
                     cached=True,
-                    message="Tokenizer already cached locally",
+                    message="Tokenizer already available on disk",
                 )
             except Exception as e:
                 logger.warning(f"Cached tokenizer corrupted, re-downloading: {e}", exc_info=True)
@@ -421,35 +517,36 @@ class TokenizerManager:
 
     def list_local_tokenizers(self) -> List[TokenizerInfo]:
         """
-        List all tokenizers persisted locally.
+        List tokenizers available on disk: writable cache plus baked-in bundled
+        ones. A cache entry shadows a bundled one with the same id (same as
+        resolution order), so each repo appears once.
 
         Returns:
             List of TokenizerInfo objects
         """
-        tokenizers = []
+        by_id: Dict[str, TokenizerInfo] = {}
 
-        if not self.TOKENIZER_STORAGE_PATH.exists():
-            return tokenizers
-
-        for path in self.TOKENIZER_STORAGE_PATH.iterdir():
-            if path.is_dir():
+        # Bundled first so cache entries override them.
+        for base_path, bundled in ((self.TOKENIZER_BUNDLED_PATH, True),
+                                   (self.TOKENIZER_STORAGE_PATH, False)):
+            if not base_path.exists():
+                continue
+            for path in base_path.iterdir():
+                if not path.is_dir():
+                    continue
                 tokenizer_id = self._tokenizer_id_from_path(path)
                 size_bytes = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
-                created_at = datetime.fromtimestamp(
-                    path.stat().st_ctime, tz=timezone.utc
+                created_at = datetime.fromtimestamp(path.stat().st_ctime, tz=timezone.utc)
+                by_id[path.name] = TokenizerInfo(
+                    id=path.name,  # Filesystem-safe ID (with --)
+                    source_repo=tokenizer_id,  # Original repo name (with /)
+                    tokenizer_type="huggingface",
+                    size_bytes=size_bytes,
+                    created_at=created_at,
+                    bundled=bundled,
                 )
 
-                tokenizers.append(
-                    TokenizerInfo(
-                        id=path.name,  # Filesystem-safe ID (with --)
-                        source_repo=tokenizer_id,  # Original repo name (with /)
-                        tokenizer_type="huggingface",
-                        size_bytes=size_bytes,
-                        created_at=created_at,
-                    )
-                )
-
-        return tokenizers
+        return list(by_id.values())
 
     def delete_tokenizer(self, tokenizer_id: str) -> DeleteResult:
         """

@@ -1,3 +1,38 @@
+# 2.5.2
+
+_2026_07_04_
+
+Tokenizer resolution can no longer stall or crash a Celery worker, which was
+wedging the job queue on closed sites (no HuggingFace egress).
+
+Root cause: `AutoTokenizer.from_pretrained` fetched tokenizer files through the
+HF xet CDN, a separate host with no usable timeout. A site that reached
+huggingface.co but blackholed the xet CDN hung the fetch until the task time
+limit. With prefork + `worker_prefetch_multiplier=1`, the message prefetched
+behind a busy child stays unacked and, once past the broker visibility timeout,
+is redelivered, so even fresh workers stop taking new tasks.
+
+- Tokenizer resolution is now a single non-hanging, non-raising path: tiktoken /
+  disk cache / bundled / bounded download / tiktoken estimate fallback. A job can
+  no longer stall or die on tokenizer loading.
+- HF xet disabled (`HF_HUB_DISABLE_XET`) plus bounded metadata/download timeouts,
+  so a fetch fails fast instead of hanging. `TOKENIZER_DOWNLOAD_TIMEOUT` (default
+  30 s) hard-caps a single download.
+- Tokenizers baked into the image (`scripts/bake_tokenizers.py`, mistral family by
+  default) resolve offline with zero egress. `TOKENIZER_OFFLINE=1` skips any
+  job-time fetch. Mount-based tokenizer dirs keep working unchanged: the writable
+  cache is read first, the bundled set is purely additive.
+- Celery backstop cut to soft 9 min / hard 10 min (`TASK_SOFT_TIME_LIMIT` /
+  `TASK_TIME_LIMIT`), and the Redis broker visibility timeout pinned to 15 min
+  (`BROKER_VISIBILITY_TIMEOUT`), kept above the hard limit so an in-flight or
+  prefetched message is never redelivered before its task is force-killed.
+- Stale/orphaned job cleanup now revokes the Celery task (`terminate=True`) so the
+  worker slot is freed, not just the DB row marked failed.
+- llm-admin tokenizer selector surfaces bundled/cached tokenizers (offline-ready
+  first) and preloads one on demand with clear success/failure feedback.
+
+---
+
 # 2.5.1
 
 _2026_07_02_

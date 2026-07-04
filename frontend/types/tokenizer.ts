@@ -6,6 +6,8 @@ export interface TokenizerInfo {
   type: 'huggingface' | 'tiktoken';
   size_bytes: number;
   created_at: string;
+  // Baked into the image (read-only), resolves offline with no download.
+  bundled?: boolean;
 }
 
 export interface TokenizerListResponse {

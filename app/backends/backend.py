@@ -96,60 +96,7 @@ class LLMBackend:
                         f"Ensure the flavor has prompt_reduce_content set when reduce_summary=true.")
 
     def _load_tokenizer(self, tokenizer_name: str):
-        """
-        Load tokenizer using TokenizerManager or fallback to direct loading.
+        """Resolve a tokenizer via TokenizerManager.load (never hangs or raises)."""
+        from app.services.tokenizer_manager import TokenizerManager
 
-        Uses TokenizerManager for tiktoken and persisted HuggingFace tokenizers.
-        Falls back to direct AutoTokenizer loading if TokenizerManager fails.
-
-        Args:
-            tokenizer_name: Tokenizer identifier (tiktoken encoding or HuggingFace repo)
-
-        Returns:
-            Tokenizer wrapper with encode/decode methods
-        """
-
-        # Check if this is a tiktoken encoding name
-        tiktoken_encodings = {"cl100k_base", "o200k_base", "p50k_base", "r50k_base"}
-        if tokenizer_name in tiktoken_encodings:
-            try:
-                import tiktoken
-                from app.services.tokenizer_manager import TiktokenWrapper
-                encoding = tiktoken.get_encoding(tokenizer_name)
-                self.logger.info(f"Loaded tiktoken encoding: {tokenizer_name}")
-                return TiktokenWrapper(encoding, tokenizer_name)
-            except Exception as e:
-                self.logger.exception(f"Failed to load tiktoken {tokenizer_name}: {e}")
-                raise
-
-        # For HuggingFace tokenizers, try TokenizerManager first
-        try:
-            from app.services.tokenizer_manager import TokenizerManager
-
-            manager = TokenizerManager.get_instance()
-            local_path = manager._get_local_path(tokenizer_name)
-
-            if local_path.exists():
-                # Load from local storage
-                wrapper = manager._load_from_local(tokenizer_name)
-                if wrapper:
-                    self.logger.info(f"Loaded tokenizer from local cache: {tokenizer_name}")
-                    return wrapper
-
-            # Try to download and save
-            wrapper = manager._download_and_save(tokenizer_name)
-            self.logger.info(f"Downloaded and cached tokenizer: {tokenizer_name}")
-            return wrapper
-
-        except Exception as e:
-            self.logger.warning(f"TokenizerManager failed for {tokenizer_name}: {e}, falling back to direct load", exc_info=True)
-
-            # Fallback to direct AutoTokenizer loading
-            try:
-                from transformers import AutoTokenizer
-                tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-                self.logger.info(f"Loaded tokenizer directly: {tokenizer_name}")
-                return tokenizer
-            except Exception as e2:
-                self.logger.exception(f"Failed to load tokenizer {tokenizer_name}: {e2}")
-                raise
+        return TokenizerManager.get_instance().load(tokenizer_name)

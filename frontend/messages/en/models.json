@@ -113,6 +113,8 @@
     "download": "Download tokenizer",
     "downloaded": "Tokenizer downloaded successfully",
     "downloading": "Downloading tokenizer...",
+    "bundled": "Bundled",
+    "cached": "Cached",
     "alreadyCached": "Tokenizer already available locally",
     "downloadFailed": "Failed to download tokenizer",
     "enterRepo": "Enter a HuggingFace repository first",
