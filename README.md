@@ -235,7 +235,9 @@ For long documents that exceed context limits, the gateway processes content in 
 
 ### Tokenizer Management
 
-LLM Gateway includes integrated tokenizer management supporting both tiktoken (OpenAI) and HuggingFace tokenizers. This ensures accurate token counting for any model, with per-flavor tokenizer override capability.
+Token counting for chunking and cost estimation works for any model, with both tiktoken (OpenAI) and HuggingFace tokenizers and a per-model tokenizer override.
+
+Resolution is offline-safe and never blocks a job: a tokenizer is resolved from memory, then the writable cache, then the tokenizers baked into the image, then (unless `TOKENIZER_OFFLINE=1`) a bounded HuggingFace download, and finally a tiktoken estimate. The image ships the mistral tokenizers and the tiktoken encodings, so a closed site with no HuggingFace egress resolves them with zero network. Admins can preload a tokenizer on demand from the model form, and existing tokenizer mounts keep working (the writable cache is read first). See **Tokenizer Resolution** under Configuration.
 
 ### Metadata Extraction & Document Categorization
 
@@ -285,6 +287,25 @@ The gateway automatically retries failed LLM API calls (rate limits, timeouts, 5
 | `API_MAX_RETRIES`     | Maximum retry attempts                  | `6`     |
 | `API_RETRY_MIN_DELAY` | Minimum delay between retries (seconds) | `1`     |
 | `API_RETRY_MAX_DELAY` | Maximum delay between retries (seconds) | `60`    |
+
+### Tokenizer Resolution
+
+| Variable                     | Description                                                      | Default                    |
+|------------------------------|------------------------------------------------------------------|----------------------------|
+| `TOKENIZER_OFFLINE`          | Skip any job-time HuggingFace fetch; use bundled/cache then tiktoken | `false`                |
+| `TOKENIZER_DOWNLOAD_TIMEOUT` | Hard cap (seconds) on a single tokenizer download                | `30`                       |
+| `TOKENIZER_STORAGE_PATH`     | Writable tokenizer cache (mountable, read first)                 | `/var/www/data/tokenizers` |
+| `TOKENIZER_BUNDLED_PATH`     | Read-only tokenizers baked into the image                        | `/opt/linto/tokenizers`    |
+
+### Task Time Limits
+
+A stuck task is force-killed by a Celery backstop so it never holds a worker forever. Keep the broker visibility timeout above the hard limit.
+
+| Variable                    | Description                                | Default |
+|-----------------------------|--------------------------------------------|---------|
+| `TASK_SOFT_TIME_LIMIT`      | Soft limit, marks the job failed (seconds) | `540`   |
+| `TASK_TIME_LIMIT`           | Hard limit, kills the worker (seconds)     | `600`   |
+| `BROKER_VISIBILITY_TIMEOUT` | Redis visibility timeout, > hard limit     | `900`   |
 
 ### Logging
 
