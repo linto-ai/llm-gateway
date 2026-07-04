@@ -18,10 +18,11 @@ is redelivered, so even fresh workers stop taking new tasks.
 - HF xet disabled (`HF_HUB_DISABLE_XET`) plus bounded metadata/download timeouts,
   so a fetch fails fast instead of hanging. `TOKENIZER_DOWNLOAD_TIMEOUT` (default
   30 s) hard-caps a single download.
-- Tokenizers baked into the image (`scripts/bake_tokenizers.py`, mistral family by
-  default) resolve offline with zero egress. `TOKENIZER_OFFLINE=1` skips any
-  job-time fetch. Mount-based tokenizer dirs keep working unchanged: the writable
-  cache is read first, the bundled set is purely additive.
+- Tokenizers baked into the image (`scripts/bake_tokenizers.py`: mistral family
+  plus the tiktoken encodings, so the fallback works offline too) resolve with
+  zero egress. `TOKENIZER_OFFLINE=1` skips any job-time fetch. Mount-based
+  tokenizer dirs keep working unchanged: the writable cache is read first, the
+  bundled set is purely additive.
 - Celery backstop cut to soft 9 min / hard 10 min (`TASK_SOFT_TIME_LIMIT` /
   `TASK_TIME_LIMIT`), and the Redis broker visibility timeout pinned to 15 min
   (`BROKER_VISIBILITY_TIMEOUT`), kept above the hard limit so an in-flight or

@@ -14,7 +14,8 @@ ENV PYTHONUNBUFFERED=1 \
     HF_HUB_DISABLE_XET=1 \
     HF_HUB_DISABLE_TELEMETRY=1 \
     HF_HUB_ETAG_TIMEOUT=10 \
-    TOKENIZER_BUNDLED_PATH=/opt/linto/tokenizers
+    TOKENIZER_BUNDLED_PATH=/opt/linto/tokenizers \
+    TIKTOKEN_CACHE_DIR=/opt/linto/tiktoken
 
 WORKDIR /usr/src
 
@@ -54,11 +55,11 @@ ARG HF_TOKEN=""
 ARG BAKE_TOKENIZERS=""
 ARG BAKE_REQUIRED=""
 ARG SKIP_BAKE=""
-RUN mkdir -p /opt/linto/tokenizers \
+RUN mkdir -p /opt/linto/tokenizers /opt/linto/tiktoken \
     && HF_HOME=/tmp/hfcache HF_TOKEN="${HF_TOKEN}" BAKE_TOKENIZERS="${BAKE_TOKENIZERS}" \
        BAKE_REQUIRED="${BAKE_REQUIRED}" SKIP_BAKE="${SKIP_BAKE}" \
        python scripts/bake_tokenizers.py \
-    && chown -R appuser:appgroup /opt/linto/tokenizers \
+    && chown -R appuser:appgroup /opt/linto \
     && rm -rf /tmp/hfcache
 
 # Create data directories with correct ownership

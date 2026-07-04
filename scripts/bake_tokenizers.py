@@ -22,6 +22,26 @@ DEFAULT_TOKENIZERS = [
     "mistralai/Mistral-Nemo-Instruct-2407",
 ]
 
+# tiktoken is the last-resort fallback; its encoding files download on first use,
+# so warm them into TIKTOKEN_CACHE_DIR at build time or the fallback breaks offline.
+TIKTOKEN_ENCODINGS = ["cl100k_base", "o200k_base", "p50k_base", "r50k_base"]
+
+
+def warm_tiktoken() -> None:
+    try:
+        import tiktoken
+    except Exception as e:
+        print(f"[bake] tiktoken import failed: {e}", file=sys.stderr, flush=True)
+        return
+    ok = []
+    for enc in TIKTOKEN_ENCODINGS:
+        try:
+            tiktoken.get_encoding(enc)
+            ok.append(enc)
+        except Exception as e:
+            print(f"[bake] tiktoken FAIL {enc}: {e}", file=sys.stderr, flush=True)
+    print(f"[bake] tiktoken cached ({os.getenv('TIKTOKEN_CACHE_DIR', 'default')}): {ok}", flush=True)
+
 
 def main() -> int:
     if os.getenv("SKIP_BAKE"):
@@ -50,6 +70,9 @@ def main() -> int:
             print(f"[bake] FAIL  {repo}: {e}", file=sys.stderr, flush=True)
 
     print(f"[bake] baked {len(ok)}/{len(repos)}: ok={ok} failed={failed}", flush=True)
+
+    warm_tiktoken()
+
     if not ok:
         msg = "[bake] nothing baked"
         if os.getenv("BAKE_REQUIRED"):
