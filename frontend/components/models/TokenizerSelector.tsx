@@ -341,6 +341,7 @@ export function TokenizerSelector({
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">{t('tokenizer.availabilityHint')}</p>
             </div>
 
             {/* Custom repo input */}
@@ -377,7 +378,7 @@ export function TokenizerSelector({
             {/* Current selection status */}
             {tokenizerName && !preloadTokenizer.isPending && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">{t('tokenizer.current')}:</span>
+                <span className="text-muted-foreground">{t('tokenizer.downloadStatus')}:</span>
                 <span className="font-mono">{tokenizerName}</span>
                 {tokenizerStatus === true && <Check className="h-4 w-4 text-green-500" />}
                 {tokenizerStatus === false && (
