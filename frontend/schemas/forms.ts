@@ -32,6 +32,7 @@ export const modelFormSchema = z.object({
   // Free-form organization identifier (any string up to 100 chars)
   organization_id: z.string().max(100, 'validation.maxLength').nullable().optional(),
   security_level: z.union([z.literal(0), z.literal(1), z.literal(2)]).nullable().optional(),
+  tokenizer_class: z.string().max(50).nullable().optional(),
   tokenizer_name: z.string().max(200).nullable().optional(),
   metadata: z.record(z.any()).optional(),
 });

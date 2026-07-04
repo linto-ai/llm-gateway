@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { TokenizerSelector } from '@/components/models/TokenizerSelector';
 import { toast } from 'sonner';
 import { useRouter } from '@/lib/navigation';
 import type { ModelResponse } from '@/types/model';
@@ -39,6 +40,8 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
       provider_id: model.provider_id || '',
       organization_id: null,
       security_level: model.security_level ?? null,
+      tokenizer_class: model.tokenizer_class ?? null,
+      tokenizer_name: model.tokenizer_name ?? null,
       metadata: model.model_metadata || {},
     } : {
       name: '',
@@ -46,9 +49,14 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
       provider_id: '',
       organization_id: null,
       security_level: null,
+      tokenizer_class: null,
+      tokenizer_name: null,
       metadata: {},
     },
   });
+
+  const tokenizerClass = form.watch('tokenizer_class');
+  const tokenizerName = form.watch('tokenizer_name');
 
   const onSubmit = async (data: ModelFormData) => {
     try {
@@ -58,6 +66,8 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
           data: {
             model_name: data.display_name,
             security_level: data.security_level,
+            tokenizer_class: data.tokenizer_class ?? null,
+            tokenizer_name: data.tokenizer_name ?? null,
             model_metadata: data.metadata,
           },
         });
@@ -72,6 +82,8 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
           max_generation_length: 8192,  // Default max generation
           model_metadata: data.metadata,
           security_level: data.security_level,
+          tokenizer_class: data.tokenizer_class ?? null,
+          tokenizer_name: data.tokenizer_name ?? null,
         });
         toast.success(t('models.createSuccess'));
       }
@@ -167,6 +179,15 @@ export function ModelForm({ model, locale, onSuccess, onCancel }: ModelFormProps
               <FormMessage />
             </FormItem>
           )}
+        />
+
+        <TokenizerSelector
+          tokenizerClass={tokenizerClass ?? null}
+          tokenizerName={tokenizerName ?? null}
+          onChange={(c, n) => {
+            form.setValue('tokenizer_class', c, { shouldDirty: true });
+            form.setValue('tokenizer_name', n, { shouldDirty: true });
+          }}
         />
 
         <div className="flex gap-4">
