@@ -266,13 +266,16 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
         session = _get_sync_db_session()
         try:
             from app.models.service_flavor import ServiceFlavor
+            from app.models.model import Model
+            from app.core.security import get_encryption_service
             from sqlalchemy.orm import joinedload
             from uuid import UUID
 
-            # Get the failover flavor with relationships
+            # Get the failover flavor with relationships. The provider is
+            # reached through the model (ServiceFlavor -> model -> provider);
+            # ServiceFlavor itself has no `provider` relationship.
             flavor = session.query(ServiceFlavor).options(
-                joinedload(ServiceFlavor.model),
-                joinedload(ServiceFlavor.provider)
+                joinedload(ServiceFlavor.model).joinedload(Model.provider)
             ).filter(ServiceFlavor.id == UUID(failover_flavor_id)).first()
 
             if not flavor:
@@ -299,13 +302,18 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
                 'estimated_cost_per_1k_tokens': flavor.estimated_cost_per_1k_tokens,
             }
 
-            # Update provider config if the failover flavor has a different provider
-            if flavor.provider:
+            # Update provider config from the failover flavor's model -> provider.
+            # Provider stores the key ENCRYPTED (api_key_encrypted) and the URL in
+            # api_base_url; mirror the dispatch path in app/api/v1/services.py so
+            # the processor gets a decrypted key and the right field names.
+            failover_provider = flavor.model.provider if flavor.model else None
+            if failover_provider:
                 new_task_data['providerConfig'] = {
-                    'api_key': flavor.provider.api_key,
-                    'api_url': flavor.provider.api_url,
-                    'provider_type': flavor.provider.provider_type,
+                    'api_key': get_encryption_service().decrypt(failover_provider.api_key_encrypted),
+                    'api_url': failover_provider.api_base_url,
+                    'provider_type': failover_provider.provider_type,
                 }
+                new_task_data['backend'] = failover_provider.provider_type
 
             # Update prompts if the failover flavor has its own
             if flavor.prompt_system_content:

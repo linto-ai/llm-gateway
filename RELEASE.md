@@ -31,6 +31,13 @@ is redelivered, so even fresh workers stop taking new tasks.
   worker slot is freed, not just the DB row marked failed.
 - llm-admin tokenizer selector surfaces bundled/cached tokenizers (offline-ready
   first) and preloads one on demand with clear success/failure feedback.
+- Fix provider failover: it never worked. On a failoverable error (e.g. a 429
+  rate-limit from the upstream provider) the failover flavor's provider was read
+  as `flavor.provider` (no such relationship) with fields `api_key`/`api_url`,
+  so building the failover task raised AttributeError and the original error was
+  surfaced to the user instead of routing to the backup provider. Now read via
+  `flavor.model.provider`, decrypt `api_key_encrypted`, use `api_base_url`, and
+  update `backend`, matching the dispatch path.
 
 ---
 
