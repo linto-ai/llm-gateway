@@ -3,7 +3,7 @@
 /**
  * Template scope indicating visibility level
  */
-export type TemplateScope = 'system' | 'organization' | 'user';
+export type TemplateScope = "system" | "organization" | "user";
 
 /**
  * Document template response from API (updated schema with i18n)
@@ -20,6 +20,10 @@ export interface DocumentTemplate {
   // Legacy single-scope fields, derived from the lists (kept for compat).
   organization_id: string | null;
   user_id: string | null;
+  // Uploader (external user ID), null for admin/system templates.
+  owner_user_id: string | null;
+  // Phosphor icon name shown on the Studio template card, null = default.
+  icon: string | null;
   file_name: string;
   file_size: number;
   file_hash: string;
@@ -57,6 +61,10 @@ export interface DocumentTemplateUpload {
   // Deprecated single-scope aliases.
   organization_id?: string;
   user_id?: string;
+  owner_user_id?: string;
+  // Link the template to this service on creation.
+  service_id?: string;
+  icon?: string;
   is_default?: boolean;
 }
 
@@ -72,6 +80,7 @@ export interface DocumentTemplateUpdate {
   // Replace the template scope (pass empty arrays for system scope).
   allowed_organization_ids?: string[];
   allowed_user_ids?: string[];
+  icon?: string;
   is_default?: boolean;
 }
 
@@ -89,7 +98,7 @@ export interface PlaceholderInfo {
  */
 export interface PlaceholderStatus {
   name: string;
-  status: 'available' | 'missing' | 'extraction_required';
+  status: "available" | "missing" | "extraction_required";
   value?: string;
 }
 
@@ -138,45 +147,45 @@ export interface DocumentTemplateUploadFields {
  * Standard placeholders available in templates
  */
 export const STANDARD_PLACEHOLDERS = [
-  'output',
-  'job_id',
-  'job_date',
-  'service_name',
-  'flavor_name',
-  'organization_id',
-  'organization_name',
-  'conversation_name',
-  'generated_at',
+  "output",
+  "job_id",
+  "job_date",
+  "service_name",
+  "flavor_name",
+  "organization_id",
+  "organization_name",
+  "conversation_name",
+  "generated_at",
 ] as const;
 
 /**
  * Metadata placeholders (from extraction)
  */
 export const METADATA_PLACEHOLDERS = [
-  'title',
-  'summary',
-  'participants',
-  'topics',
-  'action_items',
-  'key_points',
-  'date',
-  'sentiment',
+  "title",
+  "summary",
+  "participants",
+  "topics",
+  "action_items",
+  "key_points",
+  "date",
+  "sentiment",
 ] as const;
 
 /**
  * Standard metadata fields for extraction configuration
  */
 export const STANDARD_METADATA_FIELDS = [
-  'title',
-  'summary',
-  'participants',
-  'date',
-  'topics',
-  'action_items',
-  'sentiment',
-  'language',
-  'word_count',
-  'key_points',
+  "title",
+  "summary",
+  "participants",
+  "date",
+  "topics",
+  "action_items",
+  "sentiment",
+  "language",
+  "word_count",
+  "key_points",
 ] as const;
 
 export type StandardPlaceholder = (typeof STANDARD_PLACEHOLDERS)[number];
@@ -186,7 +195,7 @@ export type StandardMetadataField = (typeof STANDARD_METADATA_FIELDS)[number];
 /**
  * Export format options
  */
-export type ExportFormat = 'docx' | 'pdf';
+export type ExportFormat = "docx" | "pdf";
 
 /**
  * Parse a placeholder string that may contain a description.
@@ -195,8 +204,11 @@ export type ExportFormat = 'docx' | 'pdf';
  * @param placeholder - The full placeholder string
  * @returns Object with name and optional description
  */
-export function parsePlaceholder(placeholder: string): { name: string; description?: string } {
-  const colonIndex = placeholder.indexOf(':');
+export function parsePlaceholder(placeholder: string): {
+  name: string;
+  description?: string;
+} {
+  const colonIndex = placeholder.indexOf(":");
   if (colonIndex === -1) {
     return { name: placeholder.trim() };
   }

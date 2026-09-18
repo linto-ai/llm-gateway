@@ -14,6 +14,10 @@ if TYPE_CHECKING:
     pass
 
 
+# Usage scope given to services created without one, the one LinTO Studio asks for.
+DEFAULT_SERVICE_SCOPE = "linto"
+
+
 class Service(Base):
     """Service definitions for LLM-powered text processing workflows."""
 
@@ -36,6 +40,12 @@ class Service(Base):
     )
     allowed_user_ids = Column(
         ARRAY(String(100)), nullable=False, server_default='{}'
+    )
+    # Usage scopes: which client products list this service ("linto" = LinTO
+    # Studio, "meet", "twake"...). Orthogonal to the access lists above, which
+    # say who may use it. Never empty: a service always belongs to a usage.
+    scopes = Column(
+        ARRAY(String(50)), nullable=False, server_default='{linto}'
     )
     is_active = Column(Boolean, default=True, nullable=False, index=True)
     service_metadata = Column("metadata", JSONB, default={}, nullable=False, server_default='{}')
@@ -98,6 +108,7 @@ class Service(Base):
             "allowed_user_ids",
             postgresql_using="gin",
         ),
+        Index("idx_services_scopes", "scopes", postgresql_using="gin"),
     )
 
     def __repr__(self) -> str:

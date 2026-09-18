@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useTranslations, useLocale } from 'next-intl';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations, useLocale } from "next-intl";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,23 +12,28 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { ScopeEditor } from '@/components/shared/ScopeEditor';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ScopeEditor } from "@/components/shared/ScopeEditor";
+import { ServiceScopesEditor } from "@/components/shared/ServiceScopesEditor";
 
-import { useCreateService, useUpdateService } from '@/hooks/use-services';
-import { useServiceTypes } from '@/hooks/use-service-types';
-import { serviceFormSchema, type ServiceFormData } from '@/schemas/forms';
-import type { ServiceResponse, CreateServiceRequest, CreateFlavorRequest } from '@/types/service';
+import { useCreateService, useUpdateService } from "@/hooks/use-services";
+import { useServiceTypes } from "@/hooks/use-service-types";
+import { serviceFormSchema, type ServiceFormData } from "@/schemas/forms";
+import type {
+  ServiceResponse,
+  CreateServiceRequest,
+  CreateFlavorRequest,
+} from "@/types/service";
 
 interface ServiceFormProps {
   service?: ServiceResponse;
@@ -36,9 +41,13 @@ interface ServiceFormProps {
   onCancel: () => void;
 }
 
-export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) {
-  const t = useTranslations('services');
-  const tCommon = useTranslations('common');
+export function ServiceForm({
+  service,
+  onSuccess,
+  onCancel,
+}: ServiceFormProps) {
+  const t = useTranslations("services");
+  const tCommon = useTranslations("common");
   const locale = useLocale();
 
   const createMutation = useCreateService();
@@ -48,14 +57,15 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceFormSchema),
     defaultValues: {
-      name: service?.name || '',
-      service_type: service?.service_type || 'summary',
+      name: service?.name || "",
+      service_type: service?.service_type || "summary",
       description: {
-        en: service?.description.en || '',
-        fr: service?.description.fr || '',
+        en: service?.description.en || "",
+        fr: service?.description.fr || "",
       },
       allowed_organization_ids: service?.allowed_organization_ids ?? [],
       allowed_user_ids: service?.allowed_user_ids ?? [],
+      scopes: service?.scopes?.length ? service.scopes : ["linto"],
       // Don't load flavors in edit mode - they are managed separately via Flavors tab
       flavors: [],
     },
@@ -72,14 +82,16 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
             description: data.description,
             allowed_organization_ids: data.allowed_organization_ids ?? [],
             allowed_user_ids: data.allowed_user_ids ?? [],
+            scopes: data.scopes,
           },
         });
       } else {
         // Create new service with initial flavors
         // Clean up null values to undefined for API compatibility
-        const cleanedFlavors = (data.flavors || []).map(f => ({
+        const cleanedFlavors = (data.flavors || []).map((f) => ({
           ...f,
-          estimated_cost_per_1k_tokens: f.estimated_cost_per_1k_tokens ?? undefined,
+          estimated_cost_per_1k_tokens:
+            f.estimated_cost_per_1k_tokens ?? undefined,
           max_concurrent_requests: f.max_concurrent_requests ?? undefined,
           create_new_turn_after: f.create_new_turn_after ?? undefined,
           max_new_turns: f.max_new_turns ?? undefined,
@@ -88,7 +100,8 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           user_prompt_template_id: f.user_prompt_template_id ?? undefined,
           reduce_prompt_id: f.reduce_prompt_id ?? undefined,
           tokenizer_override: f.tokenizer_override ?? undefined,
-          placeholder_extraction_prompt_id: f.placeholder_extraction_prompt_id ?? undefined,
+          placeholder_extraction_prompt_id:
+            f.placeholder_extraction_prompt_id ?? undefined,
           fallback_flavor_id: f.fallback_flavor_id ?? undefined,
           categorization_prompt_id: f.categorization_prompt_id ?? undefined,
         }));
@@ -99,6 +112,7 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           description: data.description,
           allowed_organization_ids: data.allowed_organization_ids ?? [],
           allowed_user_ids: data.allowed_user_ids ?? [],
+          scopes: data.scopes,
           flavors: cleanedFlavors as CreateFlavorRequest[],
         };
 
@@ -119,9 +133,9 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('fields.name')}</FormLabel>
+              <FormLabel>{t("fields.name")}</FormLabel>
               <FormControl>
-                <Input placeholder={t('placeholders.name')} {...field} />
+                <Input placeholder={t("placeholders.name")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -134,7 +148,7 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           name="service_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('fields.serviceType')}</FormLabel>
+              <FormLabel>{t("fields.serviceType")}</FormLabel>
               <Select
                 onValueChange={field.onChange}
                 defaultValue={field.value}
@@ -148,7 +162,7 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
                 <SelectContent>
                   {serviceTypes?.map((st) => (
                     <SelectItem key={st.code} value={st.code}>
-                      {locale === 'fr' ? (st.name.fr || st.name.en) : st.name.en}
+                      {locale === "fr" ? st.name.fr || st.name.en : st.name.en}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -165,11 +179,14 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                {t('fields.descriptionEn')} <span className="text-muted-foreground text-xs">({tCommon('optional')})</span>
+                {t("fields.descriptionEn")}{" "}
+                <span className="text-muted-foreground text-xs">
+                  ({tCommon("optional")})
+                </span>
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder={t('placeholders.descriptionEn')}
+                  placeholder={t("placeholders.descriptionEn")}
                   rows={3}
                   {...field}
                 />
@@ -186,11 +203,14 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                {t('fields.descriptionFr')} <span className="text-muted-foreground text-xs">({tCommon('optional')})</span>
+                {t("fields.descriptionFr")}{" "}
+                <span className="text-muted-foreground text-xs">
+                  ({tCommon("optional")})
+                </span>
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder={t('placeholders.descriptionFr')}
+                  placeholder={t("placeholders.descriptionFr")}
                   rows={3}
                   {...field}
                 />
@@ -200,39 +220,56 @@ export function ServiceForm({ service, onSuccess, onCancel }: ServiceFormProps) 
           )}
         />
 
+        {/* Usage scopes: which client products list this service */}
+        <div className="space-y-2">
+          <Label>{t("fields.scopes")}</Label>
+          <ServiceScopesEditor
+            value={form.watch("scopes") ?? ["linto"]}
+            onChange={(next) =>
+              form.setValue("scopes", next, { shouldDirty: true })
+            }
+          />
+        </div>
+
         {/* Scope: allowed organizations and users (empty = global service) */}
         <div className="space-y-2">
           <Label>
-            {t('fields.scope')}{' '}
-            <span className="text-muted-foreground text-xs">({tCommon('optional')})</span>
+            {t("fields.scope")}{" "}
+            <span className="text-muted-foreground text-xs">
+              ({tCommon("optional")})
+            </span>
           </Label>
           <ScopeEditor
             value={{
-              organizationIds: form.watch('allowed_organization_ids') ?? [],
-              userIds: form.watch('allowed_user_ids') ?? [],
+              organizationIds: form.watch("allowed_organization_ids") ?? [],
+              userIds: form.watch("allowed_user_ids") ?? [],
             }}
             onChange={(next) => {
-              form.setValue('allowed_organization_ids', next.organizationIds, { shouldDirty: true });
-              form.setValue('allowed_user_ids', next.userIds, { shouldDirty: true });
+              form.setValue("allowed_organization_ids", next.organizationIds, {
+                shouldDirty: true,
+              });
+              form.setValue("allowed_user_ids", next.userIds, {
+                shouldDirty: true,
+              });
             }}
-            orgLabel={t('fields.allowedOrganizations')}
-            userLabel={t('fields.allowedUsers')}
-            orgPlaceholder={t('placeholders.addOrganizationId')}
-            userPlaceholder={t('placeholders.addUserId')}
-            globalHint={t('scope.globalHint')}
+            orgLabel={t("fields.allowedOrganizations")}
+            userLabel={t("fields.allowedUsers")}
+            orgPlaceholder={t("placeholders.addOrganizationId")}
+            userPlaceholder={t("placeholders.addUserId")}
+            globalHint={t("scope.globalHint")}
           />
         </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={onCancel}>
-            {tCommon('cancel')}
+            {tCommon("cancel")}
           </Button>
           <Button
             type="submit"
             disabled={createMutation.isPending || updateMutation.isPending}
           >
-            {service ? tCommon('update') : tCommon('create')}
+            {service ? tCommon("update") : tCommon("create")}
           </Button>
         </div>
       </form>

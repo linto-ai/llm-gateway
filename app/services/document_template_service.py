@@ -14,6 +14,7 @@ from sqlalchemy import select, update, or_, and_, func
 from fastapi import UploadFile
 
 from app.models.document_template import DocumentTemplate
+from app.models.associations import service_document_templates
 from app.services.document_service import DocumentService
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,9 @@ class DocumentTemplateService:
         organization_id: Optional[str] = None,
         user_id: Optional[str] = None,
         is_default: bool = False,
+        owner_user_id: Optional[str] = None,
+        service_id: Optional[UUID] = None,
+        icon: Optional[str] = None,
     ) -> DocumentTemplate:
         """
         Upload and register a new DOCX template.
@@ -123,13 +127,24 @@ class DocumentTemplateService:
             organization_id: Deprecated single-org alias (folded into the lists)
             user_id: Deprecated single-user alias (folded into the lists)
             is_default: Whether to set as default
+            owner_user_id: External ID of the uploading user (kept across scope changes)
+            service_id: Service to link the template to (must exist)
+            icon: Phosphor icon name shown on the template card
 
         Returns:
             Created DocumentTemplate
 
         Raises:
-            ValueError: If file is invalid
+            ValueError: If file is invalid or service_id is unknown
         """
+        service = None
+        if service_id is not None:
+            from app.models.service import Service
+            result = await db.execute(select(Service).where(Service.id == service_id))
+            service = result.scalar_one_or_none()
+            if service is None:
+                raise ValueError(f"Service {service_id} not found")
+
         orgs, users = self._resolve_scope_lists(
             allowed_organization_ids, allowed_user_ids, organization_id, user_id
         )
@@ -193,13 +208,24 @@ class DocumentTemplateService:
             file_hash=file_hash,
             placeholders=placeholders,
             is_default=is_default,
+            owner_user_id=(owner_user_id or "").strip() or None,
+            icon=(icon or "").strip() or None,
         )
 
         db.add(template)
         await db.flush()
+        if service is not None:
+            await db.execute(
+                service_document_templates.insert().values(
+                    service_id=service.id, document_template_id=template.id
+                )
+            )
         await db.refresh(template)
 
-        logger.info(f"Created template: {name_fr} ({template.id}), scope={template.scope}")
+        logger.info(
+            f"Created template: {name_fr} ({template.id}), scope={template.scope}, "
+            f"owner={template.owner_user_id}, service={service_id}"
+        )
         return template
 
     async def get_template(
@@ -227,7 +253,7 @@ class DocumentTemplateService:
         Visibility rules:
         - System templates (org=NULL, user=NULL): visible to all if include_system=True
         - Org templates (org=X, user=NULL): visible to org X members
-        - User templates (org=X, user=Y): visible only to user Y
+        - User templates (org=X, user=Y): visible only to user Y (and its owner)
 
         Args:
             db: Database session
@@ -252,16 +278,23 @@ class DocumentTemplateService:
         if include_system:
             conditions.append(self._is_system_template())
 
-        # Org templates: caller org is in allowed_organization_ids.
+        # Org templates: caller org is in allowed_organization_ids and no user
+        # is listed (a personal template also records its org, see create).
         if organization_id:
             conditions.append(
-                DocumentTemplate.allowed_organization_ids.any(organization_id)
+                and_(
+                    DocumentTemplate.allowed_organization_ids.any(organization_id),
+                    func.cardinality(DocumentTemplate.allowed_user_ids) == 0,
+                )
             )
 
-        # User templates: caller user is in allowed_user_ids.
+        # User templates: caller user is in allowed_user_ids, or uploaded it.
         if user_id:
             conditions.append(
-                DocumentTemplate.allowed_user_ids.any(user_id)
+                or_(
+                    DocumentTemplate.allowed_user_ids.any(user_id),
+                    DocumentTemplate.owner_user_id == user_id,
+                )
             )
 
         # If no conditions, return empty list
@@ -293,6 +326,7 @@ class DocumentTemplateService:
         allowed_organization_ids: Optional[List[str]] = None,
         allowed_user_ids: Optional[List[str]] = None,
         is_default: Optional[bool] = None,
+        icon: Optional[str] = None,
     ) -> Optional[DocumentTemplate]:
         """
         Update template metadata, scope and/or file.
@@ -308,6 +342,7 @@ class DocumentTemplateService:
             allowed_organization_ids: Replace the org access list (optional)
             allowed_user_ids: Replace the user access list (optional)
             is_default: Set as default (optional)
+            icon: Phosphor icon name shown on the card; empty string clears it
 
         Returns:
             Updated DocumentTemplate or None if not found
@@ -325,6 +360,8 @@ class DocumentTemplateService:
             template.description_fr = description_fr
         if description_en is not None:
             template.description_en = description_en
+        if icon is not None:
+            template.icon = icon.strip() or None
 
         # Update scope (access lists) if either list was provided
         if allowed_organization_ids is not None or allowed_user_ids is not None:

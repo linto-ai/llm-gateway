@@ -52,7 +52,8 @@
     "isDefault": "Set as default template",
     "french": "French",
     "english": "English",
-    "optionalEnglish": "Optional - falls back to French if not provided"
+    "optionalEnglish": "Optional - falls back to French if not provided",
+    "icon": "Icon (shown on the template card in LinTO Studio)"
   },
   "filters": {
     "scope": "Scope",
@@ -101,5 +102,21 @@
     "importSuccess": "Template imported successfully",
     "importError": "Failed to import template",
     "global": "Global Template"
+  },
+  "icons": {
+    "file-text": "Document",
+    "note-pencil": "Notes",
+    "list-checks": "Task list",
+    "users-three": "Meeting",
+    "chat-circle-text": "Interview",
+    "presentation-chart": "Presentation",
+    "newspaper": "Press release",
+    "clipboard-text": "Report",
+    "briefcase": "Business",
+    "scales": "Legal",
+    "handshake": "Agreement",
+    "graduation-cap": "Training",
+    "lightbulb": "Ideas",
+    "megaphone": "Communication"
   }
 }

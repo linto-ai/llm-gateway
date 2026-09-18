@@ -1,10 +1,11 @@
 // Service and Flavor types based on API contract
 
 // Processing mode type
-export type ProcessingMode = 'single_pass' | 'iterative';
+export type ProcessingMode = "single_pass" | "iterative";
 
 // Failover reason types
-export type FailoverReason = 'timeout' | 'rate_limit' | 'model_error' | 'content_filter';
+export type FailoverReason =
+  "timeout" | "rate_limit" | "model_error" | "content_filter";
 
 // Failover step in chain
 export interface FailoverStep {
@@ -47,13 +48,13 @@ export interface ValidateFailoverResponse {
 // derive from this, so the create-service dropdown and its validator can never
 // diverge (the cause of the "Invalid enum value ... received 'chat'" bug).
 export const SERVICE_TYPE_VALUES = [
-  'summary',
-  'translation',
-  'categorization',
-  'diarization_correction',
-  'speaker_correction',
-  'chat',
-  'generic',
+  "summary",
+  "translation",
+  "categorization",
+  "diarization_correction",
+  "speaker_correction",
+  "chat",
+  "generic",
 ] as const;
 
 export type ServiceType = (typeof SERVICE_TYPE_VALUES)[number];
@@ -69,7 +70,7 @@ export interface DocumentConfig {
 }
 
 // Canonical output types
-export type OutputType = 'text' | 'markdown' | 'json';
+export type OutputType = "text" | "markdown" | "json";
 
 export interface FlavorResponse {
   id: string;
@@ -173,6 +174,8 @@ export interface ServiceResponse {
   allowed_user_ids: string[];
   // Legacy single-org field, derived from the lists (kept for compat).
   organization_id: string;
+  // Client products the service is listed for ("linto" = LinTO Studio).
+  scopes: string[];
   default_template_id?: string | null;
   // Document templates available for this service (empty => global default).
   template_ids?: string[];
@@ -242,6 +245,8 @@ export interface CreateServiceRequest {
   allowed_user_ids?: string[];
   // Deprecated single-org alias (folded server-side into the lists).
   organization_id?: string;
+  // Client products the service is listed for; defaults to ["linto"].
+  scopes?: string[];
   template_ids?: string[];
   flavors: CreateFlavorRequest[];
 }
@@ -252,6 +257,7 @@ export interface UpdateServiceRequest {
   allowed_organization_ids?: string[];
   allowed_user_ids?: string[];
   organization_id?: string;
+  scopes?: string[];
   default_template_id?: string | null;
   template_ids?: string[];
 }
@@ -321,7 +327,7 @@ export interface ExecuteServiceRequest {
 // Execute response with fallback tracking
 export interface ExecuteServiceResponse {
   job_id: string;
-  status: 'queued';
+  status: "queued";
   service_id: string;
   service_name: string;
   flavor_id: string;
@@ -348,10 +354,10 @@ export interface FallbackAvailabilityResponse {
 
 // Execution error response with typed error codes
 export type ExecutionErrorCode =
-  | 'CONTEXT_EXCEEDED'
-  | 'CONTEXT_EXCEEDED_NO_FALLBACK'
-  | 'FLAVOR_INACTIVE'
-  | 'FALLBACK_FLAVOR_INACTIVE';
+  | "CONTEXT_EXCEEDED"
+  | "CONTEXT_EXCEEDED_NO_FALLBACK"
+  | "FLAVOR_INACTIVE"
+  | "FALLBACK_FLAVOR_INACTIVE";
 
 export interface ExecutionErrorResponse {
   detail: string;

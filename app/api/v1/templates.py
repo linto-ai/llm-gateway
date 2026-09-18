@@ -43,6 +43,9 @@ async def upload_template(
     organization_id: Optional[str] = Form(None, max_length=100, description="Deprecated: single organization scope"),
     user_id: Optional[str] = Form(None, max_length=100, description="Deprecated: single user scope"),
     is_default: bool = Form(False, description="Set as default for scope"),
+    owner_user_id: Optional[str] = Form(None, max_length=100, description="External ID of the uploading user"),
+    service_id: Optional[UUID] = Form(None, description="Link the template to this service on creation"),
+    icon: Optional[str] = Form(None, max_length=50, description="Phosphor icon name shown on the template card"),
     db: AsyncSession = Depends(get_db),
 ) -> TemplateResponse:
     """
@@ -55,6 +58,10 @@ async def upload_template(
     - System templates: both lists empty (visible to all)
     - Organization templates: orgs listed in allowed_organization_ids
     - User templates: users listed in allowed_user_ids
+
+    `owner_user_id` records who uploaded the template (independent from the
+    access lists). `service_id` links the template to that service so it shows
+    up in `GET /services/{id}/templates`.
 
     Maximum file size: 10 MB.
     """
@@ -71,6 +78,9 @@ async def upload_template(
             organization_id=organization_id,
             user_id=user_id,
             is_default=is_default,
+            owner_user_id=owner_user_id,
+            service_id=service_id,
+            icon=icon,
         )
         await db.commit()
         return template
@@ -159,6 +169,7 @@ async def update_template(
     # system). Needed because multipart cannot send an explicit empty list.
     replace_scope: bool = Form(False, description="Replace scope with the given lists, even when empty"),
     is_default: Optional[bool] = Form(None, description="Set as default"),
+    icon: Optional[str] = Form(None, max_length=50, description="Phosphor icon name shown on the template card"),
     db: AsyncSession = Depends(get_db),
 ) -> TemplateResponse:
     """
@@ -185,6 +196,7 @@ async def update_template(
             allowed_organization_ids=allowed_organization_ids,
             allowed_user_ids=allowed_user_ids,
             is_default=is_default,
+            icon=icon,
         )
         if not template:
             raise HTTPException(

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import logging
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload, joinedload
-from app.models.service import Service
+from app.models.service import Service, DEFAULT_SERVICE_SCOPE
 from app.models.service_flavor import ServiceFlavor
 from app.models.model import Model
 from app.models.prompt import Prompt
@@ -44,6 +44,17 @@ class ServiceService:
             if val and val not in seen:
                 seen.append(val)
         return sorted(seen)
+
+    @classmethod
+    @staticmethod
+    def _normalize_scopes(scopes) -> List[str]:
+        """Lower-cased, trimmed, de-duplicated usage scopes; never empty."""
+        seen = []
+        for raw in scopes or []:
+            value = str(raw).strip().lower()
+            if value and value not in seen:
+                seen.append(value)
+        return seen or [DEFAULT_SERVICE_SCOPE]
 
     @classmethod
     def _resolve_scope_lists(cls, allowed_organization_ids, allowed_user_ids,
@@ -202,6 +213,7 @@ class ServiceService:
             "allowed_organization_ids": list(service.allowed_organization_ids or []),
             "allowed_user_ids": list(service.allowed_user_ids or []),
             "organization_id": service.organization_id,
+            "scopes": list(service.scopes or [DEFAULT_SERVICE_SCOPE]),
             "is_active": service.is_active,
             "metadata": service.service_metadata,  # Map service_metadata -> metadata
             "service_category": service.service_category,
@@ -277,6 +289,7 @@ class ServiceService:
             allowed_user_ids=users,
             # Keep legacy single-org column in sync for backward compat.
             organization_id=(orgs[0] if len(orgs) == 1 and not users else None),
+            scopes=self._normalize_scopes(request.scopes),
             is_active=request.is_active,
             metadata=request.metadata or {}
         )
@@ -351,6 +364,7 @@ class ServiceService:
         is_active: Optional[bool] = None,
         organization_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        scope: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
     ) -> ServiceListResponse:
@@ -363,6 +377,7 @@ class ServiceService:
             is_active: Filter by active status
             organization_id: Visibility filter by organization
             user_id: Visibility filter by user
+            scope: Usage scope filter (e.g. "linto"): only services listed for it
             skip: Pagination offset
             limit: Page size
 
@@ -390,6 +405,8 @@ class ServiceService:
             if user_id:
                 visibility.append(Service.allowed_user_ids.any(user_id))
             filters.append(or_(*visibility))
+        if scope:
+            filters.append(Service.scopes.any(scope.strip().lower()))
 
         if filters:
             query = query.where(and_(*filters))
@@ -486,11 +503,14 @@ class ServiceService:
             service.allowed_user_ids = users
             service.organization_id = orgs[0] if len(orgs) == 1 and not users else None
 
+        if "scopes" in provided and provided["scopes"] is not None:
+            service.scopes = self._normalize_scopes(provided["scopes"])
+
         # Update remaining scalar fields (scope + relationship handled separately)
         update_data = request.model_dump(
             exclude_unset=True,
             exclude={"flavors", "template_ids", "allowed_organization_ids",
-                     "allowed_user_ids", "organization_id"},
+                     "allowed_user_ids", "organization_id", "scopes"},
         )
         for field, value in update_data.items():
             setattr(service, field, value)
@@ -660,9 +680,10 @@ class ServiceService:
     ):
         """Return the document templates available for a service.
 
-        - If the service has explicitly linked templates: those, filtered by the
-          caller's visibility scope (org/user/system).
-        - If it has no links: fall back to the global default template (if any).
+        Linked templates are filtered by the caller's visibility (system, org,
+        user access lists, or ownership). When the admin linked no template
+        (only user uploads, or nothing), the global default template is
+        prepended so users always get the standard layout.
         Raises 404 if the service does not exist.
         """
         from app.services.document_template_service import document_template_service
@@ -677,22 +698,33 @@ class ServiceService:
             raise HTTPException(status_code=404, detail="Service not found")
 
         linked = list(service.document_templates or [])
-        if not linked:
-            # Fallback: global default template (system-scoped, is_default=True)
-            default = await document_template_service.get_default_template(db)
-            return [default] if default else []
 
         def _visible(t) -> bool:
+            # No scope context provided => return links as-is (admin/no-filter view)
+            if organization_id is None and user_id is None:
+                return True
             if not t.allowed_organization_ids and not t.allowed_user_ids:
                 return True  # system template, visible to all
-            if organization_id and organization_id in (t.allowed_organization_ids or []):
+            if user_id and t.owner_user_id == user_id:
                 return True
-            if user_id and user_id in (t.allowed_user_ids or []):
-                return True
-            # No scope context provided => return links as-is (admin/no-filter view)
-            return organization_id is None and user_id is None
+            if t.allowed_user_ids:
+                # Personal template: the org list only records where it was
+                # uploaded, it must not open it to the whole organization.
+                return bool(user_id) and user_id in t.allowed_user_ids
+            return bool(organization_id) and organization_id in t.allowed_organization_ids
 
-        return [t for t in linked if _visible(t)]
+        templates = [t for t in linked if _visible(t)]
+
+        admin_linked = [t for t in linked if not t.owner_user_id]
+        if not admin_linked:
+            default = await document_template_service.get_default_template(db)
+            if default and all(t.id != default.id for t in templates):
+                templates.insert(0, default)
+
+        # Stable order: system, then organization, then personal templates.
+        rank = {"system": 0, "organization": 1, "user": 2}
+        templates.sort(key=lambda t: rank.get(t.scope, 3))
+        return templates
 
 
 # Singleton instance

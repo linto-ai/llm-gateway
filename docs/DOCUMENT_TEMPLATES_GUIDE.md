@@ -133,13 +133,34 @@ The HTML export uses [mammoth](https://github.com/mwilliamson/python-mammoth) to
 
 For faithful rendering of complex templates, use PDF export instead.
 
+## Visibility and Ownership
+
+A template carries two access lists (`allowed_organization_ids`, `allowed_user_ids`)
+and an `owner_user_id`:
+
+- both lists empty: system template, visible to everyone;
+- organizations listed, no user: shared with those organizations;
+- users listed: personal template, visible only to those users. The organization
+  it was uploaded from is also listed, but that does **not** open it to the
+  organization;
+- `owner_user_id` is the uploader (LinTO Studio user). The owner always sees the
+  template, whatever the lists say, so a personal template can be opened to the
+  organization (`PUT /document-templates/{id}` with `replace_scope=true` and an
+  empty user list) and back without losing ownership.
+
+`GET /services/{id}/templates?organization_id=&user_id=` returns the templates
+linked to the service, filtered with the rules above, ordered system, then
+organization, then personal. When no admin-linked template exists (only user
+uploads, or nothing), the global default template is prepended. Uploading with
+`service_id` links the new template to that service.
+
 ## API Reference
 
 See [Swagger](http://localhost:8000/docs) for full API. Key endpoints:
 
 | Endpoint | Description |
 |----------|-------------|
-| `POST /templates` | Upload template (multipart) |
+| `POST /templates` | Upload template (multipart; `owner_user_id`, `service_id` optional) |
 | `GET /templates` | List templates |
 | `GET /templates/{id}/placeholders` | Get extracted placeholders |
 | `GET /jobs/{id}/export/{format}` | Export job (docx/pdf/html) |

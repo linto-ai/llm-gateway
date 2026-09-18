@@ -325,6 +325,8 @@ class ServiceBase(BaseModel):
     allowed_user_ids: List[str] = Field(default_factory=list)
     # Legacy single-org identifier, derived from the lists for backward compat.
     organization_id: Optional[str] = Field(None, max_length=100)
+    # Usage scopes: client products listing this service ("linto" = LinTO Studio).
+    scopes: List[str] = Field(default_factory=lambda: ["linto"], min_length=1)
     is_active: bool = True
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
@@ -343,6 +345,8 @@ class ServiceCreate(BaseModel):
     allowed_user_ids: List[str] = Field(default_factory=list)
     # Deprecated single-org alias (folded into the lists by the service layer).
     organization_id: Optional[str] = Field(None, max_length=100, deprecated=True)
+    # Usage scopes: client products listing this service. Defaults to LinTO Studio.
+    scopes: List[str] = Field(default_factory=lambda: ["linto"], min_length=1)
     is_active: bool = True
     metadata: Dict[str, Any] = Field(default_factory=dict)
     service_category: Optional[str] = Field(None, max_length=50)
@@ -360,6 +364,8 @@ class ServiceUpdate(BaseModel):
     allowed_organization_ids: Optional[List[str]] = None
     allowed_user_ids: Optional[List[str]] = None
     organization_id: Optional[str] = Field(None, max_length=100, deprecated=True)
+    # When provided, replaces the usage scopes (at least one).
+    scopes: Optional[List[str]] = Field(None, min_length=1)
     is_active: Optional[bool] = None
     flavors: Optional[List[ServiceFlavorCreate]] = None
     metadata: Optional[Dict[str, Any]] = None
