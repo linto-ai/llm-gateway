@@ -105,7 +105,8 @@
     "flavorCount": "{count, plural, =0 {No flavors} =1 {1 flavor} other {# flavors}}",
     "scope": "Access scope",
     "allowedOrganizations": "Allowed organizations",
-    "allowedUsers": "Allowed users"
+    "allowedUsers": "Allowed users",
+    "scopes": "Usages (scopes)"
   },
   "types": {
     "summary": "Summary",
@@ -132,7 +133,8 @@
     "descriptionFr": "French description",
     "organizationId": "Organization UUID (e.g., 550e8400-e29b-41d4-a716-446655440000)",
     "addOrganizationId": "Add an organization ID…",
-    "addUserId": "Add a user ID…"
+    "addUserId": "Add a user ID…",
+    "addScope": "Add a usage…"
   },
   "flavors": {
     "title": "Flavors",
@@ -359,5 +361,9 @@
     "saved": "Available templates updated",
     "empty": "No template linked — the global default template will be used.",
     "add": "Add templates"
+  },
+  "scopes": {
+    "hint": "Client products listing this service: linto = LinTO Studio, meet = LinTO Meet video, twake = Twake. A service always has at least one usage.",
+    "remove": "Remove"
   }
 }

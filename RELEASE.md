@@ -2,8 +2,15 @@
 
 _2026_09_18_
 
-Document templates get an owner and an icon, and the per-service listing used
-by LinTO Studio no longer leaks personal templates.
+Services get usage scopes, document templates get an owner and an icon, and
+the per-service template listing used by LinTO Studio no longer leaks personal
+templates.
+
+- `scopes` on services (migration 011): the client products a service is
+  listed for (`linto` for LinTO Studio, `meet`, `twake`...), orthogonal to the
+  access lists that say who may use it. Existing services get `linto`.
+  `GET /services?scope=linto` returns only the services listed for that scope;
+  the admin edits the scopes on the service form and sees them in the list.
 
 - `owner_user_id` on document templates (migration 009, backfilled from the
   legacy `user_id`): the uploader keeps ownership when the template is opened

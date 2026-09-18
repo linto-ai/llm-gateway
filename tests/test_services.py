@@ -499,6 +499,46 @@ class TestServiceCreateSchema:
         assert "fields" not in dump, "ServiceCreate should not include 'fields' in output"
 
 
+class TestServiceScopes:
+    """Usage scopes: which client products list a service."""
+
+    def test_create_defaults_to_linto(self):
+        from app.schemas.service import ServiceCreate
+        service = ServiceCreate(name="S", service_type="summary")
+        assert service.scopes == ["linto"]
+
+    def test_create_rejects_empty_scopes(self):
+        from pydantic import ValidationError
+        from app.schemas.service import ServiceCreate
+        with pytest.raises(ValidationError):
+            ServiceCreate(name="S", service_type="summary", scopes=[])
+
+    def test_update_scopes_optional(self):
+        from app.schemas.service import ServiceUpdate
+        assert ServiceUpdate().scopes is None
+        assert ServiceUpdate(scopes=["meet"]).scopes == ["meet"]
+
+    def test_response_exposes_scopes(self):
+        from app.schemas.service import ServiceResponse
+        assert "scopes" in ServiceResponse.model_fields
+
+    def test_model_has_scopes_column(self):
+        from app.models.service import Service
+        columns = {c.name for c in Service.__table__.columns}
+        assert "scopes" in columns
+
+    def test_normalize_scopes(self):
+        from app.services.service_service import ServiceService
+        assert ServiceService._normalize_scopes([" Meet ", "linto", "meet", ""]) == ["meet", "linto"]
+        assert ServiceService._normalize_scopes([]) == ["linto"]
+        assert ServiceService._normalize_scopes(None) == ["linto"]
+
+    def test_list_endpoint_accepts_scope(self):
+        import inspect
+        from app.api.v1.services import list_services
+        assert "scope" in inspect.signature(list_services).parameters
+
+
 class TestServiceUpdateSchema:
     """Tests for ServiceUpdate schema - fields removal."""
 

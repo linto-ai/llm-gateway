@@ -215,6 +215,7 @@ async def list_services(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     organization_id: Optional[str] = Query(None, description="Visibility filter - returns global services + services allowing this org"),
     user_id: Optional[str] = Query(None, description="Visibility filter - also returns services allowing this user"),
+    scope: Optional[str] = Query(None, max_length=50, description="Usage scope filter - only services listed for this client product (e.g. linto, meet, twake)"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db)
@@ -226,6 +227,7 @@ async def list_services(
     - **is_active**: Filter by active status
     - **organization_id**: Visibility filter - returns global services (no scope) plus services whose allowed orgs include this ID
     - **user_id**: Visibility filter - also returns services whose allowed users include this ID
+    - **scope**: Usage scope filter - only services whose `scopes` include it (LinTO Studio asks for `linto`)
     - **page**: Page number (default: 1)
     - **page_size**: Items per page (default: 50, max: 100)
     """
@@ -237,6 +239,7 @@ async def list_services(
             is_active=is_active,
             organization_id=organization_id,
             user_id=user_id,
+            scope=scope,
             skip=skip,
             limit=page_size
         )
