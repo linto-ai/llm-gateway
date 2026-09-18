@@ -414,6 +414,21 @@ class TestUploadEndpointParameters:
         sig = inspect.signature(upload_template)
         assert "is_default" in sig.parameters
 
+    def test_upload_and_update_accept_an_icon(self):
+        """Admins pick the icon shown on the Studio template card."""
+        from app.api.v1.templates import upload_template, update_template
+        import inspect
+        assert "icon" in inspect.signature(upload_template).parameters
+        assert "icon" in inspect.signature(update_template).parameters
+
+    def test_upload_has_owner_and_service_parameters(self):
+        """Upload records the uploader and can link the template to a service."""
+        from app.api.v1.templates import upload_template
+        import inspect
+        sig = inspect.signature(upload_template)
+        assert "owner_user_id" in sig.parameters
+        assert "service_id" in sig.parameters
+
 
 # =============================================================================
 # Part 5: List Endpoint Query Parameters Tests
@@ -666,6 +681,112 @@ class TestVisibilityHierarchy:
         )
         assert template.scope == "user"
         assert "user-2" in template.allowed_user_ids
+
+
+class TestTemplateOwnership:
+    """owner_user_id is independent from the access lists."""
+
+    def test_owner_survives_scope_change(self):
+        from app.models.document_template import DocumentTemplate
+        template = DocumentTemplate(
+            id=uuid4(), name_fr="Mine", owner_user_id="user-1",
+            allowed_organization_ids=["org-1"], allowed_user_ids=["user-1"],
+            file_path="t.docx", file_name="t.docx", file_size=100,
+            mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert template.scope == "user"
+        template.allowed_user_ids = []
+        assert template.scope == "organization"
+        assert template.owner_user_id == "user-1"
+
+    def test_response_exposes_owner(self):
+        from app.schemas.template import TemplateResponse
+        assert "owner_user_id" in TemplateResponse.model_fields
+
+    def test_response_exposes_icon(self):
+        from app.schemas.template import TemplateResponse
+        assert "icon" in TemplateResponse.model_fields
+
+
+def _tpl(name, orgs=(), users=(), owner=None, is_default=False):
+    from app.models.document_template import DocumentTemplate
+    return DocumentTemplate(
+        id=uuid4(), name_fr=name, owner_user_id=owner, is_default=is_default,
+        allowed_organization_ids=list(orgs), allowed_user_ids=list(users),
+        file_path="t.docx", file_name="t.docx", file_size=100,
+        mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    )
+
+
+class TestServiceTemplateListing:
+    """service_service.get_service_templates: visibility, ownership, default fallback."""
+
+    def _run(self, linked, default, organization_id=None, user_id=None):
+        import asyncio
+        from app.services.service_service import service_service
+
+        service = MagicMock()
+        service.document_templates = linked
+        result = MagicMock()
+        result.scalar_one_or_none.return_value = service
+        db = MagicMock()
+        db.execute = AsyncMock(return_value=result)
+
+        with patch(
+            "app.services.document_template_service.document_template_service.get_default_template",
+            new=AsyncMock(return_value=default),
+        ):
+            return asyncio.run(
+                service_service.get_service_templates(
+                    db, uuid4(), organization_id=organization_id, user_id=user_id
+                )
+            )
+
+    def test_no_links_falls_back_to_global_default(self):
+        default = _tpl("Default", is_default=True)
+        assert self._run([], default, "org-1", "user-1") == [default]
+
+    def test_admin_links_hide_global_default(self):
+        default = _tpl("Default", is_default=True)
+        system = _tpl("System")
+        out = self._run([system], default, "org-1", "user-1")
+        assert out == [system]
+
+    def test_user_upload_keeps_global_default(self):
+        """A personal upload must not remove the standard layout for the service."""
+        default = _tpl("Default", is_default=True)
+        mine = _tpl("Mine", orgs=["org-1"], users=["user-1"], owner="user-1")
+        out = self._run([mine], default, "org-1", "user-1")
+        assert out == [default, mine]
+
+    def test_personal_template_hidden_from_other_users(self):
+        default = _tpl("Default", is_default=True)
+        mine = _tpl("Mine", orgs=["org-1"], users=["user-1"], owner="user-1")
+        assert self._run([mine], default, "org-1", "user-2") == [default]
+
+    def test_owner_still_sees_template_opened_to_org_of_another_org_context(self):
+        """Ownership grants visibility even when the access lists do not match."""
+        mine = _tpl("Mine", orgs=["org-1"], users=[], owner="user-1")
+        system = _tpl("System")
+        out = self._run([system, mine], None, "org-2", "user-1")
+        assert out == [system, mine]
+
+    def test_org_template_visible_to_org_members(self):
+        shared = _tpl("Shared", orgs=["org-1"], users=[], owner="user-1")
+        system = _tpl("System")
+        assert self._run([system, shared], None, "org-1", "user-9") == [system, shared]
+        assert self._run([system, shared], None, "org-2", "user-9") == [system]
+
+    def test_order_system_then_org_then_personal(self):
+        system = _tpl("System")
+        shared = _tpl("Shared", orgs=["org-1"], owner="user-1")
+        mine = _tpl("Mine", orgs=["org-1"], users=["user-1"], owner="user-1")
+        out = self._run([mine, shared, system], None, "org-1", "user-1")
+        assert [t.name_fr for t in out] == ["System", "Shared", "Mine"]
+
+    def test_no_context_returns_links_as_is(self):
+        mine = _tpl("Mine", orgs=["org-1"], users=["user-1"], owner="user-1")
+        assert self._run([mine], None) == [mine]
 
 
 # =============================================================================

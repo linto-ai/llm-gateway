@@ -55,6 +55,13 @@ class DocumentTemplate(Base):
         ARRAY(String(100)), nullable=False, server_default='{}'
     )
 
+    # User who uploaded the template (external ID, no FK). Independent from the
+    # access lists so ownership survives a scope change (personal -> organization).
+    owner_user_id = Column(String(100), nullable=True)
+
+    # Phosphor icon name shown on the template card in LinTO Studio (e.g. "file-text")
+    icon = Column(String(50), nullable=True)
+
     # File information
     file_path = Column(String(500), nullable=False)
     file_name = Column(String(255), nullable=False)
@@ -90,6 +97,7 @@ class DocumentTemplate(Base):
         Index("idx_templates_user_id", "user_id"),
         Index("idx_templates_scope", "organization_id", "user_id"),
         Index("idx_templates_file_hash", "file_hash"),
+        Index("idx_templates_owner_user", "owner_user_id"),
         Index(
             "idx_templates_allowed_orgs",
             "allowed_organization_ids",

@@ -1,3 +1,34 @@
+# 2.6.0
+
+_2026_09_18_
+
+Document templates get an owner and an icon, and the per-service listing used
+by LinTO Studio no longer leaks personal templates.
+
+- `owner_user_id` on document templates (migration 009, backfilled from the
+  legacy `user_id`): the uploader keeps ownership when the template is opened
+  to the organization and back. Upload accepts `owner_user_id` and `service_id`
+  (links the new template to that service).
+- Personal templates (users listed in `allowed_user_ids`) were visible to the
+  whole organization they were uploaded from, both in `GET /document-templates`
+  and `GET /services/{id}/templates`. They are now visible to the listed users
+  and to their owner only.
+- `GET /services/{id}/templates` keeps the global default template when the
+  admin linked none (user uploads no longer hide the standard layout), returns
+  the caller's own templates, and orders system, organization, then personal.
+- `icon` on document templates (migration 010): Phosphor icon name shown on the
+  LinTO Studio template card, picked in the admin when uploading or editing a
+  template (14 pictograms, previewed in the list).
+- Fix provider failover: it never worked. On a failoverable error (e.g. a 429
+  rate-limit from the upstream provider) the failover flavor's provider was read
+  as `flavor.provider` (no such relationship) with fields `api_key`/`api_url`,
+  so building the failover task raised AttributeError and the original error was
+  surfaced to the user instead of routing to the backup provider. Now read via
+  `flavor.model.provider`, decrypt `api_key_encrypted`, use `api_base_url`, and
+  update `backend`, matching the dispatch path.
+
+---
+
 # 2.5.2
 
 _2026_07_04_
@@ -31,13 +62,6 @@ is redelivered, so even fresh workers stop taking new tasks.
   worker slot is freed, not just the DB row marked failed.
 - llm-admin tokenizer selector surfaces bundled/cached tokenizers (offline-ready
   first) and preloads one on demand with clear success/failure feedback.
-- Fix provider failover: it never worked. On a failoverable error (e.g. a 429
-  rate-limit from the upstream provider) the failover flavor's provider was read
-  as `flavor.provider` (no such relationship) with fields `api_key`/`api_url`,
-  so building the failover task raised AttributeError and the original error was
-  surfaced to the user instead of routing to the backup provider. Now read via
-  `flavor.model.provider`, decrypt `api_key_encrypted`, use `api_base_url`, and
-  update `backend`, matching the dispatch path.
 
 ---
 

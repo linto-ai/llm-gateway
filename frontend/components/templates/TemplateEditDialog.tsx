@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Upload, X, FileText, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useCallback, useEffect } from "react";
+import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Upload, X, FileText, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -27,23 +27,25 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from '@/components/ui/form';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/form";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
-import { useUpdateDocumentTemplate } from '@/hooks/use-document-templates';
-import { formatFileSize } from '@/lib/template-utils';
-import { getPlaceholderName } from '@/types/document-template';
-import { ScopeEditor, type ScopeValue } from '@/components/shared/ScopeEditor';
-import type { DocumentTemplate } from '@/types/document-template';
+import { useUpdateDocumentTemplate } from "@/hooks/use-document-templates";
+import { formatFileSize } from "@/lib/template-utils";
+import { getPlaceholderName } from "@/types/document-template";
+import { ScopeEditor, type ScopeValue } from "@/components/shared/ScopeEditor";
+import { TemplateIconSelect } from "@/components/templates/TemplateIconSelect";
+import { DEFAULT_TEMPLATE_ICON } from "@/lib/template-icons";
+import type { DocumentTemplate } from "@/types/document-template";
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // Allowed MIME types for DOCX
 const ALLOWED_MIME_TYPES = [
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
 interface TemplateEditDialogProps {
@@ -65,22 +67,26 @@ export function TemplateEditDialog({
   onSuccess,
   showDefaultOption = false,
 }: TemplateEditDialogProps) {
-  const t = useTranslations('templates');
-  const tCommon = useTranslations('common');
+  const t = useTranslations("templates");
+  const tCommon = useTranslations("common");
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [scope, setScope] = useState<ScopeValue>({ organizationIds: [], userIds: [] });
+  const [scope, setScope] = useState<ScopeValue>({
+    organizationIds: [],
+    userIds: [],
+  });
 
   const updateMutation = useUpdateDocumentTemplate();
 
   // Form schema
   const formSchema = z.object({
-    name_fr: z.string().min(1, t('fileValidation.required')),
+    name_fr: z.string().min(1, t("fileValidation.required")),
     name_en: z.string().optional(),
     description_fr: z.string().optional(),
     description_en: z.string().optional(),
+    icon: z.string().default(DEFAULT_TEMPLATE_ICON),
     is_default: z.boolean().default(false),
   });
 
@@ -89,10 +95,11 @@ export function TemplateEditDialog({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name_fr: '',
-      name_en: '',
-      description_fr: '',
-      description_en: '',
+      name_fr: "",
+      name_en: "",
+      description_fr: "",
+      description_en: "",
+      icon: DEFAULT_TEMPLATE_ICON,
       is_default: false,
     },
   });
@@ -102,9 +109,10 @@ export function TemplateEditDialog({
     if (template) {
       form.reset({
         name_fr: template.name_fr,
-        name_en: template.name_en || '',
-        description_fr: template.description_fr || '',
-        description_en: template.description_en || '',
+        name_en: template.name_en || "",
+        description_fr: template.description_fr || "",
+        description_en: template.description_en || "",
+        icon: template.icon || DEFAULT_TEMPLATE_ICON,
         is_default: template.is_default,
       });
       setScope({
@@ -119,10 +127,10 @@ export function TemplateEditDialog({
   // Validate file
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return t('fileValidation.invalidType');
+      return t("fileValidation.invalidType");
     }
     if (file.size > MAX_FILE_SIZE) {
-      return t('fileValidation.tooLarge');
+      return t("fileValidation.tooLarge");
     }
     return null;
   };
@@ -183,39 +191,44 @@ export function TemplateEditDialog({
 
     // Only append changed fields
     if (data.name_fr !== template.name_fr) {
-      formData.append('name_fr', data.name_fr);
+      formData.append("name_fr", data.name_fr);
     }
-    if (data.name_en !== (template.name_en || '')) {
-      formData.append('name_en', data.name_en || '');
+    if (data.name_en !== (template.name_en || "")) {
+      formData.append("name_en", data.name_en || "");
     }
-    if (data.description_fr !== (template.description_fr || '')) {
-      formData.append('description_fr', data.description_fr || '');
+    if (data.description_fr !== (template.description_fr || "")) {
+      formData.append("description_fr", data.description_fr || "");
     }
-    if (data.description_en !== (template.description_en || '')) {
-      formData.append('description_en', data.description_en || '');
+    if (data.description_en !== (template.description_en || "")) {
+      formData.append("description_en", data.description_en || "");
     }
     if (data.is_default !== template.is_default) {
-      formData.append('is_default', String(data.is_default));
+      formData.append("is_default", String(data.is_default));
+    }
+    if (data.icon !== (template.icon || DEFAULT_TEMPLATE_ICON)) {
+      formData.append("icon", data.icon);
     }
 
     // Always replace the access scope with the editor's current value (supports
     // clearing to a system template). replace_scope makes empty lists explicit.
-    formData.append('replace_scope', 'true');
-    scope.organizationIds.forEach((id) => formData.append('allowed_organization_ids', id));
-    scope.userIds.forEach((id) => formData.append('allowed_user_ids', id));
+    formData.append("replace_scope", "true");
+    scope.organizationIds.forEach((id) =>
+      formData.append("allowed_organization_ids", id),
+    );
+    scope.userIds.forEach((id) => formData.append("allowed_user_ids", id));
 
     // Append file if selected
     if (selectedFile) {
-      formData.append('file', selectedFile);
+      formData.append("file", selectedFile);
     }
 
     try {
       await updateMutation.mutateAsync({ id: template.id, formData });
-      toast.success(t('updateSuccess'));
+      toast.success(t("updateSuccess"));
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
-      toast.error(error.message || t('updateError'));
+      toast.error(error.message || t("updateError"));
     }
   };
 
@@ -225,10 +238,8 @@ export function TemplateEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('edit')}</DialogTitle>
-          <DialogDescription>
-            {t('editDescription')}
-          </DialogDescription>
+          <DialogTitle>{t("edit")}</DialogTitle>
+          <DialogDescription>{t("editDescription")}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -248,7 +259,11 @@ export function TemplateEditDialog({
               {template.placeholders && template.placeholders.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1">
                   {template.placeholders.map((placeholder) => (
-                    <Badge key={placeholder} variant="outline" className="text-xs font-mono">
+                    <Badge
+                      key={placeholder}
+                      variant="outline"
+                      className="text-xs font-mono"
+                    >
                       {`{{${getPlaceholderName(placeholder)}}}`}
                     </Badge>
                   ))}
@@ -258,25 +273,29 @@ export function TemplateEditDialog({
 
             {/* Optional file replacement */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t('replaceFile')}</label>
+              <label className="text-sm font-medium">{t("replaceFile")}</label>
               <div
                 className={`
                   relative border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer
-                  ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}
-                  ${fileError ? 'border-destructive' : ''}
+                  ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"}
+                  ${fileError ? "border-destructive" : ""}
                 `}
                 onDragEnter={handleDragEnter}
                 onDragLeave={handleDragLeave}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
-                onClick={() => document.getElementById('edit-file-input')?.click()}
+                onClick={() =>
+                  document.getElementById("edit-file-input")?.click()
+                }
               >
                 <input
                   id="edit-file-input"
                   type="file"
                   accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
+                  onChange={(e) =>
+                    handleFileSelect(e.target.files?.[0] || null)
+                  }
                 />
 
                 {selectedFile ? (
@@ -284,7 +303,9 @@ export function TemplateEditDialog({
                     <CardContent className="p-3 flex items-center gap-3">
                       <FileText className="h-6 w-6 text-blue-500" />
                       <div className="text-left">
-                        <p className="font-medium text-sm">{selectedFile.name}</p>
+                        <p className="font-medium text-sm">
+                          {selectedFile.name}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {formatFileSize(selectedFile.size)}
                         </p>
@@ -305,8 +326,10 @@ export function TemplateEditDialog({
                 ) : (
                   <>
                     <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm">{t('dropzone.replaceTitle')}</p>
-                    <p className="text-xs text-muted-foreground">{t('dropzone.optional')}</p>
+                    <p className="text-sm">{t("dropzone.replaceTitle")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t("dropzone.optional")}
+                    </p>
                   </>
                 )}
               </div>
@@ -318,8 +341,8 @@ export function TemplateEditDialog({
             {/* i18n fields in tabs */}
             <Tabs defaultValue="fr" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="fr">{t('fields.french')}</TabsTrigger>
-                <TabsTrigger value="en">{t('fields.english')}</TabsTrigger>
+                <TabsTrigger value="fr">{t("fields.french")}</TabsTrigger>
+                <TabsTrigger value="en">{t("fields.english")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="fr" className="space-y-4 mt-4">
@@ -328,9 +351,27 @@ export function TemplateEditDialog({
                   name="name_fr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('fields.nameFr')} *</FormLabel>
+                      <FormLabel>{t("fields.nameFr")} *</FormLabel>
                       <FormControl>
                         <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Icon shown on the Studio template card */}
+                <FormField
+                  control={form.control}
+                  name="icon"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("fields.icon")}</FormLabel>
+                      <FormControl>
+                        <TemplateIconSelect
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -342,7 +383,7 @@ export function TemplateEditDialog({
                   name="description_fr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('fields.descriptionFr')}</FormLabel>
+                      <FormLabel>{t("fields.descriptionFr")}</FormLabel>
                       <FormControl>
                         <Textarea {...field} rows={3} />
                       </FormControl>
@@ -358,12 +399,12 @@ export function TemplateEditDialog({
                   name="name_en"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('fields.nameEn')}</FormLabel>
+                      <FormLabel>{t("fields.nameEn")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
                       <FormDescription>
-                        {t('fields.optionalEnglish')}
+                        {t("fields.optionalEnglish")}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -375,7 +416,7 @@ export function TemplateEditDialog({
                   name="description_en"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('fields.descriptionEn')}</FormLabel>
+                      <FormLabel>{t("fields.descriptionEn")}</FormLabel>
                       <FormControl>
                         <Textarea {...field} rows={3} />
                       </FormControl>
@@ -388,16 +429,18 @@ export function TemplateEditDialog({
 
             {/* Access scope (orgs/users). Both empty => system template. */}
             <div className="rounded-md border p-4">
-              <p className="text-sm font-medium">{t('scope.title')}</p>
-              <p className="text-xs text-muted-foreground mt-1 mb-3">{t('scope.description')}</p>
+              <p className="text-sm font-medium">{t("scope.title")}</p>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                {t("scope.description")}
+              </p>
               <ScopeEditor
                 value={scope}
                 onChange={setScope}
-                orgLabel={t('scope.allowedOrganizations')}
-                userLabel={t('scope.allowedUsers')}
-                orgPlaceholder={t('scope.addOrganizationId')}
-                userPlaceholder={t('scope.addUserId')}
-                globalHint={t('scope.globalHint')}
+                orgLabel={t("scope.allowedOrganizations")}
+                userLabel={t("scope.allowedUsers")}
+                orgPlaceholder={t("scope.addOrganizationId")}
+                userPlaceholder={t("scope.addUserId")}
+                globalHint={t("scope.globalHint")}
               />
             </div>
 
@@ -409,10 +452,13 @@ export function TemplateEditDialog({
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                     <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>{t('fields.isDefault')}</FormLabel>
+                      <FormLabel>{t("fields.isDefault")}</FormLabel>
                     </div>
                   </FormItem>
                 )}
@@ -421,17 +467,21 @@ export function TemplateEditDialog({
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                {tCommon('cancel')}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                {tCommon("cancel")}
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {tCommon('saving')}
+                    {tCommon("saving")}
                   </>
                 ) : (
-                  tCommon('save')
+                  tCommon("save")
                 )}
               </Button>
             </div>

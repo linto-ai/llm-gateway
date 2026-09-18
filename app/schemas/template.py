@@ -18,6 +18,11 @@ class TemplateCreate(BaseModel):
     # Deprecated single-scope aliases (folded into the lists by the service layer).
     organization_id: Optional[str] = Field(None, max_length=100, deprecated=True)
     user_id: Optional[str] = Field(None, max_length=100, deprecated=True)
+    # Uploader (external user ID) and optional service to link the template to.
+    owner_user_id: Optional[str] = Field(None, max_length=100)
+    service_id: Optional[UUID] = None
+    # Phosphor icon name shown on the template card (LinTO Studio)
+    icon: Optional[str] = Field(None, max_length=50)
     is_default: bool = False
 
 
@@ -30,6 +35,7 @@ class TemplateUpdate(BaseModel):
     # Scope edit: when provided, replaces the template's access lists.
     allowed_organization_ids: Optional[List[str]] = None
     allowed_user_ids: Optional[List[str]] = None
+    icon: Optional[str] = Field(None, max_length=50)
     is_default: Optional[bool] = None
 
 
@@ -47,6 +53,10 @@ class TemplateResponse(BaseModel):
     # (LinTO Studio reads organization_id / user_id / scope).
     organization_id: Optional[str]
     user_id: Optional[str]
+    # Uploader of the template (external user ID), None for admin/system templates.
+    owner_user_id: Optional[str] = None
+    # Phosphor icon name shown on the template card, None = default icon
+    icon: Optional[str] = None
     file_path: str
     file_name: str
     file_size: int

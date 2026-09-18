@@ -52,7 +52,8 @@
     "isDefault": "Definir comme template par defaut",
     "french": "Francais",
     "english": "Anglais",
-    "optionalEnglish": "Optionnel - utilise le francais si non fourni"
+    "optionalEnglish": "Optionnel - utilise le francais si non fourni",
+    "icon": "Icone (affichee sur la carte du template dans LinTO Studio)"
   },
   "filters": {
     "scope": "Portee",
@@ -101,5 +102,21 @@
     "importSuccess": "Template importe avec succes",
     "importError": "Echec de l'importation du template",
     "global": "Template global"
+  },
+  "icons": {
+    "file-text": "Document",
+    "note-pencil": "Notes",
+    "list-checks": "Liste de taches",
+    "users-three": "Reunion",
+    "chat-circle-text": "Entretien",
+    "presentation-chart": "Presentation",
+    "newspaper": "Communique",
+    "clipboard-text": "Compte rendu",
+    "briefcase": "Affaires",
+    "scales": "Juridique",
+    "handshake": "Accord",
+    "graduation-cap": "Formation",
+    "lightbulb": "Idees",
+    "megaphone": "Communication"
   }
 }

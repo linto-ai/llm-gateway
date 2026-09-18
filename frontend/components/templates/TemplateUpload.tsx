@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Upload, X, FileText, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Upload, X, FileText, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -20,21 +20,23 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from '@/components/ui/form';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "@/components/ui/form";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { useUploadDocumentTemplate } from '@/hooks/use-document-templates';
-import { formatFileSize } from '@/lib/template-utils';
-import { ScopeEditor, type ScopeValue } from '@/components/shared/ScopeEditor';
-import type { DocumentTemplate } from '@/types/document-template';
+import { useUploadDocumentTemplate } from "@/hooks/use-document-templates";
+import { formatFileSize } from "@/lib/template-utils";
+import { ScopeEditor, type ScopeValue } from "@/components/shared/ScopeEditor";
+import { TemplateIconSelect } from "@/components/templates/TemplateIconSelect";
+import { DEFAULT_TEMPLATE_ICON } from "@/lib/template-icons";
+import type { DocumentTemplate } from "@/types/document-template";
 
 // Max file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // Allowed MIME types for DOCX
 const ALLOWED_MIME_TYPES = [
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
 interface TemplateUploadProps {
@@ -62,8 +64,8 @@ export function TemplateUpload({
   onSuccess,
   onCancel,
 }: TemplateUploadProps) {
-  const t = useTranslations('templates');
-  const tCommon = useTranslations('common');
+  const t = useTranslations("templates");
+  const tCommon = useTranslations("common");
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -78,10 +80,11 @@ export function TemplateUpload({
 
   // Form schema with i18n fields
   const formSchema = z.object({
-    name_fr: z.string().min(1, t('fileValidation.required')),
+    name_fr: z.string().min(1, t("fileValidation.required")),
     name_en: z.string().optional(),
     description_fr: z.string().optional(),
     description_en: z.string().optional(),
+    icon: z.string().default(DEFAULT_TEMPLATE_ICON),
     is_default: z.boolean().default(false),
   });
 
@@ -90,10 +93,11 @@ export function TemplateUpload({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name_fr: '',
-      name_en: '',
-      description_fr: '',
-      description_en: '',
+      name_fr: "",
+      name_en: "",
+      description_fr: "",
+      description_en: "",
+      icon: DEFAULT_TEMPLATE_ICON,
       is_default: false,
     },
   });
@@ -101,10 +105,10 @@ export function TemplateUpload({
   // Validate file
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return t('fileValidation.invalidType');
+      return t("fileValidation.invalidType");
     }
     if (file.size > MAX_FILE_SIZE) {
-      return t('fileValidation.tooLarge');
+      return t("fileValidation.tooLarge");
     }
     return null;
   };
@@ -128,9 +132,9 @@ export function TemplateUpload({
     setSelectedFile(file);
 
     // Auto-fill name from filename if empty
-    if (!form.getValues('name_fr')) {
-      const nameWithoutExtension = file.name.replace(/\.docx$/i, '');
-      form.setValue('name_fr', nameWithoutExtension);
+    if (!form.getValues("name_fr")) {
+      const nameWithoutExtension = file.name.replace(/\.docx$/i, "");
+      form.setValue("name_fr", nameWithoutExtension);
     }
   };
 
@@ -166,34 +170,37 @@ export function TemplateUpload({
   // Handle form submission
   const onSubmit = async (data: FormData) => {
     if (!selectedFile) {
-      setFileError(t('fileValidation.required'));
+      setFileError(t("fileValidation.required"));
       return;
     }
 
     const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('name_fr', data.name_fr);
-    formData.append('is_default', String(data.is_default));
+    formData.append("file", selectedFile);
+    formData.append("name_fr", data.name_fr);
+    formData.append("is_default", String(data.is_default));
+    formData.append("icon", data.icon);
 
     if (data.name_en) {
-      formData.append('name_en', data.name_en);
+      formData.append("name_en", data.name_en);
     }
     if (data.description_fr) {
-      formData.append('description_fr', data.description_fr);
+      formData.append("description_fr", data.description_fr);
     }
     if (data.description_en) {
-      formData.append('description_en', data.description_en);
+      formData.append("description_en", data.description_en);
     }
     // Multi-scope access lists (repeat the field per ID). Empty => system template.
-    scope.organizationIds.forEach((id) => formData.append('allowed_organization_ids', id));
-    scope.userIds.forEach((id) => formData.append('allowed_user_ids', id));
+    scope.organizationIds.forEach((id) =>
+      formData.append("allowed_organization_ids", id),
+    );
+    scope.userIds.forEach((id) => formData.append("allowed_user_ids", id));
 
     try {
       const template = await uploadMutation.mutateAsync(formData);
-      toast.success(t('uploadSuccess'));
+      toast.success(t("uploadSuccess"));
       onSuccess(template);
     } catch (error: any) {
-      toast.error(error.message || t('uploadError'));
+      toast.error(error.message || t("uploadError"));
     }
   };
 
@@ -204,14 +211,14 @@ export function TemplateUpload({
         <div
           className={`
             relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer
-            ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}
-            ${fileError ? 'border-destructive' : ''}
+            ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"}
+            ${fileError ? "border-destructive" : ""}
           `}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
-          onClick={() => document.getElementById('file-input')?.click()}
+          onClick={() => document.getElementById("file-input")?.click()}
         >
           <input
             id="file-input"
@@ -247,21 +254,21 @@ export function TemplateUpload({
           ) : (
             <>
               <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">{t('dropzone.title')}</p>
-              <p className="text-sm text-muted-foreground">{t('dropzone.subtitle')}</p>
+              <p className="text-lg font-medium">{t("dropzone.title")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("dropzone.subtitle")}
+              </p>
             </>
           )}
         </div>
 
-        {fileError && (
-          <p className="text-sm text-destructive">{fileError}</p>
-        )}
+        {fileError && <p className="text-sm text-destructive">{fileError}</p>}
 
         {/* i18n fields in tabs */}
         <Tabs defaultValue="fr" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="fr">{t('fields.french')}</TabsTrigger>
-            <TabsTrigger value="en">{t('fields.english')}</TabsTrigger>
+            <TabsTrigger value="fr">{t("fields.french")}</TabsTrigger>
+            <TabsTrigger value="en">{t("fields.english")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="fr" className="space-y-4 mt-4">
@@ -271,9 +278,27 @@ export function TemplateUpload({
               name="name_fr"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('fields.nameFr')} *</FormLabel>
+                  <FormLabel>{t("fields.nameFr")} *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder={t('namePlaceholder')} />
+                    <Input {...field} placeholder={t("namePlaceholder")} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Icon shown on the Studio template card */}
+            <FormField
+              control={form.control}
+              name="icon"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("fields.icon")}</FormLabel>
+                  <FormControl>
+                    <TemplateIconSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -286,11 +311,11 @@ export function TemplateUpload({
               name="description_fr"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('fields.descriptionFr')}</FormLabel>
+                  <FormLabel>{t("fields.descriptionFr")}</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder={t('descriptionPlaceholder')}
+                      placeholder={t("descriptionPlaceholder")}
                       rows={3}
                     />
                   </FormControl>
@@ -307,12 +332,12 @@ export function TemplateUpload({
               name="name_en"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('fields.nameEn')}</FormLabel>
+                  <FormLabel>{t("fields.nameEn")}</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder={t('namePlaceholder')} />
+                    <Input {...field} placeholder={t("namePlaceholder")} />
                   </FormControl>
                   <FormDescription>
-                    {t('fields.optionalEnglish')}
+                    {t("fields.optionalEnglish")}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -325,11 +350,11 @@ export function TemplateUpload({
               name="description_en"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('fields.descriptionEn')}</FormLabel>
+                  <FormLabel>{t("fields.descriptionEn")}</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
-                      placeholder={t('descriptionPlaceholder')}
+                      placeholder={t("descriptionPlaceholder")}
                       rows={3}
                     />
                   </FormControl>
@@ -343,16 +368,18 @@ export function TemplateUpload({
         {/* Access scope (orgs/users). Both empty => system template. */}
         {showScopeEditor && (
           <div className="rounded-md border p-4">
-            <p className="text-sm font-medium">{t('scope.title')}</p>
-            <p className="text-xs text-muted-foreground mt-1 mb-3">{t('scope.description')}</p>
+            <p className="text-sm font-medium">{t("scope.title")}</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              {t("scope.description")}
+            </p>
             <ScopeEditor
               value={scope}
               onChange={setScope}
-              orgLabel={t('scope.allowedOrganizations')}
-              userLabel={t('scope.allowedUsers')}
-              orgPlaceholder={t('scope.addOrganizationId')}
-              userPlaceholder={t('scope.addUserId')}
-              globalHint={t('scope.globalHint')}
+              orgLabel={t("scope.allowedOrganizations")}
+              userLabel={t("scope.allowedUsers")}
+              orgPlaceholder={t("scope.addOrganizationId")}
+              userPlaceholder={t("scope.addUserId")}
+              globalHint={t("scope.globalHint")}
             />
           </div>
         )}
@@ -365,12 +392,15 @@ export function TemplateUpload({
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                 <FormControl>
-                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>{t('setDefault')}</FormLabel>
+                  <FormLabel>{t("setDefault")}</FormLabel>
                   <FormDescription>
-                    {t('setDefaultDescription')}
+                    {t("setDefaultDescription")}
                   </FormDescription>
                 </div>
               </FormItem>
@@ -382,19 +412,22 @@ export function TemplateUpload({
         <div className="flex justify-end gap-3">
           {onCancel && (
             <Button type="button" variant="outline" onClick={onCancel}>
-              {tCommon('cancel')}
+              {tCommon("cancel")}
             </Button>
           )}
-          <Button type="submit" disabled={uploadMutation.isPending || !selectedFile}>
+          <Button
+            type="submit"
+            disabled={uploadMutation.isPending || !selectedFile}
+          >
             {uploadMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {tCommon('uploading')}
+                {tCommon("uploading")}
               </>
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
-                {t('upload')}
+                {t("upload")}
               </>
             )}
           </Button>
