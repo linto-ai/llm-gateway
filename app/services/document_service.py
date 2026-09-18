@@ -2,6 +2,7 @@
 """Document generation service for DOCX/PDF export."""
 import json
 import logging
+import secrets
 import subprocess
 import tempfile
 from datetime import datetime
@@ -58,6 +59,7 @@ class DocumentService:
         version_content: Optional[str] = None,
         version_metadata: Optional[Dict[str, Any]] = None,
         timezone: Optional[str] = None,
+        footer_note: Optional[str] = None,
     ) -> BytesIO:
         """
         Generate DOCX from template with placeholder substitution.
@@ -68,6 +70,7 @@ class DocumentService:
             custom_fields: Optional additional fields
             version_content: Optional content from a specific version (overrides job.result)
             version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
+            footer_note: Optional line added at the bottom of every page
 
         Returns:
             BytesIO containing the generated DOCX
@@ -90,6 +93,8 @@ class DocumentService:
 
         placeholders = self.get_placeholders(job, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
         self.substitute_placeholders(doc, placeholders)
+        if footer_note:
+            self._add_footer_note(doc, footer_note)
 
         output = BytesIO()
         doc.save(output)
@@ -104,6 +109,8 @@ class DocumentService:
         version_content: Optional[str] = None,
         version_metadata: Optional[Dict[str, Any]] = None,
         timezone: Optional[str] = None,
+        footer_note: Optional[str] = None,
+        lock: bool = False,
     ) -> BytesIO:
         """
         Generate PDF from job result.
@@ -117,15 +124,17 @@ class DocumentService:
             version_content: Optional content from a specific version (overrides job.result)
             version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
             timezone: Optional IANA timezone for date formatting (e.g., 'Europe/Paris')
+            footer_note: Optional line added at the bottom of every page
+            lock: Forbid editing and copying in the PDF (printing stays allowed)
 
         Returns:
             BytesIO containing the generated PDF
         """
         # Generate DOCX first (handles default template)
-        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
+        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone, footer_note=footer_note)
 
         # Convert via LibreOffice
-        return await self._convert_docx_to_pdf(docx_buffer, job)
+        return await self._convert_docx_to_pdf(docx_buffer, job, lock=lock)
 
     async def generate_html(
         self,
@@ -248,7 +257,46 @@ class DocumentService:
 
         return html
 
-    async def _convert_docx_to_pdf(self, docx_buffer: BytesIO, job: Job) -> BytesIO:
+    @staticmethod
+    def _add_footer_note(doc, text: str) -> None:
+        """Append a small centered line to every footer the document defines."""
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Pt, RGBColor
+
+        footers = []
+        for index, section in enumerate(doc.sections):
+            variants = [section.footer]
+            if section.different_first_page_header_footer:
+                variants.append(section.first_page_footer)
+            if doc.settings.odd_and_even_pages_header_footer:
+                variants.append(section.even_page_footer)
+            # A linked footer is the previous section's one, already handled
+            footers += [f for f in variants if index == 0 or not f.is_linked_to_previous]
+
+        for footer in footers:
+            para = footer.add_paragraph()
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = para.add_run(text)
+            run.font.size = Pt(8)
+            run.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
+
+    @staticmethod
+    def _locked_pdf_filter() -> str:
+        """LibreOffice PDF filter with editing and copying forbidden.
+
+        The permission password is random and thrown away. Readers that honour
+        PDF permissions enforce them, converters ignore them.
+        """
+        options = {
+            "RestrictPermissions": {"type": "boolean", "value": True},
+            "PermissionPassword": {"type": "string", "value": secrets.token_urlsafe(24)},
+            "Changes": {"type": "long", "value": 0},
+            "EnableCopyingOfContent": {"type": "boolean", "value": False},
+            "Printing": {"type": "long", "value": 2},
+        }
+        return "pdf:writer_pdf_Export:" + json.dumps(options)
+
+    async def _convert_docx_to_pdf(self, docx_buffer: BytesIO, job: Job, lock: bool = False) -> BytesIO:
         """Convert DOCX buffer to PDF using LibreOffice."""
         with tempfile.TemporaryDirectory() as tmpdir:
             docx_path = Path(tmpdir) / "document.docx"
@@ -263,7 +311,7 @@ class DocumentService:
                     [
                         'libreoffice',
                         '--headless',
-                        '--convert-to', 'pdf',
+                        '--convert-to', self._locked_pdf_filter() if lock else 'pdf',
                         '--outdir', tmpdir,
                         str(docx_path)
                     ],
