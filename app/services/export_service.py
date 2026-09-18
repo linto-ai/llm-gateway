@@ -59,6 +59,8 @@ class ExportService:
         llm_inference=None,
         version_number: Optional[int] = None,
         timezone: Optional[str] = None,
+        pdf_lock: bool = False,
+        pdf_footer_note: Optional[str] = None,
     ) -> BytesIO | str:
         """
         Export job with just-in-time metadata extraction.
@@ -70,6 +72,8 @@ class ExportService:
             format: Export format ('docx', 'pdf', or 'html')
             llm_inference: Optional LLM inference engine for extraction
             version_number: Optional version number (fetches content from DB, uses per-version extraction cache)
+            pdf_lock: PDF only, forbid editing and copying
+            pdf_footer_note: PDF only, line added at the bottom of every page
 
         Returns:
             BytesIO containing the generated document (docx/pdf), or HTML string (html)
@@ -150,7 +154,7 @@ class ExportService:
         elif format == "html":
             return await self.document_service.generate_html(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
         else:
-            return await self.document_service.generate_pdf(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
+            return await self.document_service.generate_pdf(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone, footer_note=pdf_footer_note, lock=pdf_lock)
 
     async def get_export_preview(
         self,
