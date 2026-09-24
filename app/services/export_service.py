@@ -15,6 +15,7 @@ from app.models.job import Job
 from app.models.prompt import Prompt
 from app.services.document_service import DocumentService
 from app.services.document_template_service import DocumentTemplateService
+from app.services import template_renderers
 
 logger = logging.getLogger(__name__)
 
@@ -371,10 +372,20 @@ class ExportService:
             and template_id != last_extraction_template_id
         )
 
+        # Renderer-owned placeholders (e.g. {{list.field}} of repeated rows) become their own requests
+        renderer_names, renderer_requests = template_renderers.extraction_requests(
+            template_placeholders,
+            self.template_service.parse_placeholder_info,
+            current_metadata,
+            force=template_changed,
+        )
+
         for placeholder in template_placeholders:
             # Parse placeholder name
             info = self.template_service.parse_placeholder_info(placeholder)
             name = info["name"]
+            if name in renderer_names:
+                continue
 
             # Skip standard placeholders (system-provided)
             if name in standard_placeholders:
@@ -390,7 +401,7 @@ class ExportService:
             if name not in current_metadata:
                 missing.append(placeholder)
 
-        return missing
+        return missing + renderer_requests
 
     async def _can_extract_async(self, db: AsyncSession, job: Job) -> bool:
         """Check if extraction is possible for this job (async version)."""

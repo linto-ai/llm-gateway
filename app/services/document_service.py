@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 from app.models.document_template import DocumentTemplate
+from app.services import template_renderers
 from app.models.job import Job
 
 logger = logging.getLogger(__name__)
@@ -412,6 +413,12 @@ class DocumentService:
                 else:
                     placeholders[key] = str(value) if value is not None else ""
 
+        # Raw extracted lists, used by the repeated_rows renderer
+        placeholders[template_renderers.LISTS_KEY] = {
+            k: v for k, v in (extracted_metadata or {}).items()
+            if isinstance(v, list) and not k.startswith("_")
+        } if isinstance(extracted_metadata, dict) else {}
+
         # Add custom fields (override if same name)
         if custom_fields:
             placeholders.update(custom_fields)
@@ -491,6 +498,9 @@ class DocumentService:
             placeholders: Dict of placeholder values
         """
         output_content = placeholders.get("output", "")
+        template_renderers.before_substitution(
+            doc, placeholders, self._set_run_text, self._rescue_split_placeholders
+        )
 
         def replace_text_simple(text: str) -> str:
             """Replace placeholders except output (handled specially).
@@ -501,8 +511,8 @@ class DocumentService:
             """
             import re
             for key, value in placeholders.items():
-                if key == "output":
-                    continue  # Handle output separately
+                if key == "output" or key.startswith("__"):
+                    continue  # output is handled separately, __ keys are internal
                 # Replace exact match {{key}}
                 text = text.replace(f"{{{{{key}}}}}", str(value or ""))
                 # Replace {{key: anything}} pattern (placeholder with description)
@@ -604,6 +614,8 @@ class DocumentService:
         for para in self._iter_all_paragraphs(doc):
             self._rescue_split_placeholders(para, clean_unfilled)
 
+        template_renderers.after_substitution(doc, placeholders)
+
     def _insert_markdown_content(self, doc, after_para, markdown_content: str) -> None:
         """
         Convert markdown to DOCX formatting and insert after the given paragraph.
@@ -633,6 +645,8 @@ class DocumentService:
                 lines = lines[:-1]
             stripped = "\n".join(lines)
         markdown_content = stripped
+
+        markdown_content = template_renderers.prepare_output(doc, markdown_content)
 
         # Clean trailing backslashes before conversion
         cleaned_content = self._clean_trailing_backslashes(markdown_content)
@@ -673,6 +687,7 @@ class DocumentService:
         # Remap them to the target template's actual styleIds via the canonical
         # <w:name> (which is invariant across languages for built-in styles).
         self._remap_inserted_style_ids(doc, inserted_elements)
+        template_renderers.format_output(doc, inserted_elements)
 
     # Canonical <w:name> values used by Word for the built-in styles that
     # htmldocx may emit. Matching is case-insensitive and space-insensitive.
