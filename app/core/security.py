@@ -44,15 +44,6 @@ class EncryptionService:
         return self.fernet.decrypt(ciphertext.encode()).decode()
 
 
-def generate_encryption_key() -> str:
-    """
-    Generate a new Fernet encryption key.
-
-    Returns:
-        Base64-encoded 32-byte encryption key
-    """
-    return Fernet.generate_key().decode()
-
 
 # Global encryption service instance (initialized with settings)
 _encryption_service: Optional[EncryptionService] = None

@@ -72,11 +72,6 @@ class TemplateResponse(BaseModel):
         from_attributes = True
 
 
-class TemplateListResponse(BaseModel):
-    """Response schema for listing templates."""
-    items: List[TemplateResponse]
-    total: int
-
 
 class PlaceholderInfo(BaseModel):
     """Information about a single placeholder."""
@@ -84,12 +79,6 @@ class PlaceholderInfo(BaseModel):
     description: Optional[str] = None
     is_standard: bool = False
 
-
-class AllPlaceholdersResponse(BaseModel):
-    """Response with all available placeholders for document generation."""
-    standard: List[PlaceholderInfo]
-    template: List[str]
-    metadata: List[str]
 
 
 class TemplateImportRequest(BaseModel):
@@ -107,10 +96,6 @@ class TemplateImportRequest(BaseModel):
             raise ValueError("target_user_id requires target_organization_id to be set")
         return self
 
-
-class ExportPreviewRequest(BaseModel):
-    """Request for export preview."""
-    template_id: Optional[UUID] = None
 
 
 class PlaceholderStatus(BaseModel):

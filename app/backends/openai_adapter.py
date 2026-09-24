@@ -192,83 +192,6 @@ class OpenAIAdapter:
         )
         return result
 
-    async def async_publish(
-        self,
-        content: str,
-        system_prompt: typing.Optional[str] = None,
-        temperature: typing.Optional[float] = None,
-        top_p: typing.Optional[float] = None,
-        max_tokens: typing.Optional[int] = None,
-        return_usage: bool = False
-        ) -> typing.Union[str, Tuple[str, TokenUsage]]:
-        """
-        Async publishes a message to the OpenAI chat model and returns the response.
-        Args:
-            content (str): The content to be sent to the chat model.
-            return_usage (bool): If True, returns (content, usage_dict) tuple.
-        Returns:
-            str: The response content from the chat model if successful.
-            tuple[str, dict]: (content, usage) if return_usage=True.
-        Raises:
-            BadRequestError: On permanent API errors (not retried)
-            Exception: After all retry attempts exhausted
-        """
-        from tenacity import AsyncRetrying
-
-        # Add system prompt if provided
-        messages = [{"role": "system", "content": system_prompt}] if system_prompt else []
-
-        # Add user message
-        messages.append({"role": "user", "content": content})
-
-        async def _call():
-            try:
-                chat_response = await self.async_client.chat.completions.create(
-                    model=self.modelName,
-                    messages=messages,
-                    temperature=temperature if temperature is not None else self.temperature,
-                    top_p=top_p if top_p is not None else self.top_p,
-                    max_tokens=max_tokens if max_tokens is not None else self.maxGenerationLength
-                )
-                response_content = chat_response.choices[0].message.content
-                if return_usage and chat_response.usage:
-                    usage = {
-                        "prompt_tokens": chat_response.usage.prompt_tokens,
-                        "completion_tokens": chat_response.usage.completion_tokens,
-                        "total_tokens": chat_response.usage.total_tokens,
-                    }
-                    return response_content, usage
-                return response_content
-            except BadRequestError as e:
-                self.logger.exception(f"BadRequestError from API: {e.message}")
-                self.logger.exception(f"Request params: model={self.modelName}, temp={temperature or self.temperature}, "
-                                f"top_p={top_p or self.top_p}, max_tokens={max_tokens or self.maxGenerationLength}")
-                self.logger.exception(f"Content length: {len(content)} chars")
-                raise
-
-        started = time.monotonic()
-        retries_before = self.total_retries
-        self.logger.info(
-            f"LLM request -> {self.api_base} model={self.modelName} input={len(content)} chars"
-        )
-        try:
-            async for attempt in AsyncRetrying(**self._get_retry_decorator()):
-                with attempt:
-                    result = await _call()
-        except BaseException as e:
-            self.logger.error(
-                f"LLM request FAILED -> {self.api_base} model={self.modelName} "
-                f"after {time.monotonic() - started:.1f}s "
-                f"({self.total_retries - retries_before} retries): "
-                f"{type(e).__name__}: {str(e)[:200]}"
-            )
-            raise
-        self.logger.info(
-            f"LLM response <- {self.api_base} model={self.modelName} "
-            f"in {time.monotonic() - started:.1f}s "
-            f"({self.total_retries - retries_before} retries)"
-        )
-        return result
 
     async def stream_chat(
         self,
@@ -314,25 +237,3 @@ class OpenAIAdapter:
                 yield "", usage
             elif chunk.choices and chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content, None
-
-    async def generate_title(self, text: str) -> str:
-        """Generate a short title for the given text."""
-        from tenacity import AsyncRetrying
-
-        messages = [
-            {"role": "system", "content": "Please generate a short title for the following text.\n\nBe VERY SUCCINCT. No more than 6 words."},
-            {"role": "user", "content": text},
-        ]
-
-        async def _call():
-            response = await self.async_client.chat.completions.create(
-                model=self.modelName,
-                messages=messages,
-                max_tokens=20,
-                temperature=0.5,
-            )
-            return response.choices[0].message.content.strip()
-
-        async for attempt in AsyncRetrying(**self._get_retry_decorator(exclude_bad_request=False)):
-            with attempt:
-                return await _call()

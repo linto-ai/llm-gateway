@@ -219,38 +219,6 @@ class JobService:
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def update_job_status(
-        self,
-        db: AsyncSession,
-        celery_task_id: str,
-        status: str,
-        result: Optional[dict] = None,
-        error: Optional[str] = None,
-        progress: Optional[dict] = None,
-    ) -> Optional[Job]:
-        """Update job status (called by Celery worker or polling)."""
-        from datetime import datetime
-
-        job = await self.get_job_by_celery_id(db, celery_task_id)
-        if not job:
-            return None
-
-        job.status = status
-        if status == "started" and not job.started_at:
-            job.started_at = datetime.utcnow()
-        if status in ("completed", "failed") and not job.completed_at:
-            job.completed_at = datetime.utcnow()
-
-        if result:
-            job.result = result
-        if error:
-            job.error = error
-        if progress:
-            job.progress = progress
-
-        await db.commit()
-        await db.refresh(job)
-        return job
 
     async def list_jobs(
         self,

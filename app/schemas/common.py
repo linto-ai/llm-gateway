@@ -6,11 +6,6 @@ from math import ceil
 T = TypeVar('T')
 
 
-class PaginationParams(BaseModel):
-    """Pagination parameters for list endpoints."""
-    page: int = Field(default=1, ge=1)
-    page_size: int = Field(default=20, ge=1, le=100)
-
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Standardized pagination response format per API contract."""

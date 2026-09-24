@@ -459,45 +459,6 @@ class FlavorService:
 
         return flavor
 
-    @staticmethod
-    async def validate_flavor_config(
-        db: AsyncSession,
-        flavor: ServiceFlavor
-    ) -> List[str]:
-        """
-        Validate flavor configuration against model limits.
-
-        Note: max_tokens field removed - uses model's max_generation_length.
-
-        Args:
-            db: Database session
-            flavor: Flavor to validate
-
-        Returns:
-            List of validation error messages (empty if valid)
-        """
-        errors = []
-
-        # Validate parameter ranges
-        if flavor.temperature < 0 or flavor.temperature > 2:
-            errors.append("temperature must be between 0 and 2")
-
-        if flavor.top_p <= 0 or flavor.top_p > 1:
-            errors.append("top_p must be between 0 (exclusive) and 1 (inclusive)")
-
-        if flavor.frequency_penalty < 0 or flavor.frequency_penalty > 2:
-            errors.append("frequency_penalty must be between 0 and 2")
-
-        if flavor.presence_penalty < 0 or flavor.presence_penalty > 2:
-            errors.append("presence_penalty must be between 0 and 2")
-
-        if len(flavor.stop_sequences) > 4:
-            errors.append("stop_sequences can have at most 4 items")
-
-        if flavor.priority < 0:
-            errors.append("priority must be >= 0")
-
-        return errors
 
     @staticmethod
     async def get_default_flavor(

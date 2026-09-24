@@ -520,16 +520,6 @@ class DocumentService:
                 text = re.sub(pattern, str(value or ""), text)
             return text
 
-        def process_paragraph_for_output(para):
-            """Check if paragraph contains {{output}} and replace with formatted content."""
-            full_text = "".join(run.text for run in para.runs)
-            if "{{output}}" in full_text:
-                # Clear the paragraph
-                for run in para.runs:
-                    self._set_run_text(run, "")
-                # Insert formatted markdown content after this paragraph
-                return True
-            return False
 
         # First pass: replace simple placeholders
         for para in doc.paragraphs:
@@ -845,34 +835,6 @@ class DocumentService:
                 or json.dumps(job.result, indent=2, ensure_ascii=False)
             )
         return str(job.result)
-
-    def get_all_available_placeholders(
-        self,
-        template: Optional[DocumentTemplate] = None,
-        extracted_metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, list]:
-        """
-        Get all available placeholder categories.
-
-        Returns:
-            Dict with 'standard', 'template', and 'metadata' keys
-        """
-        result = {
-            "standard": self.STANDARD_PLACEHOLDERS.copy(),
-            "template": [],
-            "metadata": [],
-        }
-
-        if template and template.placeholders:
-            result["template"] = template.placeholders
-
-        if extracted_metadata:
-            result["metadata"] = [
-                k for k in extracted_metadata.keys()
-                if not k.startswith("_")
-            ]
-
-        return result
 
 
 # Singleton instance

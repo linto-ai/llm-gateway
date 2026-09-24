@@ -354,10 +354,6 @@ def update_sent_state(sender=None, headers=None, **kwargs):
     backend = task.backend if task else celery_app.backend
     backend.store_result(headers['id'], None, "QUEUED")
 
-def get_task_ids(cutoff_seconds=settings.task_cutoff_seconds):
-    now = int(time.time())
-    min_score = now - cutoff_seconds
-    return [task.decode('utf-8') for task in redis_client.zrangebyscore("task_ids", min_score, now)]
 
 def get_task_status(task_id):
     """Get task status from Celery/Redis (synchronous - use get_task_status_async for async contexts)."""
@@ -390,36 +386,6 @@ def clean_old_task_ids(older_than_seconds=settings.task_expiration):
     removed = redis_client.zremrangebyscore("task_ids", 0, cutoff)
     logger.info(f"Cleaned up {removed} old task_ids")
 
-
-def cleanup_expired_jobs_sync() -> dict:
-    """
-    Delete expired jobs from the database.
-
-    Jobs with expires_at < now() are deleted. Jobs with NULL expires_at
-    are never deleted by this function.
-
-    Returns:
-        dict with 'deleted_count' key
-    """
-    session = _get_sync_db_session()
-    try:
-        from app.models.job import Job
-
-        # Delete expired jobs (where expires_at is set and in the past)
-        result = session.query(Job).filter(
-            Job.expires_at.isnot(None),
-            Job.expires_at < datetime.utcnow()
-        ).delete(synchronize_session=False)
-
-        session.commit()
-        logger.info(f"Cleaned up {result} expired jobs")
-        return {'deleted_count': result}
-    except Exception as e:
-        session.rollback()
-        logger.exception(f"Error cleaning up expired jobs: {e}")
-        raise
-    finally:
-        session.close()
 
 
 # Database session helper for Celery signals (runs in worker process)

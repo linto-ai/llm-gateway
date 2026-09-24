@@ -735,10 +735,6 @@ class ExportService:
 
 
 # Factory function
-def get_export_service() -> ExportService:
-    """Get export service instance."""
-    return ExportService()
-
 
 # Singleton instance
 export_service = ExportService()
