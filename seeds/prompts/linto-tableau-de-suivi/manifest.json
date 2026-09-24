@@ -1,0 +1,19 @@
+{
+  "name": "linto-tableau-de-suivi",
+  "description": {
+    "fr": "Tableau de suivi : sujets numérotés typés Action, Décision, Observation, avec porteur et échéance, et section Réunion pour le cartouche",
+    "en": "Action log: numbered topics typed Action, Decision, Observation with owner and due date, plus a meeting data section"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "languages": [
+    "*"
+  ],
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "linto-tableau-de-suivi"
+    }
+  }
+}

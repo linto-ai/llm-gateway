@@ -1,0 +1,19 @@
+{
+  "name": "linto-compte-rendu",
+  "description": {
+    "fr": "Compte rendu de réunion structuré : participants, décisions, actions avec porteur et échéance, chiffres clés, discussion par thème",
+    "en": "Structured meeting minutes: attendees, decisions, actions with owner and deadline, key figures, discussion by topic"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "languages": [
+    "*"
+  ],
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "linto-compte-rendu"
+    }
+  }
+}

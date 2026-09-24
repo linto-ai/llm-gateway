@@ -1,0 +1,19 @@
+{
+  "name": "linto-brief-commercial",
+  "description": {
+    "fr": "Brief commercial : compte, besoins, chiffres, objections et réponses, engagements, points de vigilance",
+    "en": "Sales brief: account, needs, figures, objections and answers, commitments, watch points"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "languages": [
+    "*"
+  ],
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "linto-brief-commercial"
+    }
+  }
+}

@@ -15,6 +15,9 @@ seeds/
 │   ├── extraction/
 │   ├── categorization/
 │   └── field-extraction/
+├── services/                    # Public service catalog (no credentials), installed with --catalog
+│   ├── compte-rendu/manifest.json   # display_order 0: first service returned by the API
+│   └── ...
 ├── presets/                     # Flavor presets (versioned)
 │   ├── summary-fast/manifest.json
 │   ├── summary-quality/manifest.json
@@ -26,6 +29,45 @@ seeds/
     └── services/
         └── summarize-en/manifest.json
 ```
+
+## LinTO catalog
+
+The gateway ships a catalog of meeting services built on Mistral Small class models, each with one
+flavor, one prompt and one DOCX template:
+
+| Route | Label | Position | Prompt | Template |
+|---|---|---|---|---|
+| compte-rendu | Compte rendu | 0 | linto-compte-rendu | linto-compte-rendu.docx |
+| points-cles | Points clés | 10 | linto-points-cles | linto-points-cles.docx |
+| tableau-de-suivi | Tableau de suivi | 20 | linto-tableau-de-suivi | linto-tableau-de-suivi.docx |
+| brief-commercial | Brief commercial | 30 | linto-brief-commercial | linto-brief-commercial.docx |
+| note-technique | Note technique | 40 | linto-note-technique | linto-note-technique.docx |
+
+All flavors share the extraction prompt `linto-extraction-champs`. Templates are built by
+`scripts/templates/` and rely on the template renderers (`docs/TEMPLATE_RENDERERS.md`).
+
+Prompts and templates are seeded at every API start. The services need a model, so they are created
+only on request, on a model that already exists:
+
+```bash
+docker exec llm-gateway-llm-gateway-1 python -m app.seeds.base_seed --catalog mistralai/mistral-small-3.2-24b-instruct
+```
+
+or at API start with `SEED_CATALOG_MODEL=<model identifier>`. A missing model only logs an error.
+
+## Never overwriting a deployment
+
+The seed runs automatically at each API start (`scripts/docker-entrypoint.sh`) and is non-destructive:
+- a prompt that already exists is kept, even if its content differs from the seed
+  (`--update-prompts` overwrites library prompts; flavors keep their own inline copy anyway);
+- a global template whose French name exists is kept;
+- a catalog service whose route exists is kept, flavors and templates included.
+
+## Service order
+
+`services.display_order` (migration 012) sorts `GET /api/v1/services`: ascending, then newest first.
+Existing services get 100. Put a service first with `PATCH /api/v1/services/{id}` `{"display_order": 0}`
+or from the admin UI (service form, « Position dans la liste »).
 
 ## Usage
 
