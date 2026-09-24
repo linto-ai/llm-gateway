@@ -3,6 +3,7 @@ import logging
 import re
 from .backend import LLMBackend
 from .batch_manager import BatchManager
+from app.core.output_cleanup import strip_wrapping_fence
 
 logger = logging.getLogger("llm_inference")
 
@@ -66,6 +67,7 @@ class LLMInferenceEngine(LLMBackend):
             self.summary = self.chunker.consolidate_turns(self.summary)
 
         self.summary = self.batch_manager.format_summary(self.summary)
+        self.summary = strip_wrapping_fence(self.summary)
 
         # Run placeholder extraction if configured
         extracted_metadata = {}
