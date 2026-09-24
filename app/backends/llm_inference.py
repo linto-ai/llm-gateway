@@ -12,7 +12,8 @@ class LLMInferenceEngine(LLMBackend):
     def __init__(self, task_data: dict, celery_task):
         super().__init__(task_data)
         self.celery_task = celery_task
-        self.batch_manager = BatchManager(task_data,self.tokenizer, self.prompt, self.prompt_token_count, self.reduce_prompt, celery_task)
+        self.batch_manager = BatchManager(task_data,self.tokenizer, self.prompt, self.prompt_token_count, self.reduce_prompt, celery_task,
+                                          system_prompt=self.system_prompt)
 
         # Store extraction prompt if provided
         self.extraction_prompt_content = task_data.get("prompt_extraction_content")

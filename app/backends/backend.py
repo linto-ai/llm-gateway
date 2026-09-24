@@ -46,6 +46,8 @@ class LLMBackend:
             
             # Initialize token count for prompt and adding token offset to account for special tokens
             self.prompt_token_count = len(self.tokenizer(self.prompt)["input_ids"])
+            if self.system_prompt:  # the system message takes context too
+                self.prompt_token_count += len(self.tokenizer(self.system_prompt)["input_ids"])
             self.chunker = Chunker(self.tokenizer, self.createNewTurnAfter)
 
             if task_data["backendParams"]['reduceSummary'] and task_data["backendParams"]["reduce_prompt"] is not None:
@@ -61,23 +63,30 @@ class LLMBackend:
 
     def loadPrompt(self):
         """
-        Load prompt from task_data (database).
+        Load the prompts of the flavor from task_data (database).
 
-        Priority 1: prompt_user_content (main prompt for user-facing services)
-        Priority 2: prompt_system_content (system prompt if user prompt not set)
-
-        No filesystem fallback - all prompts must be in database.
+        prompt_user_content is the template filled with the input ({} placeholders);
+        prompt_system_content, when both are set, is sent as the system message of every
+        generation call. A flavor with only a system prompt keeps the legacy behaviour:
+        that prompt is used as the template and no system message is sent.
         """
-        # Priority 1: User prompt content from database (most common case)
-        if self.task_data.get("prompt_user_content"):
-            self.prompt = self.task_data["prompt_user_content"]
-            self.logger.info("Loaded prompt from database (prompt_user_content)")
+        user = self.task_data.get("prompt_user_content")
+        system = self.task_data.get("prompt_system_content")
+        self.system_prompt = None
+
+        if user:
+            self.prompt = user
+            if system and system.strip():
+                self.system_prompt = system
+            self.logger.info(
+                "Loaded prompt from database (prompt_user_content"
+                + (" + prompt_system_content as system message)" if self.system_prompt else ")")
+            )
             return
 
-        # Priority 2: System prompt content from database
-        if self.task_data.get("prompt_system_content"):
-            self.prompt = self.task_data["prompt_system_content"]
-            self.logger.info("Loaded prompt from database (prompt_system_content)")
+        if system:
+            self.prompt = system
+            self.logger.info("Loaded prompt from database (prompt_system_content used as template, legacy)")
             return
 
         # No prompt found - this is an error
