@@ -50,7 +50,7 @@ Mindmap: a {{mindmap_...}} placeholder becomes a mind map image drawn from an ex
 
 Rich values: a standalone multi-line or **bold** value rendered as formatted paragraphs.
 
-- **Déclencheur dans le template** : Un placeholder seul dans son paragraphe ou sa cellule, dont la valeur a plusieurs lignes ou du **gras**.
+- **Déclencheur dans le template** : Un placeholder seul dans son paragraphe ou sa cellule, dont la valeur a plusieurs lignes ou du **gras** ; et tout **gras** laissé dans un paragraphe après substitution (lignes répétées comprises).
 - **Prompt du service** : Aucune exigence propre.
 - **Consignes des placeholders** : Demander explicitement la forme : « un élément par ligne commençant par • suivi d'un espace », « nom du porteur en gras ». Le prompt d'extraction autorise **…** et le saut de ligne \n dans les valeurs.
 - **Exemple** : `{{decisions_cles: les 4 décisions principales, une par ligne commençant par • suivi d'un espace, qui a tranché en gras}}`

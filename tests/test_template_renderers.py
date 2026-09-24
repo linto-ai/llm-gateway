@@ -78,6 +78,14 @@ class TestRichValues:
         assert [r.text for r in first.runs if r.bold] == ["Claire"]
         assert all(r.italic for r in first.runs) and first.paragraph_format.first_line_indent < 0
 
+    def test_bold_pairs_in_repeated_rows(self):
+        doc = Document()
+        doc.add_table(rows=1, cols=1).cell(0, 0).text = "{{points.texte}}"
+        doc = _render(doc, {LISTS: {"points": [{"texte": "Budget de **4 200 €** validé"}]}})
+        runs = doc.tables[0].cell(0, 0).paragraphs[0].runs
+        assert "".join(r.text for r in runs) == "Budget de 4 200 € validé"
+        assert [r.text for r in runs if r.bold] == ["4 200 €"]
+
     def test_value_inside_sentence_untouched_and_cells_supported(self):
         doc = Document()
         doc.add_paragraph("Voir {{d}} ici")

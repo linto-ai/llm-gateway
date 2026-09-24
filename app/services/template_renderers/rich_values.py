@@ -2,7 +2,8 @@
 
 A multi-line value gives one paragraph per line; lines starting with •, -, * or 1. get a hanging
 bullet indent; **text** becomes bold. Font, size and colour come from the placeholder run in the
-template. A placeholder inside a sentence stays plain text.
+template. A placeholder inside a sentence stays plain text, except that a **text** pair left in any
+paragraph after substitution (for example in a repeated row) is rendered bold in place.
 """
 import re
 from copy import deepcopy
@@ -15,7 +16,7 @@ from docx.text.paragraph import Paragraph
 from .base import PLACEHOLDER, Renderer, RendererSpec, register
 
 SPEC = RendererSpec(
-    trigger="Un placeholder seul dans son paragraphe ou sa cellule, dont la valeur a plusieurs lignes ou du **gras**.",
+    trigger="Un placeholder seul dans son paragraphe ou sa cellule, dont la valeur a plusieurs lignes ou du **gras** ; et tout **gras** laissé dans un paragraphe après substitution (lignes répétées comprises).",
     service_prompt="Aucune exigence propre.",
     placeholder_prompt=(
         "Demander explicitement la forme : « un élément par ligne commençant par • suivi d'un espace », "
@@ -46,11 +47,13 @@ def enrich(doc, placeholders: Dict[str, Any]) -> None:
         str(v).strip() for k, v in placeholders.items()
         if k != "output" and not k.startswith("__") and isinstance(v, str) and ("\n" in v.strip() or "**" in v)
     }
-    if not values:
-        return
     for para in list(_paragraphs(doc)):
         text = para.text.strip()
-        if not text or text not in values:
+        if not text:
+            continue
+        if text not in values:
+            if text.count("**") >= 2 and "\n" not in text:
+                _bold_in_place(para)
             continue
         runs = [r for r in para.runs if r.text]
         if not runs:
@@ -94,3 +97,22 @@ class RichValues(Renderer):
 
     def after_substitution(self, doc, ctx):
         enrich(doc, ctx.placeholders)
+
+
+def _bold_in_place(para) -> None:
+    """Rewrite a single-line paragraph holding **pairs** as normal and bold runs, same formatting."""
+    runs = [r for r in para.runs if r.text]
+    if not runs:
+        return
+    model_rpr = runs[0]._r.rPr
+    text = "".join(r.text for r in runs)
+    for r in runs:
+        r._r.getparent().remove(r._r)
+    for j, chunk in enumerate(re.split(r"\*\*", text)):
+        if not chunk:
+            continue
+        run = para.add_run(chunk)
+        if model_rpr is not None:
+            run._r.insert(0, deepcopy(model_rpr))
+        if j % 2 == 1:
+            run.bold = True
