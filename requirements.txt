@@ -51,6 +51,7 @@ markdown>=3.5
 htmldocx>=0.0.6
 # DOCX to HTML conversion (for preview)
 mammoth>=1.6.0
+Pillow>=10.0  # mindmap template renderer
 
 # CLI tools for load testing
 click>=8.0

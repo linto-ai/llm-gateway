@@ -166,7 +166,7 @@ class TestPluginRegistry:
         from app.services.template_renderers.base import REGISTRY
         assert {(r.name, r.family) for r in REGISTRY} == {
             ("repeated_rows", "placeholder"), ("rich_values", "placeholder"),
-            ("hidden_sections", "output"), ("output_tables", "output")}
+            ("hidden_sections", "output"), ("output_tables", "output"), ("mindmap", "placeholder")}
 
     def test_register_rejects_invalid_plugins(self):
         import pytest as _pytest
@@ -206,3 +206,40 @@ class TestPluginRegistry:
             assert out == "| A |\n\n## RÉUNION\n- X"  # hidden_sections (order 10) ran first
         finally:
             REGISTRY[:] = [r for r in REGISTRY if r.name != "test_shout"]
+
+
+class TestMindmap:
+    OUTLINE = "Projet Atlas\n- Budget\n  - **4 200 €** de licences\n  - Renouvellement en 2028\n- Infrastructure\n  - Serveurs dédiés (80 %)\n- Organisation"
+
+    def test_outline_parsing(self):
+        from app.services.template_renderers.mindmap import parse_outline
+        center, branches = parse_outline(self.OUTLINE)
+        assert center == "Projet Atlas"
+        assert branches == [("Budget", ["4 200 € de licences", "Renouvellement en 2028"]),
+                            ("Infrastructure", ["Serveurs dédiés (80 %)"]), ("Organisation", [])]
+
+    def test_placeholder_becomes_image(self):
+        doc = Document()
+        doc.add_paragraph("Avant")
+        doc.add_paragraph("{{mindmap_sujets: les sujets}}")
+        doc = _render(doc, {"mindmap_sujets": self.OUTLINE})
+        para = doc.paragraphs[1]
+        assert para.text == ""
+        assert para._p.findall(".//" + qn("w:drawing"))
+        assert doc.inline_shapes[0].width > 0
+
+    def test_not_extracted_leaves_empty_paragraph_and_bad_outline_falls_back_to_text(self):
+        doc = Document()
+        doc.add_paragraph("{{mindmap_sujets}}")
+        doc.add_paragraph("{{mindmap_autre}}")
+        doc = _render(doc, {"mindmap_autre": "juste une phrase"})
+        assert doc.paragraphs[0].text == "" and not doc.inline_shapes
+        assert doc.paragraphs[1].text == "juste une phrase"
+
+    def test_extraction_request_is_an_outline(self):
+        svc = ExportService.__new__(ExportService)
+        svc.template_service = DocumentTemplateService.__new__(DocumentTemplateService)
+        missing = svc._get_missing_placeholders(["mindmap_sujets: les sujets abordés", "titre"], {})
+        req = [m for m in missing if m.startswith("mindmap_sujets:")]
+        assert len(req) == 1 and "outline" in req[0] and "les sujets abordés" in req[0]
+        assert "titre" in missing

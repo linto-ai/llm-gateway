@@ -36,6 +36,16 @@ Repeated rows: a table row repeated once per object of an extracted list.
 - **Exemple** : `| {{actions.porteur}} | {{actions: toutes les actions, 8 au maximum}}{{actions.action: 16 mots maximum}} | {{actions.echeance}} |`
 - **Étapes** : before_substitution, extraction_requests
 
+### mindmap
+
+Mindmap: a {{mindmap_...}} placeholder becomes a mind map image drawn from an extracted outline.
+
+- **Déclencheur dans le template** : Placeholder dont le nom commence par mindmap_, seul dans son paragraphe ou sa cellule, par exemple {{mindmap_sujets: consigne}}.
+- **Prompt du service** : Aucune exigence propre : la sortie du service doit contenir les thèmes et les points à cartographier (sections Sujets abordés et Discussion par exemple).
+- **Consignes des placeholders** : La consigne dit quoi cartographier (thème central, branches, détails). Le gateway la transforme en demande de plan indenté : ligne 1 le thème central, puis « - branche », puis « - détail » indenté de deux espaces.
+- **Exemple** : `{{mindmap_sujets: thème central = objet de la réunion ; une branche par sujet de la section Sujets abordés ; détails = faits clés de la section Discussion}}`
+- **Étapes** : before_substitution, extraction_requests
+
 ### rich_values
 
 Rich values: a standalone multi-line or **bold** value rendered as formatted paragraphs.
