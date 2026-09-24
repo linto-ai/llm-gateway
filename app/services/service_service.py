@@ -291,7 +291,9 @@ class ServiceService:
             organization_id=(orgs[0] if len(orgs) == 1 and not users else None),
             scopes=self._normalize_scopes(request.scopes),
             is_active=request.is_active,
-            metadata=request.metadata or {}
+            # The column is mapped as `service_metadata` (SQLAlchemy reserves
+            # `metadata`): the API field must land there, not on a stray attribute.
+            service_metadata=request.metadata or {},
         )
 
         db.add(service)
@@ -513,7 +515,8 @@ class ServiceService:
                      "allowed_user_ids", "organization_id", "scopes"},
         )
         for field, value in update_data.items():
-            setattr(service, field, value)
+            # `metadata` is the API name of the `service_metadata` column.
+            setattr(service, "service_metadata" if field == "metadata" else field, value)
 
         # Replace linked document templates if provided
         if request.template_ids is not None:
