@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -66,6 +67,7 @@ export function ServiceForm({
       allowed_organization_ids: service?.allowed_organization_ids ?? [],
       allowed_user_ids: service?.allowed_user_ids ?? [],
       scopes: service?.scopes?.length ? service.scopes : ["linto"],
+      display_order: service?.display_order ?? 100,
       // Don't load flavors in edit mode - they are managed separately via Flavors tab
       flavors: [],
     },
@@ -83,6 +85,7 @@ export function ServiceForm({
             allowed_organization_ids: data.allowed_organization_ids ?? [],
             allowed_user_ids: data.allowed_user_ids ?? [],
             scopes: data.scopes,
+            display_order: data.display_order,
           },
         });
       } else {
@@ -113,6 +116,7 @@ export function ServiceForm({
           allowed_organization_ids: data.allowed_organization_ids ?? [],
           allowed_user_ids: data.allowed_user_ids ?? [],
           scopes: data.scopes,
+          display_order: data.display_order,
           flavors: cleanedFlavors as CreateFlavorRequest[],
         };
 
@@ -230,6 +234,22 @@ export function ServiceForm({
             }
           />
         </div>
+
+        {/* Position in the service list returned by the API (0 = first) */}
+        <FormField
+          control={form.control}
+          name="display_order"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("fields.displayOrder")}</FormLabel>
+              <FormControl>
+                <Input type="number" min={0} max={100000} step={1} className="w-32" {...field} />
+              </FormControl>
+              <FormDescription>{t("fields.displayOrderHint")}</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Scope: allowed organizations and users (empty = global service) */}
         <div className="space-y-2">

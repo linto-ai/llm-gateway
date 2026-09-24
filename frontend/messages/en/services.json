@@ -106,7 +106,9 @@
     "scope": "Access scope",
     "allowedOrganizations": "Allowed organizations",
     "allowedUsers": "Allowed users",
-    "scopes": "Usages (scopes)"
+    "scopes": "Usages (scopes)",
+    "displayOrder": "Position in the list",
+    "displayOrderHint": "0 = first service returned by the API (first tab in LinTO Studio). Ties: newest first."
   },
   "types": {
     "summary": "Summary",

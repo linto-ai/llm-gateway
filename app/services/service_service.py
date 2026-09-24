@@ -215,6 +215,7 @@ class ServiceService:
             "organization_id": service.organization_id,
             "scopes": list(service.scopes or [DEFAULT_SERVICE_SCOPE]),
             "is_active": service.is_active,
+            "display_order": service.display_order if service.display_order is not None else 100,
             "metadata": service.service_metadata,  # Map service_metadata -> metadata
             "service_category": service.service_category,
             "default_template_id": service.default_template_id,
@@ -291,6 +292,7 @@ class ServiceService:
             organization_id=(orgs[0] if len(orgs) == 1 and not users else None),
             scopes=self._normalize_scopes(request.scopes),
             is_active=request.is_active,
+            display_order=request.display_order,
             # The column is mapped as `service_metadata` (SQLAlchemy reserves
             # `metadata`): the API field must land there, not on a stray attribute.
             service_metadata=request.metadata or {},
@@ -419,7 +421,8 @@ class ServiceService:
         total = total_result.scalar_one()
 
         # Get paginated results
-        query = query.offset(skip).limit(limit).order_by(Service.created_at.desc())
+        # Admin-controlled position first (0 = first), then newest first as before
+        query = query.offset(skip).limit(limit).order_by(Service.display_order.asc(), Service.created_at.desc())
         result = await db.execute(query)
         services = result.scalars().unique().all()
 

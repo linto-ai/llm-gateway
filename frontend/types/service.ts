@@ -176,6 +176,8 @@ export interface ServiceResponse {
   organization_id: string;
   // Client products the service is listed for ("linto" = LinTO Studio).
   scopes: string[];
+  // Position in service lists (ascending, then newest first); 0 = first.
+  display_order: number;
   default_template_id?: string | null;
   // Document templates available for this service (empty => global default).
   template_ids?: string[];
@@ -247,6 +249,7 @@ export interface CreateServiceRequest {
   organization_id?: string;
   // Client products the service is listed for; defaults to ["linto"].
   scopes?: string[];
+  display_order?: number;
   template_ids?: string[];
   flavors: CreateFlavorRequest[];
 }
@@ -258,6 +261,7 @@ export interface UpdateServiceRequest {
   allowed_user_ids?: string[];
   organization_id?: string;
   scopes?: string[];
+  display_order?: number;
   default_template_id?: string | null;
   template_ids?: string[];
 }

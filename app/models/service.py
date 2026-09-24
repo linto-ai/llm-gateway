@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import uuid
-from sqlalchemy import (
+from sqlalchemy import (Integer, 
     Column, String, DateTime, ForeignKey, Boolean, Index
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
@@ -48,6 +48,8 @@ class Service(Base):
         ARRAY(String(50)), nullable=False, server_default='{linto}'
     )
     is_active = Column(Boolean, default=True, nullable=False, index=True)
+    # Position in service lists (ascending, then newest first). 0 = listed first.
+    display_order = Column(Integer, nullable=False, default=100, server_default="100", index=True)
     service_metadata = Column("metadata", JSONB, default={}, nullable=False, server_default='{}')
     
     # Allows custom service types

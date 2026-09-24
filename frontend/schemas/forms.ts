@@ -203,6 +203,8 @@ export const serviceFormSchema = z.object({
   allowed_user_ids: z.array(z.string().max(100)).optional().default([]),
   // Client products the service is listed for; never empty.
   scopes: z.array(z.string().min(1).max(50)).min(1).default(["linto"]),
+  // Position in service lists (ascending); 0 = listed first by the API.
+  display_order: z.coerce.number().int().min(0).max(100000).default(100),
   // Flavors are optional during creation - can be added later via Flavors tab
   flavors: z.array(flavorFormSchema).optional().default([]),
 });
