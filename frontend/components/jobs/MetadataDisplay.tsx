@@ -181,7 +181,9 @@ export function MetadataDisplay({ metadata }: MetadataDisplayProps) {
     const { name } = parsePlaceholder(key);
     // Convert snake_case to camelCase for i18n lookup
     const camelKey = name.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    return t(camelKey, { defaultValue: name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) });
+    // Template placeholders are free-form: only known fields have a translation
+    if (t.has(camelKey)) return t(camelKey);
+    return name.replace(/_/g, ' ').replace(/^\w/, l => l.toUpperCase());
   };
 
   return (
