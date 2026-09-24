@@ -243,3 +243,14 @@ class TestMindmap:
         req = [m for m in missing if m.startswith("mindmap_sujets:")]
         assert len(req) == 1 and "outline" in req[0] and "les sujets abordés" in req[0]
         assert "titre" in missing
+
+
+def test_end_of_job_extraction_fields_use_renderers():
+    from app.services.template_renderers import prepare_extraction_fields
+    fields = ["titre: court", "actions: les actions", "actions.porteur", "actions.action: 12 mots",
+              "mindmap_sujets: les sujets", "output"]
+    out = prepare_extraction_fields(fields)
+    assert "titre: court" in out and "output" in out
+    assert not any(f.startswith("actions.") for f in out)
+    assert sum(f.startswith("actions:") for f in out) == 1 and "list of JSON objects" in [f for f in out if f.startswith("actions:")][0]
+    assert [f for f in out if f.startswith("mindmap_sujets:")][0].count("outline") == 1

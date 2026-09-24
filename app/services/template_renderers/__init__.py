@@ -4,7 +4,8 @@ Drop a module in this package with a Renderer subclass decorated by @register: i
 import time. DocumentService and ExportService call the hooks below; each one runs every registered
 renderer that implements it, in `order`:
 
-  extraction_requests  ExportService, before the extraction LLM call   (placeholder family)
+  extraction_requests  extraction calls: end of job (LLMInference) and  (placeholder family)
+                       export (ExportService)
   before_substitution  start of placeholder substitution               (placeholder family)
   after_substitution   end of placeholder substitution                 (placeholder family)
   prepare_output       {{output}} Markdown, before conversion to Word  (output family)
@@ -17,7 +18,7 @@ import pkgutil
 from typing import Any, Dict, List, Tuple
 
 from .base import (LISTS_KEY, OUTPUT, PLACEHOLDER, REGISTRY, RenderContext, Renderer,
-                   implemented_hooks, template_properties)
+                   implemented_hooks, parse_placeholder, template_properties)
 
 for _module in pkgutil.iter_modules(__path__):
     if _module.name != "base":
@@ -36,6 +37,13 @@ def extraction_requests(placeholders: List[str], parse, current_metadata: Dict[s
         handled |= names
         requests += reqs
     return handled, requests
+
+
+def prepare_extraction_fields(fields: List[str], current_metadata: Dict[str, Any] = None) -> List[str]:
+    """Placeholder list for an extraction call: renderer-owned placeholders replaced by their requests.
+    Used by the extraction run at the end of a job (LLMInference), the export path uses extraction_requests."""
+    handled, requests = extraction_requests(fields, parse_placeholder, current_metadata or {}, force=False)
+    return [f for f in fields if parse_placeholder(f)["name"] not in handled] + requests
 
 
 def before_substitution(doc, placeholders: Dict[str, Any], set_run_text, rescue) -> None:

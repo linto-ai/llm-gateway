@@ -111,5 +111,11 @@ def template_properties(doc) -> Dict[str, str]:
     return {}
 
 
+def parse_placeholder(placeholder: str) -> Dict[str, Any]:
+    """'name: instruction' -> {'name', 'description'} (same rule as DocumentTemplateService)."""
+    name, _, description = placeholder.partition(":")
+    return {"name": name.strip(), "description": description.strip() or None}
+
+
 def csv_values(props: Dict[str, str], key: str) -> List[str]:
     return [v.strip() for v in props.get(key, "").split(",") if v.strip()]

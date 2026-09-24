@@ -132,8 +132,9 @@ class LLMInferenceEngine(LLMBackend):
 
             logger.info(f"Starting placeholder extraction for task {self.task_id}")
 
-            # Use extraction fields from templates (already validated non-empty)
-            fields_to_extract = self.extraction_fields
+            # Template fields, with renderer-owned placeholders (lists, mindmaps...) turned into their requests
+            from app.services.template_renderers import prepare_extraction_fields
+            fields_to_extract = prepare_extraction_fields(self.extraction_fields)
             logger.info(f"Extracting {len(fields_to_extract)} fields: {fields_to_extract}")
 
             # Build extraction prompt
