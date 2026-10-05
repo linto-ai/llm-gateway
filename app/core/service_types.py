@@ -5,7 +5,7 @@ This module defines the service type configurations used throughout the applicat
 to determine which prompts and features are available for each service type.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from pydantic import BaseModel
 
 

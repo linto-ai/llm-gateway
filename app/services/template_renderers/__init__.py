@@ -17,8 +17,9 @@ import importlib
 import pkgutil
 from typing import Any, Dict, List, Tuple
 
-from .base import (LISTS_KEY, OUTPUT, PLACEHOLDER, REGISTRY, RenderContext, Renderer,
-                   implemented_hooks, parse_placeholder, template_properties)
+from .base import (LISTS_KEY as LISTS_KEY, OUTPUT, PLACEHOLDER, REGISTRY, RenderContext,
+                   Renderer as Renderer, implemented_hooks, parse_placeholder,
+                   template_properties)
 
 for _module in pkgutil.iter_modules(__path__):
     if _module.name != "base":

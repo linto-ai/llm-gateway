@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, Any, Generic, TypeVar, List
 from math import ceil
 

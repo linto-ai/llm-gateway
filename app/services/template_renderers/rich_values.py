@@ -60,7 +60,7 @@ def enrich(doc, placeholders: Dict[str, Any]) -> None:
             continue
         model_rpr = runs[0]._r.rPr
         anchor = para._p
-        for i, line in enumerate(l for l in text.split("\n") if l.strip()):
+        for i, line in enumerate(ln for ln in text.split("\n") if ln.strip()):
             if i == 0:
                 target = para
                 for r in list(para.runs):
