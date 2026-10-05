@@ -293,7 +293,11 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
             new_task_data['flavor_id'] = str(flavor.id)
 
             # Update backend params from the failover flavor, as the dispatch path does
-            new_task_data['backendParams'] = build_backend_params(flavor)
+            # Request-level temperature/top_p overrides still apply to the failover flavor
+            overrides = original_task_data.get('requestOverrides') or {}
+            new_task_data['backendParams'] = build_backend_params(
+                flavor, overrides.get('temperature'), overrides.get('top_p')
+            )
 
             # Update provider config from the failover flavor's model -> provider.
             # Provider stores the key ENCRYPTED (api_key_encrypted) and the URL in

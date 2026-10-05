@@ -140,3 +140,18 @@ def test_failover_flavor_without_user_prompt_does_not_inherit_the_original_one()
     # single_pass worker never formats the original 2-placeholder prompt.
     assert out["prompt_user_content"] is None
     assert out["fields"] == 0
+
+
+def test_failover_keeps_request_overrides():
+    flavor = _failover_flavor()
+    session = MagicMock()
+    session.query.return_value.options.return_value.filter.return_value.first.return_value = flavor
+    original = {**_original_task_data(), "requestOverrides": {"temperature": 0.0, "top_p": None}}
+    with patch.object(celery_app, "_get_sync_db_session", return_value=session), \
+         patch("app.core.security.get_encryption_service", return_value=MagicMock()):
+        out = celery_app._get_failover_task_data(original, FAILOVER_FLAVOR_ID)
+
+    assert out is not None, "failover task_data must be built, not None"
+    # The request's temperature applies to the failover flavor; top_p was not overridden.
+    assert out["backendParams"]["temperature"] == 0.0
+    assert out["backendParams"]["top_p"] == 0.9

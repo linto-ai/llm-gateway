@@ -990,6 +990,8 @@ async def _execute_with_file_internal(
         "name": service.name,
         "type": service.service_type,
         "backendParams": build_backend_params(flavor, effective_temperature, effective_top_p),
+        # Request-level sampling overrides, re-applied if the job fails over to another flavor
+        "requestOverrides": {"temperature": temperature, "top_p": top_p},
         # Derive fields from prompt placeholder count
         "fields": count_placeholders(flavor.prompt_user_content or ""),
         "content": content,
