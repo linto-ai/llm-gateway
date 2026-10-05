@@ -1,3 +1,35 @@
+# 2.7.1
+
+_2026_10_05_
+
+Failover to a backup flavor works again, and CI on `next` is green.
+
+Upgrade notes:
+
+- No migration.
+- SQLAlchemy is capped to `<2.1`. Images stay on 2.0.x, as in 2.7.0.
+
+## Failover (#28, #29)
+
+Every failover failed with the original error, as if no failover was
+configured: building the backup task read `Model` fields that don't exist
+(`max_output_tokens`, `max_context_length`) and sent the model display name
+instead of `model_identifier`.
+
+- `backendParams` is built by one helper (`app/services/task_params.py`) for
+  both dispatch paths and for failover. Failover now takes the model id,
+  limits, tokenizer and chunking settings from the backup flavor.
+- Failover also takes all prompts from the backup flavor (system, user,
+  reduce, extraction, categorization) and its `fields`.
+- A `temperature` / `top_p` passed to `/run` is kept after failover.
+
+## CI (#30, #32)
+
+- ruff pinned to 0.12.0, the 11 errors added since July fixed.
+- `test_service_metadata.py` skipped on SQLite like the other DB-backed tests.
+
+---
+
 # 2.7.0
 
 _2026_09_24_
