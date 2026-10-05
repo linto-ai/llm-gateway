@@ -20,7 +20,10 @@ def resolve_tokenizer_for_flavor(flavor) -> str:
     4. Extract base model from quantized identifier
     5. Fallback to tiktoken cl100k_base
     """
-    from app.core.tokenizer_mappings import get_tokenizer_config, get_fallback_tokenizer_config
+    from app.core.tokenizer_mappings import (
+        get_fallback_tokenizer_config,
+        get_tokenizer_config,
+    )
 
     # Priority 1: flavor.tokenizer_override
     if flavor.tokenizer_override:

@@ -308,14 +308,20 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
                 }
                 new_task_data['backend'] = failover_provider.provider_type
 
-            # Update prompts if the failover flavor has its own
-            if flavor.prompt_system_content:
-                new_task_data['prompt_system_content'] = flavor.prompt_system_content
-            if flavor.prompt_user_content:
-                new_task_data['prompt_user_content'] = flavor.prompt_user_content
-                new_task_data['fields'] = count_placeholders(flavor.prompt_user_content)
-            if flavor.prompt_reduce_content:
-                new_task_data['prompt_reduce_content'] = flavor.prompt_reduce_content
+            # Prompts come from the failover flavor, as the dispatch path does, so they
+            # always match its processing_mode and reduce settings
+            new_task_data['prompt_system_content'] = flavor.prompt_system_content
+            new_task_data['prompt_user_content'] = flavor.prompt_user_content
+            new_task_data['prompt_reduce_content'] = flavor.prompt_reduce_content
+            new_task_data['fields'] = count_placeholders(flavor.prompt_user_content or "")
+            new_task_data['prompt_extraction_content'] = (
+                flavor.placeholder_extraction_prompt.content
+                if flavor.placeholder_extraction_prompt else None
+            )
+            new_task_data['prompt_categorization_content'] = (
+                flavor.categorization_prompt.content
+                if flavor.categorization_prompt else None
+            )
 
             # Update failover config for potential deeper failover
             new_task_data['failoverConfig'] = {
