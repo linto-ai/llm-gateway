@@ -12,6 +12,7 @@ from app.services.service_service import service_service
 from app.services.document_template_service import document_template_service
 from app.core.prompt_validation import count_placeholders
 from app.services.tokenizer_manager import TokenizerManager
+from app.services.task_params import build_backend_params, resolve_tokenizer_for_flavor  # noqa: F401 (re-exported)
 from app.schemas.service import (
     ServiceCreate,
     ServiceUpdate,
@@ -36,44 +37,6 @@ from app.schemas.common import ErrorResponse, PaginatedResponse
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["services"])
-
-
-def resolve_tokenizer_for_flavor(flavor) -> str:
-    """
-    Resolve the tokenizer to use for a flavor.
-
-    This function uses TokenizerManager to resolve the tokenizer config,
-    then returns the appropriate tokenizer identifier string for backward
-    compatibility with the existing task_data format.
-
-    Priority (handled by TokenizerManager):
-    1. flavor.tokenizer_override (if set)
-    2. flavor.model.tokenizer_name (if set)
-    3. TOKENIZER_MAPPINGS lookup by model_identifier
-    4. Extract base model from quantized identifier
-    5. Fallback to tiktoken cl100k_base
-    """
-    from app.core.tokenizer_mappings import get_tokenizer_config, get_fallback_tokenizer_config
-
-    # Priority 1: flavor.tokenizer_override
-    if flavor.tokenizer_override:
-        return flavor.tokenizer_override
-
-    # Priority 2: flavor.model.tokenizer_name
-    if flavor.model.tokenizer_name:
-        return flavor.model.tokenizer_name
-
-    # Use tokenizer mappings for resolution
-    config = get_tokenizer_config(flavor.model.model_identifier)
-    if not config:
-        config = get_fallback_tokenizer_config()
-
-    if config["type"] == "tiktoken":
-        # For tiktoken, return the encoding name (will be handled by TokenizerManager)
-        return config["encoding"]
-    else:
-        # For HuggingFace, return the repo
-        return config["repo"]
 
 
 async def _get_extraction_fields(db: AsyncSession, service_id: UUID) -> list[str]:
@@ -731,9 +694,6 @@ async def execute_service(
                    f"Please configure token limits on the model before executing jobs."
         )
 
-    # Resolve tokenizer using TokenizerManager
-    tokenizer = resolve_tokenizer_for_flavor(flavor)
-
     # Get decrypted API key from provider
     provider_id = flavor.model.provider_id
     decrypted_key = await provider_service.get_decrypted_api_key(db, provider_id)
@@ -752,27 +712,7 @@ async def execute_service(
         },
         "name": service.name,
         "type": service.service_type,
-        "backendParams": {
-            "modelName": flavor.model.model_identifier,
-            # Model token limits (validated above)
-            "totalContextLength": flavor.model.context_length,
-            "maxGenerationLength": flavor.model.max_generation_length,
-            "tokenizerClass": flavor.model.tokenizer_class,
-            "tokenizer": tokenizer,
-            "temperature": flavor.temperature,
-            "top_p": flavor.top_p,
-            "createNewTurnAfter": flavor.create_new_turn_after or 500,  # Default: 500 tokens
-            "summaryTurns": flavor.summary_turns or 3,  # Default: 3 turns for summary context
-            "maxNewTurns": flavor.max_new_turns or 10,  # Default: 10 turns per batch
-            "reduceSummary": flavor.reduce_summary,
-            "consolidateSummary": flavor.consolidate_summary,
-            "reduce_prompt": flavor.reduce_prompt.name if flavor.reduce_prompt else None,
-            "type": flavor.output_type,
-            # Processing mode
-            "processing_mode": flavor.processing_mode,
-            # Cost estimation rate
-            "estimated_cost_per_1k_tokens": flavor.estimated_cost_per_1k_tokens,
-        },
+        "backendParams": build_backend_params(flavor),
         # Derive fields from prompt placeholder count
         "fields": count_placeholders(flavor.prompt_user_content or ""),
         "content": content,
@@ -1031,9 +971,6 @@ async def _execute_with_file_internal(
                    f"Please configure token limits on the model before executing jobs."
         )
 
-    # Resolve tokenizer using TokenizerManager
-    tokenizer = resolve_tokenizer_for_flavor(flavor)
-
     # Get decrypted API key from provider
     provider_id = flavor.model.provider_id
     decrypted_key = await provider_service.get_decrypted_api_key(db, provider_id)
@@ -1052,27 +989,7 @@ async def _execute_with_file_internal(
         },
         "name": service.name,
         "type": service.service_type,
-        "backendParams": {
-            "modelName": flavor.model.model_identifier,
-            # Model token limits (validated above)
-            "totalContextLength": flavor.model.context_length,
-            "maxGenerationLength": flavor.model.max_generation_length,
-            "tokenizerClass": flavor.model.tokenizer_class,
-            "tokenizer": tokenizer,
-            "temperature": effective_temperature,
-            "top_p": effective_top_p,
-            "createNewTurnAfter": flavor.create_new_turn_after or 500,  # Default: 500 tokens
-            "summaryTurns": flavor.summary_turns or 3,  # Default: 3 turns for summary context
-            "maxNewTurns": flavor.max_new_turns or 10,  # Default: 10 turns per batch
-            "reduceSummary": flavor.reduce_summary,
-            "consolidateSummary": flavor.consolidate_summary,
-            "reduce_prompt": flavor.reduce_prompt.name if flavor.reduce_prompt else None,
-            "type": flavor.output_type,
-            # Processing mode
-            "processing_mode": flavor.processing_mode,
-            # Cost estimation rate
-            "estimated_cost_per_1k_tokens": flavor.estimated_cost_per_1k_tokens,
-        },
+        "backendParams": build_backend_params(flavor, effective_temperature, effective_top_p),
         # Derive fields from prompt placeholder count
         "fields": count_placeholders(flavor.prompt_user_content or ""),
         "content": content,

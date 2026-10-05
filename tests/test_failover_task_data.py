@@ -45,6 +45,13 @@ def _fake_flavor(prompt_user_content=None):
         prompt_system_content=None,
         prompt_user_content=prompt_user_content,
         tokenizer_override=None,
+        create_new_turn_after=300,
+        summary_turns=2,
+        max_new_turns=6,
+        reduce_summary=True,
+        consolidate_summary=False,
+        reduce_prompt=None,
+        output_type="text",
         prompt_reduce_content=None,
         failover_enabled=False,
         failover_flavor_id=None,
@@ -66,7 +73,7 @@ def test_failover_task_data_reads_provider_via_model_and_decrypts():
     original = {
         "flavor_id": "00000000-0000-0000-0000-000000000000",
         "backend": "old_backend",
-        "backendParams": {"modelName": "old", "maxGenerationLength": 1},
+        "backendParams": {"modelName": "old", "maxGenerationLength": 1, "maxNewTurns": 10, "createNewTurnAfter": 500},
         "providerConfig": {"api_url": "https://old", "api_key": "old", "provider_type": "old"},
         "content": "unchanged",
         "prompt_user_content": "Summary so far: {} New turns: {}",
@@ -95,6 +102,10 @@ def test_failover_task_data_reads_provider_via_model_and_decrypts():
     assert out["backendParams"]["totalContextLength"] == 32000
     assert out["backendParams"]["tokenizerClass"] == "FailoverTokenizer"
     assert out["backendParams"]["tokenizer"] == "failover/tokenizer"
+    # Chunking settings come from the failover flavor too, not the original job.
+    assert out["backendParams"]["maxNewTurns"] == 6
+    assert out["backendParams"]["createNewTurnAfter"] == 300
+    assert out["backendParams"]["reduceSummary"] is True
     # untouched content preserved
     assert out["content"] == "unchanged"
     # The failover flavor has no user prompt: the original prompt and its fields are kept.
