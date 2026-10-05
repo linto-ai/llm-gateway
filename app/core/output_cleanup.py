@@ -19,6 +19,6 @@ def strip_wrapping_fence(text: str) -> str:
     body = lines[1:]
     if body and _CLOSING.match(body[-1]):
         body = body[:-1]
-    elif any(_CLOSING.match(l) for l in body):
+    elif any(_CLOSING.match(ln) for ln in body):
         return text  # the first fence closes inside the answer: it is a real code block
     return "\n".join(body).strip("\n")

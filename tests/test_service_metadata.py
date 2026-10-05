@@ -2,12 +2,18 @@
 reserves `metadata`), on creation and on update — this is where LinTO Studio
 and Meet read the service's icon from."""
 
+import os
+
 import pytest
 
 from app.schemas.service import ServiceCreate, ServiceUpdate
 from app.services.service_service import ServiceService
 
 
+@pytest.mark.skipif(
+    "sqlite" in os.environ.get("DATABASE_URL", "sqlite").lower(),
+    reason="Requires PostgreSQL (ARRAY columns not supported in SQLite)",
+)
 @pytest.mark.asyncio
 async def test_metadata_persists_on_create_and_update(async_db_session, async_sample_model):
     service = ServiceService()

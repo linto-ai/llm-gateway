@@ -17,7 +17,7 @@ asgiref==3.8.1
 tenacity==9.0.0
 
 # Database and ORM
-sqlalchemy[asyncio]>=2.0.0
+sqlalchemy[asyncio]>=2.0.0,<2.1
 asyncpg>=0.29.0
 alembic>=1.13.0
 
