@@ -125,7 +125,7 @@ def draw_mindmap(center: str, branches: List[Tuple[str, List[str]]]) -> bytes:
     margin, gap = 40, 34
     branch_w, leaf_w, branch_off, leaf_off = 380, 430, 90, 44
     c_lines = _wrap(probe, center, f_center, 420)
-    c_w = (max(probe.textlength(l, font=f_center) for l in c_lines) + 70) if c_lines else 200
+    c_w = (max(probe.textlength(ln, font=f_center) for ln in c_lines) + 70) if c_lines else 200
     # width from the content: centre + on each side branch box, connector and the widest detail text
     W = int(c_w + 2 * (branch_off + branch_w + leaf_off + 16 + leaf_w + margin))
     cx = W // 2
@@ -137,7 +137,7 @@ def draw_mindmap(center: str, branches: List[Tuple[str, List[str]]]) -> bytes:
         b_lines = _wrap(probe, label, f_branch, branch_w - 40)
         b_h = len(b_lines) * 44 + 30
         leaf_lines = [_wrap(probe, leaf, f_leaf, leaf_w) for leaf in leaves]
-        l_h = sum(len(l) * 40 + 14 for l in leaf_lines)
+        l_h = sum(len(ln) * 40 + 14 for ln in leaf_lines)
         return b_lines, b_h, leaf_lines, max(b_h, l_h)
 
     sides = []
@@ -158,7 +158,7 @@ def draw_mindmap(center: str, branches: List[Tuple[str, List[str]]]) -> bytes:
         for i, (b_lines, b_h, leaf_lines, blk_h) in enumerate(blocks):
             color = _rgb(PALETTE[(first_index + i) % len(PALETTE)])
             by = y + blk_h / 2
-            bw = max(d.textlength(l, font=f_branch) for l in b_lines) + 44
+            bw = max(d.textlength(ln, font=f_branch) for ln in b_lines) + 44
             bx0 = cx + direction * (c_w / 2 + branch_off) - (0 if direction > 0 else bw)
             _curve(d, (cx + direction * c_w / 2 * 0.8, cy), (bx0 if direction > 0 else bx0 + bw, by), color, 7)
             d.rounded_rectangle([bx0, by - b_h / 2, bx0 + bw, by + b_h / 2], radius=18, fill=color)
@@ -167,7 +167,7 @@ def draw_mindmap(center: str, branches: List[Tuple[str, List[str]]]) -> bytes:
                 d.text((bx0 + 22, ty), line, font=f_branch, fill="white")
                 ty += 44
             # leaves
-            total_leaves = sum(len(l) * 40 + 14 for l in leaf_lines)
+            total_leaves = sum(len(ln) * 40 + 14 for ln in leaf_lines)
             ly = by - total_leaves / 2
             anchor_x = bx0 + bw if direction > 0 else bx0
             for lines in leaf_lines:
@@ -216,7 +216,6 @@ def _available_width(paragraph, doc):
 
 
 def insert_mindmaps(doc, placeholders: Dict[str, Any]) -> None:
-    from docx.text.paragraph import Paragraph
     from docx.oxml.ns import qn
 
     paragraphs = list(doc.paragraphs)
