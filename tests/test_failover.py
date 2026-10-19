@@ -142,6 +142,7 @@ class TestFailoverServiceValidation:
             name="flavor-b",
             temperature=0.5,
             top_p=0.8,
+            failover_enabled=True,
             failover_flavor_id=flavor_a.id  # B -> A
         )
         async_db_session.add(flavor_b)
@@ -193,12 +194,14 @@ class TestFailoverServiceValidation:
             name="flavor-c",
             temperature=0.3,
             top_p=0.7,
+            failover_enabled=True,
             failover_flavor_id=flavor_a.id  # C -> A
         )
         async_db_session.add(flavor_c)
         await async_db_session.commit()
 
         # Set B -> C
+        flavor_b.failover_enabled = True
         flavor_b.failover_flavor_id = flavor_c.id
         await async_db_session.commit()
 
@@ -247,6 +250,7 @@ class TestFailoverServiceValidation:
         await async_db_session.commit()
 
         # Set up chain: B -> C
+        flavor_b.failover_enabled = True
         flavor_b.failover_flavor_id = flavor_c.id
         await async_db_session.commit()
 
@@ -686,6 +690,7 @@ class TestFailoverAPIEndpoints:
         await async_db_session.commit()
 
         # Set up: B -> A
+        flavor_b.failover_enabled = True
         flavor_b.failover_flavor_id = flavor_a.id
         await async_db_session.commit()
 

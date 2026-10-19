@@ -225,14 +225,23 @@ class FlavorService:
                 detail="Flavor not found"
             )
 
-        # Fallback and failover flavors must be in the same service, and the
-        # failover chain must not loop
+        # Fallback and failover flavors must be in the same service, and with
+        # failover on, the failover chain must not loop
         await FlavorService.validate_flavor_links(
             db, flavor.service_id, flavor_update.fallback_flavor_id, flavor_update.failover_flavor_id
         )
-        if flavor_update.failover_flavor_id:
+        fields = flavor_update.model_fields_set
+        failover_flavor_id = (
+            flavor_update.failover_flavor_id if "failover_flavor_id" in fields
+            else flavor.failover_flavor_id
+        )
+        failover_enabled = (
+            flavor_update.failover_enabled if flavor_update.failover_enabled is not None
+            else flavor.failover_enabled
+        )
+        if failover_enabled and failover_flavor_id and fields & {"failover_flavor_id", "failover_enabled"}:
             is_valid, error, _, _ = await failover_service.validate_failover_chain(
-                db, flavor_id, flavor_update.failover_flavor_id
+                db, flavor_id, failover_flavor_id
             )
             if not is_valid:
                 raise HTTPException(

@@ -67,7 +67,7 @@ class FailoverService:
 
             # Get current flavor info and next in chain
             result = await db.execute(
-                select(ServiceFlavor.name, ServiceFlavor.failover_flavor_id)
+                select(ServiceFlavor.name, ServiceFlavor.failover_flavor_id, ServiceFlavor.failover_enabled)
                 .where(ServiceFlavor.id == current_id)
             )
             row = result.one_or_none()
@@ -75,9 +75,10 @@ class FailoverService:
                 # Flavor not found, end of chain
                 break
 
-            name, next_id = row
+            name, next_id, enabled = row
             chain_preview.append(name)
-            current_id = next_id
+            # A flavor with failover disabled ends the chain, as at runtime
+            current_id = next_id if enabled else None
             depth += 1
 
         return True, None, len(chain_preview), chain_preview

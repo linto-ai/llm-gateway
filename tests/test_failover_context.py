@@ -260,3 +260,18 @@ def test_run_with_failover_counts_skipped_flavors_in_depth(chain):
 
     assert result["final_flavor_id"] == NEXT
     assert result["failover_depth"] == 2
+
+
+def test_run_with_failover_limits_the_walk_to_the_remaining_depth(chain):
+    flavors, _ = chain
+    flavors[TARGET] = _flavor(TARGET, context_length=SMALL_CONTEXT, failover_flavor_id=NEXT)
+    flavors[NEXT] = _flavor(NEXT)
+    engine = MagicMock()
+    engine.return_value.run.side_effect = RateLimitFailoverError("rate limited at depth 2")
+
+    # Already at depth 2 of 3: one hop left, so NEXT (a second hop) is out of reach.
+    with patch.object(celery_app, "LLMInferenceEngine", engine):
+        with pytest.raises(RateLimitFailoverError, match="rate limited at depth 2"):
+            celery_app._run_with_failover(MagicMock(), _task_data(), failover_depth=2)
+
+    assert engine.call_count == 1
