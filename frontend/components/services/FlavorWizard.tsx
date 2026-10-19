@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -244,8 +245,8 @@ export function FlavorWizard({ service, flavor, onSuccess, onCancel }: FlavorWiz
         });
       }
       onSuccess();
-    } catch {
-      // Error handled by mutation
+    } catch (error: any) {
+      toast.error(error.message || tCommon('error'));
     }
   };
 
