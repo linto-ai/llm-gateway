@@ -15,6 +15,7 @@ from app.models.job import Job
 from app.models.prompt import Prompt
 from app.schemas.service import ServiceFlavorCreate, ServiceFlavorUpdate
 from app.core.prompt_validation import validate_prompt_for_processing_mode
+from app.services.failover_service import failover_service
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,35 @@ class FlavorService:
         return validate_prompt_for_processing_mode(
             content, processing_mode, prompt_name, field_name
         )
+
+    @staticmethod
+    async def validate_flavor_links(
+        db: AsyncSession,
+        service_id: UUID,
+        fallback_flavor_id: Optional[UUID],
+        failover_flavor_id: Optional[UUID],
+    ) -> None:
+        """
+        Reject a fallback or failover flavor that belongs to another service.
+
+        Raises:
+            HTTPException: 400 if a linked flavor is in another service
+        """
+        for field, linked_id in (
+            ("fallback_flavor_id", fallback_flavor_id),
+            ("failover_flavor_id", failover_flavor_id),
+        ):
+            if not linked_id:
+                continue
+            result = await db.execute(
+                select(ServiceFlavor.service_id).where(ServiceFlavor.id == linked_id)
+            )
+            linked_service_id = result.scalar_one_or_none()
+            if linked_service_id is not None and linked_service_id != service_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"{field} must be a flavor of the same service"
+                )
 
     @staticmethod
     def _get_flavor_options():
@@ -194,6 +224,21 @@ class FlavorService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Flavor not found"
             )
+
+        # Fallback and failover flavors must be in the same service, and the
+        # failover chain must not loop
+        await FlavorService.validate_flavor_links(
+            db, flavor.service_id, flavor_update.fallback_flavor_id, flavor_update.failover_flavor_id
+        )
+        if flavor_update.failover_flavor_id:
+            is_valid, error, _, _ = await failover_service.validate_failover_chain(
+                db, flavor_id, flavor_update.failover_flavor_id
+            )
+            if not is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error
+                )
 
         # Check name uniqueness if name is being updated
         if flavor_update.name and flavor_update.name != flavor.name:

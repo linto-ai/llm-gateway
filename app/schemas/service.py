@@ -66,7 +66,7 @@ class ServiceFlavorBase(BaseModel):
     # Fallback configuration
     fallback_flavor_id: Optional[UUID] = Field(
         None,
-        description="Explicit flavor to use when input exceeds context limit. Can be from any service."
+        description="Explicit flavor to use when input exceeds context limit. Must be in the same service."
     )
 
     # Failover configuration (triggers on processing errors, not context overflow)

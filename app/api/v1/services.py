@@ -378,12 +378,18 @@ async def add_flavor_to_service(
     """
     from app.models.service_flavor import ServiceFlavor
     from app.models.prompt import Prompt
+    from app.services.flavor_service import FlavorService
     from sqlalchemy import select
 
     # Verify service exists
     service = await service_service.get_service_by_id(db, service_id)
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
+
+    # Fallback and failover flavors must be in the same service
+    await FlavorService.validate_flavor_links(
+        db, service_id, request.fallback_flavor_id, request.failover_flavor_id
+    )
 
     # Map schema field names to model field names
     data = request.model_dump()
