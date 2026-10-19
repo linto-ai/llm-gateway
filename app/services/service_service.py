@@ -46,7 +46,6 @@ class ServiceService:
                 seen.append(val)
         return sorted(seen)
 
-    @classmethod
     @staticmethod
     def _normalize_scopes(scopes) -> List[str]:
         """Lower-cased, trimmed, de-duplicated usage scopes; never empty."""

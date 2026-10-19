@@ -275,3 +275,29 @@ def test_run_with_failover_limits_the_walk_to_the_remaining_depth(chain):
             celery_app._run_with_failover(MagicMock(), _task_data(), failover_depth=2)
 
     assert engine.call_count == 1
+
+
+def test_task_status_during_failover_has_no_progress():
+    # The failover PROGRESS meta has no completed_turns/total_turns
+    result = SimpleNamespace(
+        status="PROGRESS",
+        result={"phase": "failover", "failover_depth": 1},
+        info={"phase": "failover", "failover_reason": "rate_limit", "failover_depth": 1},
+    )
+    with patch.object(celery_app, "AsyncResult", return_value=result):
+        status, _, progress = celery_app.get_task_status("task-id")
+
+    assert status == "PROGRESS"
+    assert progress is None
+
+
+def test_task_status_progress_from_turns():
+    result = SimpleNamespace(
+        status="PROGRESS",
+        result={"completed_turns": 3, "total_turns": 4},
+        info={"completed_turns": 3, "total_turns": 4},
+    )
+    with patch.object(celery_app, "AsyncResult", return_value=result):
+        _, _, progress = celery_app.get_task_status("task-id")
+
+    assert progress == "75"
