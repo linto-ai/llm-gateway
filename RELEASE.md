@@ -1,3 +1,33 @@
+# 2.7.2
+
+_2026_10_19_
+
+Failover checks that the input fits the backup flavor, and fallback and
+failover links stay inside their service.
+
+Upgrade notes:
+
+- No migration. Existing flavor links are not checked or changed.
+- Creating or updating a flavor now returns 400 when its `fallback_flavor_id`
+  or `failover_flavor_id` is a flavor of another service, or when the failover
+  chain loops.
+
+## Failover (#31, #33)
+
+- Before switching, the input is checked against the failover flavor with the
+  same token count as dispatch (`app/services/context_check.py`). If it doesn't
+  fit, the flavor's fallback is used when it fits, otherwise the next flavor of
+  the failover chain. Each skipped flavor is logged with the reason and counts
+  toward `max_failover_depth`. If nothing fits, the job fails with the original
+  error.
+- Fallback and failover flavors must be in the same service, on every path
+  that sets them (flavor create and update, flavors nested in a service).
+- `PATCH` of a flavor refuses a failover chain that loops. A flavor with
+  failover off ends the chain, in the check, in the chain preview of
+  `validate-failover` and at runtime.
+
+---
+
 # 2.7.1
 
 _2026_10_05_
