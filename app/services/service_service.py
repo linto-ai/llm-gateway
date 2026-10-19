@@ -10,6 +10,7 @@ from app.models.service import Service, DEFAULT_SERVICE_SCOPE
 from app.models.service_flavor import ServiceFlavor
 from app.models.model import Model
 from app.models.prompt import Prompt
+from app.services.flavor_service import FlavorService
 from app.schemas.service import (
     ServiceCreate, ServiceUpdate, ServiceResponse, ServiceListResponse,
     ServiceFlavorResponse
@@ -309,6 +310,11 @@ class ServiceService:
 
             # Create flavors
             for flavor_data in request.flavors:
+                # Fallback and failover flavors must be in the same service
+                await FlavorService.validate_flavor_links(
+                    db, service.id, flavor_data.fallback_flavor_id, flavor_data.failover_flavor_id
+                )
+
                 # Convert Pydantic model to dict
                 flavor_dict = flavor_data.model_dump()
 
@@ -547,6 +553,11 @@ class ServiceService:
                         status_code=404,
                         detail=f"Model with ID {flavor_data.model_id} not found"
                     )
+
+                # Fallback and failover flavors must be in the same service
+                await FlavorService.validate_flavor_links(
+                    db, service.id, flavor_data.fallback_flavor_id, flavor_data.failover_flavor_id
+                )
 
                 # Convert Pydantic model to dict
                 flavor_dict = flavor_data.model_dump()

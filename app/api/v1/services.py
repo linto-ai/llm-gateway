@@ -12,6 +12,7 @@ from app.services.service_service import service_service
 from app.services.document_template_service import document_template_service
 from app.core.prompt_validation import count_placeholders
 from app.services.tokenizer_manager import TokenizerManager
+from app.services.context_check import check_context_fit
 from app.services.task_params import build_backend_params, resolve_tokenizer_for_flavor  # noqa: F401 (re-exported)
 from app.schemas.service import (
     ServiceCreate,
@@ -90,22 +91,7 @@ async def _validate_context(
     Returns:
         tuple: (fits, input_tokens, available_tokens)
     """
-    # Count tokens
-    try:
-        manager = TokenizerManager.get_instance()
-        input_tokens = manager.count_tokens(flavor.model, content)
-    except Exception as e:
-        logger.warning(f"Tokenizer count failed, using estimate: {e}", exc_info=True)
-        input_tokens = len(content) // 4  # Rough estimate
-
-    # Calculate available tokens using direct model limits
-    prompt_buffer = 500  # Reserve for system/user prompts
-    context_length = flavor.model.context_length
-    max_gen_length = flavor.model.max_generation_length
-    available = context_length - max_gen_length - prompt_buffer
-
-    fits = input_tokens <= available
-    return fits, input_tokens, available
+    return check_context_fit(flavor.model, content)
 
 
 async def _find_fallback_flavor(
@@ -392,12 +378,18 @@ async def add_flavor_to_service(
     """
     from app.models.service_flavor import ServiceFlavor
     from app.models.prompt import Prompt
+    from app.services.flavor_service import FlavorService
     from sqlalchemy import select
 
     # Verify service exists
     service = await service_service.get_service_by_id(db, service_id)
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
+
+    # Fallback and failover flavors must be in the same service
+    await FlavorService.validate_flavor_links(
+        db, service_id, request.fallback_flavor_id, request.failover_flavor_id
+    )
 
     # Map schema field names to model field names
     data = request.model_dump()

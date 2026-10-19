@@ -282,7 +282,7 @@ class TestContextValidation:
         # Small content (100 words ~ 130 tokens)
         small_content = "This is a test sentence. " * 20
 
-        with patch('app.api.v1.services.TokenizerManager') as mock_tm:
+        with patch('app.services.context_check.TokenizerManager') as mock_tm:
             mock_manager = Mock()
             mock_manager.count_tokens.return_value = 130
             mock_tm.get_instance.return_value = mock_manager
@@ -305,7 +305,7 @@ class TestContextValidation:
         # Large content
         large_content = "Speaker1: word " * 10000
 
-        with patch('app.api.v1.services.TokenizerManager') as mock_tm:
+        with patch('app.services.context_check.TokenizerManager') as mock_tm:
             mock_manager = Mock()
             mock_manager.count_tokens.return_value = 15000
             mock_tm.get_instance.return_value = mock_manager
@@ -326,7 +326,7 @@ class TestContextValidation:
 
         content = "a" * 4000  # 4000 chars ~ 1000 tokens estimate
 
-        with patch('app.api.v1.services.TokenizerManager') as mock_tm:
+        with patch('app.services.context_check.TokenizerManager') as mock_tm:
             mock_tm.get_instance.side_effect = Exception("Tokenizer failed")
 
             fits, input_tokens, available = await _validate_context(

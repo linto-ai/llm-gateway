@@ -88,7 +88,7 @@ def _build(flavor):
     enc.decrypt.return_value = "DECRYPTED_KEY"
     with patch.object(celery_app, "_get_sync_db_session", return_value=session), \
          patch("app.core.security.get_encryption_service", return_value=enc):
-        out = celery_app._get_failover_task_data(_original_task_data(), FAILOVER_FLAVOR_ID)
+        out, _ = celery_app._get_failover_task_data(_original_task_data(), FAILOVER_FLAVOR_ID, max_hops=1)
     return out, enc
 
 
@@ -149,7 +149,7 @@ def test_failover_keeps_request_overrides():
     original = {**_original_task_data(), "requestOverrides": {"temperature": 0.0, "top_p": None}}
     with patch.object(celery_app, "_get_sync_db_session", return_value=session), \
          patch("app.core.security.get_encryption_service", return_value=MagicMock()):
-        out = celery_app._get_failover_task_data(original, FAILOVER_FLAVOR_ID)
+        out, _ = celery_app._get_failover_task_data(original, FAILOVER_FLAVOR_ID, max_hops=1)
 
     assert out is not None, "failover task_data must be built, not None"
     # The request's temperature applies to the failover flavor; top_p was not overridden.
