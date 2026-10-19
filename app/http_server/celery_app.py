@@ -448,7 +448,10 @@ def get_task_status(task_id):
     # Get progress metadata if task is in progress
     progress = None
     if result.status == 'PROGRESS':
-        progress = f"{round(100 * (result.info['completed_turns'] / result.info['total_turns']))}"
+        # The failover meta has no turn counts
+        info = result.info or {}
+        if info.get('total_turns'):
+            progress = f"{round(100 * (info.get('completed_turns', 0) / info['total_turns']))}"
     return result.status, result.result, progress
 
 
