@@ -163,14 +163,17 @@ def _run_with_failover(celery_task, task_data, failover_depth: int):
             }
         )
 
-        # Get new task_data for the failover flavor
-        new_task_data = _get_failover_task_data(task_data, failover_flavor_id)
+        # Get new task_data for the first flavor in the chain the input fits.
+        # Flavors skipped for context count toward the depth limit.
+        new_task_data, hops = _get_failover_task_data(
+            task_data, failover_flavor_id, max_hops=max_depth - failover_depth
+        )
         if new_task_data is None:
             logger.exception(f"Failed to get task data for failover flavor {failover_flavor_id}")
             raise failoverable_error from e
 
         # Recursively run with failover flavor
-        return _run_with_failover(celery_task, new_task_data, failover_depth + 1)
+        return _run_with_failover(celery_task, new_task_data, failover_depth + hops)
 
 
 def _classify_error(e: Exception):
@@ -254,39 +257,113 @@ def _should_failover(failover_config: dict, error, failover_depth: int, max_dept
     return False
 
 
-def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -> dict:
+def _load_flavor(session, flavor_id: str):
+    """Load a flavor with its model and the model's provider."""
+    from app.models.service_flavor import ServiceFlavor
+    from app.models.model import Model
+    from sqlalchemy.orm import joinedload
+    from uuid import UUID
+
+    # The provider is reached through the model (ServiceFlavor -> model -> provider);
+    # ServiceFlavor itself has no `provider` relationship.
+    return session.query(ServiceFlavor).options(
+        joinedload(ServiceFlavor.model).joinedload(Model.provider)
+    ).filter(ServiceFlavor.id == UUID(str(flavor_id))).first()
+
+
+def _input_fits(flavor, content) -> tuple[bool, str]:
+    """
+    Check the input against a flavor the way dispatch does (_validate_context).
+
+    Iterative flavors chunk the input, so any size fits. Returns (fits, reason).
+    """
+    from app.services.context_check import check_context_fit
+
+    if flavor.processing_mode == "iterative":
+        return True, ""
+    fits, input_tokens, available = check_context_fit(flavor.model, content)
+    return fits, f"input ({input_tokens} tokens) exceeds context limit ({available} available)"
+
+
+def _select_failover_flavor(session, failover_flavor_id: str, content, max_hops: int):
+    """
+    Pick the flavor to fail over to, following the failover chain.
+
+    Same rule as dispatch: use the failover target if the input fits; if not,
+    use its fallback flavor if that one fits; otherwise move on to the target's
+    own failover flavor. Each flavor tried counts as one hop, up to max_hops.
+
+    Returns:
+        tuple: (flavor or None, hops)
+    """
+    current_id = failover_flavor_id
+    hops = 0
+
+    while current_id and hops < max_hops:
+        hops += 1
+
+        flavor = _load_flavor(session, current_id)
+        if not flavor:
+            logger.error(f"Failover flavor {current_id} not found")
+            return None, hops
+
+        if not flavor.is_active:
+            logger.error(f"Failover flavor {current_id} is inactive")
+            return None, hops
+
+        fits, reason = _input_fits(flavor, content)
+        if fits:
+            return flavor, hops
+
+        if flavor.fallback_flavor_id:
+            fallback = _load_flavor(session, flavor.fallback_flavor_id)
+            if not fallback or not fallback.is_active:
+                reason += f"; fallback flavor {flavor.fallback_flavor_id} not found or inactive"
+            else:
+                fallback_fits, fallback_reason = _input_fits(fallback, content)
+                if fallback_fits:
+                    logger.info(
+                        f"Failover: {flavor.name} {reason}, using its fallback flavor {fallback.name}"
+                    )
+                    return fallback, hops
+                reason += f"; fallback flavor {fallback.name}: {fallback_reason}"
+        else:
+            reason += "; no fallback flavor configured"
+
+        logger.warning(f"Skipping failover flavor {flavor.name} ({flavor.id}): {reason}")
+        # Follow the chain only where failover is enabled, as _should_failover does
+        current_id = (
+            str(flavor.failover_flavor_id)
+            if flavor.failover_enabled and flavor.failover_flavor_id else None
+        )
+
+    logger.error(f"No flavor in the failover chain fits the input ({hops} tried, max {max_hops})")
+    return None, hops
+
+
+def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str, max_hops: int):
     """
     Build new task_data for the failover flavor.
 
-    This retrieves the failover flavor from the database and rebuilds
-    the task_data with the new flavor's configuration while preserving
+    This picks the flavor to fail over to (see _select_failover_flavor) and
+    rebuilds the task_data with that flavor's configuration while preserving
     the original content and context.
+
+    Returns:
+        tuple: (new task_data or None, number of flavors tried)
     """
     try:
         session = _get_sync_db_session()
         try:
-            from app.models.service_flavor import ServiceFlavor
-            from app.models.model import Model
             from app.core.security import get_encryption_service
             from app.core.prompt_validation import count_placeholders
             from app.services.task_params import build_backend_params
-            from sqlalchemy.orm import joinedload
-            from uuid import UUID
 
-            # Get the failover flavor with relationships. The provider is
-            # reached through the model (ServiceFlavor -> model -> provider);
-            # ServiceFlavor itself has no `provider` relationship.
-            flavor = session.query(ServiceFlavor).options(
-                joinedload(ServiceFlavor.model).joinedload(Model.provider)
-            ).filter(ServiceFlavor.id == UUID(failover_flavor_id)).first()
-
+            flavor, hops = _select_failover_flavor(
+                session, failover_flavor_id, original_task_data['content'], max_hops
+            )
             if not flavor:
-                logger.error(f"Failover flavor {failover_flavor_id} not found")
-                return None
-
-            if not flavor.is_active:
-                logger.error(f"Failover flavor {failover_flavor_id} is inactive")
-                return None
+                return None, hops
 
             # Build new task_data preserving content but using new flavor config
             new_task_data = original_task_data.copy()
@@ -338,15 +415,15 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
                 'max_failover_depth': flavor.max_failover_depth,
             }
 
-            logger.info(f"Built failover task_data for flavor {flavor.name} (id={failover_flavor_id})")
-            return new_task_data
+            logger.info(f"Built failover task_data for flavor {flavor.name} (id={flavor.id})")
+            return new_task_data, hops
 
         finally:
             session.close()
 
     except Exception as e:
         logger.exception(f"Error building failover task_data: {e}")
-        return None
+        return None, 0
 
 # Set publish tasked status to QUEUED
 @after_task_publish.connect

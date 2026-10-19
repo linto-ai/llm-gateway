@@ -12,6 +12,7 @@ from app.services.service_service import service_service
 from app.services.document_template_service import document_template_service
 from app.core.prompt_validation import count_placeholders
 from app.services.tokenizer_manager import TokenizerManager
+from app.services.context_check import check_context_fit
 from app.services.task_params import build_backend_params, resolve_tokenizer_for_flavor  # noqa: F401 (re-exported)
 from app.schemas.service import (
     ServiceCreate,
@@ -90,22 +91,7 @@ async def _validate_context(
     Returns:
         tuple: (fits, input_tokens, available_tokens)
     """
-    # Count tokens
-    try:
-        manager = TokenizerManager.get_instance()
-        input_tokens = manager.count_tokens(flavor.model, content)
-    except Exception as e:
-        logger.warning(f"Tokenizer count failed, using estimate: {e}", exc_info=True)
-        input_tokens = len(content) // 4  # Rough estimate
-
-    # Calculate available tokens using direct model limits
-    prompt_buffer = 500  # Reserve for system/user prompts
-    context_length = flavor.model.context_length
-    max_gen_length = flavor.model.max_generation_length
-    available = context_length - max_gen_length - prompt_buffer
-
-    fits = input_tokens <= available
-    return fits, input_tokens, available
+    return check_context_fit(flavor.model, content)
 
 
 async def _find_fallback_flavor(
