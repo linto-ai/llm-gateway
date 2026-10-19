@@ -567,6 +567,10 @@ class BatchManager:
         Returns:
             list: The reduced/formatted summary as a list of lines.
         """
+        if self.reduce_prompt is None:
+            self.logger.warning("reduce_summary is on but the flavor has no reduce prompt. Returning summary without reduce formatting.")
+            return summary
+
         self.logger.info(f"Reducing summary: {len(summary)} lines")
         self.current_phase = "reducing"
 

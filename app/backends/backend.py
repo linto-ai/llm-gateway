@@ -50,7 +50,8 @@ class LLMBackend:
                 self.prompt_token_count += len(self.tokenizer(self.system_prompt)["input_ids"])
             self.chunker = Chunker(self.tokenizer, self.createNewTurnAfter)
 
-            if task_data["backendParams"]['reduceSummary'] and task_data["backendParams"]["reduce_prompt"] is not None:
+            # Inline content counts, not only a linked prompt (reduce_prompt is its name)
+            if task_data["backendParams"]['reduceSummary'] and task_data.get("prompt_reduce_content"):
                 self.load_reduce_prompt()
             else:
                 self.reduce_prompt = None
