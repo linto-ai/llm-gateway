@@ -1,0 +1,19 @@
+{
+  "name": "linto-points-cles",
+  "description": {
+    "fr": "Points clés : l essentiel en une minute, points numérotés, ce qui change, la suite, chiffres, thèmes",
+    "en": "Key points: one-minute read, numbered points, what changes, next steps, figures, themes"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "languages": [
+    "*"
+  ],
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "linto-points-cles"
+    }
+  }
+}

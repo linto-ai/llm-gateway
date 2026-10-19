@@ -1,0 +1,19 @@
+{
+  "name": "linto-extraction-champs",
+  "description": {
+    "fr": "Extraction des champs de template à partir du compte rendu : chaînes, listes sur plusieurs lignes, listes d objets pour les lignes répétées",
+    "en": "Template field extraction from the minutes: strings, multi-line lists, lists of objects for repeated rows"
+  },
+  "service_type": "summary",
+  "prompt_type": "field_extraction",
+  "languages": [
+    "*"
+  ],
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "linto-extraction-champs"
+    }
+  }
+}

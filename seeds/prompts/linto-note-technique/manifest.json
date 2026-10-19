@@ -1,0 +1,19 @@
+{
+  "name": "linto-note-technique",
+  "description": {
+    "fr": "Note technique : contexte, constats, options et statut, décisions, plan d action, risques, questions ouvertes",
+    "en": "Technical note: context, findings, options with status, decisions, action plan, risks, open questions"
+  },
+  "service_type": "summary",
+  "prompt_type": "standard",
+  "languages": [
+    "*"
+  ],
+  "version": "1.0.0",
+  "files": {
+    "user.md": {
+      "prompt_category": "user",
+      "prompt_name": "linto-note-technique"
+    }
+  }
+}

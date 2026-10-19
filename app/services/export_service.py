@@ -15,6 +15,7 @@ from app.models.job import Job
 from app.models.prompt import Prompt
 from app.services.document_service import DocumentService
 from app.services.document_template_service import DocumentTemplateService
+from app.services import template_renderers
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,8 @@ class ExportService:
         llm_inference=None,
         version_number: Optional[int] = None,
         timezone: Optional[str] = None,
+        pdf_lock: bool = False,
+        pdf_footer_note: Optional[str] = None,
     ) -> BytesIO | str:
         """
         Export job with just-in-time metadata extraction.
@@ -70,6 +73,8 @@ class ExportService:
             format: Export format ('docx', 'pdf', or 'html')
             llm_inference: Optional LLM inference engine for extraction
             version_number: Optional version number (fetches content from DB, uses per-version extraction cache)
+            pdf_lock: PDF only, forbid editing and copying
+            pdf_footer_note: PDF only, line added at the bottom of every page
 
         Returns:
             BytesIO containing the generated document (docx/pdf), or HTML string (html)
@@ -150,7 +155,7 @@ class ExportService:
         elif format == "html":
             return await self.document_service.generate_html(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
         else:
-            return await self.document_service.generate_pdf(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
+            return await self.document_service.generate_pdf(job, template, version_content=version_content, version_metadata=version_metadata, timezone=timezone, footer_note=pdf_footer_note, lock=pdf_lock)
 
     async def get_export_preview(
         self,
@@ -367,10 +372,20 @@ class ExportService:
             and template_id != last_extraction_template_id
         )
 
+        # Renderer-owned placeholders (e.g. {{list.field}} of repeated rows) become their own requests
+        renderer_names, renderer_requests = template_renderers.extraction_requests(
+            template_placeholders,
+            self.template_service.parse_placeholder_info,
+            current_metadata,
+            force=template_changed,
+        )
+
         for placeholder in template_placeholders:
             # Parse placeholder name
             info = self.template_service.parse_placeholder_info(placeholder)
             name = info["name"]
+            if name in renderer_names:
+                continue
 
             # Skip standard placeholders (system-provided)
             if name in standard_placeholders:
@@ -386,7 +401,7 @@ class ExportService:
             if name not in current_metadata:
                 missing.append(placeholder)
 
-        return missing
+        return missing + renderer_requests
 
     async def _can_extract_async(self, db: AsyncSession, job: Job) -> bool:
         """Check if extraction is possible for this job (async version)."""
@@ -720,10 +735,6 @@ class ExportService:
 
 
 # Factory function
-def get_export_service() -> ExportService:
-    """Get export service instance."""
-    return ExportService()
-
 
 # Singleton instance
 export_service = ExportService()

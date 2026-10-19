@@ -106,7 +106,9 @@
     "scope": "Portée d'accès",
     "allowedOrganizations": "Organisations autorisées",
     "allowedUsers": "Utilisateurs autorisés",
-    "scopes": "Usages (scopes)"
+    "scopes": "Usages (scopes)",
+    "displayOrder": "Position dans la liste",
+    "displayOrderHint": "0 = premier service renvoyé par l'API (onglet affiché en premier dans LinTO Studio). À égalité, les plus récents d'abord."
   },
   "types": {
     "summary": "Resume",

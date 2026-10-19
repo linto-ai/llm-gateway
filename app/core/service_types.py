@@ -5,7 +5,7 @@ This module defines the service type configurations used throughout the applicat
 to determine which prompts and features are available for each service type.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from pydantic import BaseModel
 
 
@@ -228,10 +228,3 @@ def get_service_type_config(service_type: str) -> Optional[ServiceTypeConfig]:
     return SERVICE_TYPE_CONFIGS.get(service_type)
 
 
-def get_available_service_types() -> List[str]:
-    """Get list of all available service types.
-
-    Returns:
-        List of service type identifiers
-    """
-    return list(SERVICE_TYPE_CONFIGS.keys())

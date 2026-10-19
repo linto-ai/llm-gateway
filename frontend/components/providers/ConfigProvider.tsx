@@ -40,9 +40,12 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     loadConfig();
   }, []);
 
+  // Children render only once the runtime config is known: queries run as soon as pages mount,
+  // and the API client throws "Config not loaded" before that (the failed query then stays
+  // paused and the page shows an empty list).
   return (
     <ConfigContext.Provider value={config}>
-      {children}
+      {config.isLoading ? null : children}
     </ConfigContext.Provider>
   );
 }

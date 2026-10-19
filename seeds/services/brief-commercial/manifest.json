@@ -1,0 +1,25 @@
+{
+  "name": "Brief commercial",
+  "route": "brief-commercial",
+  "service_type": "summary",
+  "description": {
+    "fr": "Brief commercial",
+    "en": "Sales brief"
+  },
+  "scopes": [
+    "linto"
+  ],
+  "display_order": 30,
+  "flavor": {
+    "name": "Default",
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "presence_penalty": 0.0,
+    "processing_mode": "single_pass",
+    "output_type": "markdown",
+    "create_new_turn_after": 100,
+    "user_prompt_name": "linto-brief-commercial",
+    "extraction_prompt_name": "linto-extraction-champs"
+  },
+  "template_file": "linto-brief-commercial.docx"
+}

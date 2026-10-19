@@ -5,7 +5,11 @@ Base seed logic for development data.
 Uses a declarative directory-based structure for seed data:
 - seeds/prompts/*  - Production prompts (versioned)
 - seeds/presets/*  - Production flavor presets (versioned)
+- seeds/services/* - Public service catalog, installed on demand on an existing model
 - seeds/dev/*      - Dev providers and services (gitignored)
+
+Non-destructive: existing prompts, templates and services are never overwritten
+(except prompts with --update-prompts). Run automatically at API start by the entrypoint.
 
 Usage:
     # Seed production data (prompts + presets + templates)
@@ -13,6 +17,9 @@ Usage:
 
     # Include dev data (providers + services)
     docker exec llm-gateway-llm-gateway-1 python -m app.seeds.base_seed --dev
+
+    # Also create the service catalog on an existing model (existing routes are kept)
+    docker exec llm-gateway-llm-gateway-1 python -m app.seeds.base_seed --catalog mistralai/mistral-small-3.2-24b-instruct
 
     # Seed specific category only
     docker exec llm-gateway-llm-gateway-1 python -m app.seeds.base_seed --only prompts
@@ -154,8 +161,13 @@ async def get_or_create_prompt(
     prompt_category: str = "user",
     prompt_type: Optional[str] = None,
     service_type: str = "summary",
+    update_existing: bool = False,
 ) -> Prompt:
-    """Get existing prompt by name or create/update it."""
+    """Get existing prompt by name or create it.
+
+    An existing prompt whose content differs is kept as is (an admin may have edited it; flavors keep
+    their own inline copy anyway) unless update_existing is set (--update-prompts).
+    """
     from app.models.prompt_type import PromptType
 
     result = await db.execute(
@@ -164,10 +176,12 @@ async def get_or_create_prompt(
     prompt = result.scalar_one_or_none()
 
     if prompt:
-        # Update content if changed
         if prompt.content != content:
-            prompt.content = content
-            logger.info(f"Prompt '{name}' content updated")
+            if update_existing:
+                prompt.content = content
+                logger.info(f"Prompt '{name}' content updated (--update-prompts)")
+            else:
+                logger.info(f"Prompt '{name}' differs from the seed, kept (use --update-prompts to overwrite)")
         else:
             logger.info(f"Prompt '{name}' already exists, no changes")
         return prompt
@@ -338,7 +352,7 @@ async def get_or_create_preset(
     return preset
 
 
-async def seed_prompts(db: AsyncSession, prompts: list[PromptSeed]) -> int:
+async def seed_prompts(db: AsyncSession, prompts: list[PromptSeed], update_existing: bool = False) -> int:
     """Seed prompts from loaded seed data.
 
     Args:
@@ -358,6 +372,7 @@ async def seed_prompts(db: AsyncSession, prompts: list[PromptSeed]) -> int:
             prompt_category=prompt_seed.prompt_category,
             prompt_type=prompt_seed.prompt_type,
             service_type=prompt_seed.service_type,
+            update_existing=update_existing,
         )
         if prompt:
             count += 1
@@ -537,7 +552,94 @@ async def seed_global_document_templates(db: AsyncSession) -> int:
         return 0
 
 
-async def seed_production(db: AsyncSession, only: Optional[str] = None) -> dict:
+async def seed_catalog(db: AsyncSession, model_identifier: str) -> dict:
+    """Create the services of the public catalog (seeds/services/) on an existing model.
+
+    Non-destructive: a service whose route already exists is left untouched. Each service gets one
+    flavor (inline copy of its seed prompt, shared extraction prompt) and its document template as
+    default. Prompts and templates must be seeded first (seed_production).
+    """
+    from app.models.document_template import DocumentTemplate
+
+    stats = {"catalog_created": 0, "catalog_skipped": 0}
+    result = await db.execute(
+        select(Model).where(Model.model_identifier == model_identifier).order_by(Model.is_active.desc())
+    )
+    model = result.scalars().first()
+    if not model:
+        # Never block the API start: prompts and templates are still seeded
+        logger.error(f"Catalog not installed: model '{model_identifier}' not found, configure the provider and model first")
+        stats["catalog_error"] = f"model '{model_identifier}' not found"
+        return stats
+
+    prompts = {p.name: p for p in (await db.execute(select(Prompt))).scalars().all()}
+    for seed in SeedLoader().load_catalog_services():
+        existing = await db.execute(select(Service).where(Service.route == seed.route))
+        if existing.scalars().first():
+            logger.info(f"Catalog service '{seed.route}' already exists, kept")
+            stats["catalog_skipped"] += 1
+            continue
+        f = seed.flavor
+        user_prompt = prompts.get(f.get("user_prompt_name"))
+        if not user_prompt:
+            logger.warning(f"Prompt '{f.get('user_prompt_name')}' missing, catalog service '{seed.route}' skipped")
+            stats["catalog_skipped"] += 1
+            continue
+        extraction = prompts.get(f.get("extraction_prompt_name")) if f.get("extraction_prompt_name") else None
+
+        service = Service(
+            name=seed.name,
+            route=seed.route,
+            service_type=seed.service_type,
+            description=seed.description,
+            scopes=seed.scopes,
+            display_order=seed.display_order,
+            is_active=True,
+            organization_id=None,
+            allowed_organization_ids=[],
+            allowed_user_ids=[],
+        )
+        db.add(service)
+        await db.flush()
+
+        db.add(ServiceFlavor(
+            service_id=service.id,
+            model_id=model.id,
+            name=f.get("name", "Default"),
+            temperature=f.get("temperature", 0.2),
+            top_p=f.get("top_p", 0.9),
+            presence_penalty=f.get("presence_penalty", 0.0),
+            is_default=True,
+            is_active=True,
+            processing_mode=f.get("processing_mode", "single_pass"),
+            output_type=f.get("output_type", "markdown"),
+            create_new_turn_after=f.get("create_new_turn_after"),
+            user_prompt_template_id=user_prompt.id,
+            prompt_user_content=user_prompt.content,
+            placeholder_extraction_prompt_id=extraction.id if extraction else None,
+        ))
+
+        if seed.template_file:
+            tpl = (await db.execute(
+                select(DocumentTemplate).where(
+                    DocumentTemplate.file_name == seed.template_file,
+                    DocumentTemplate.organization_id.is_(None),
+                    DocumentTemplate.user_id.is_(None),
+                ).order_by(DocumentTemplate.created_at)
+            )).scalars().first()
+            if tpl:
+                await db.refresh(service, attribute_names=["document_templates"])
+                service.document_templates.append(tpl)
+                service.default_template_id = tpl.id
+            else:
+                logger.warning(f"Template '{seed.template_file}' not seeded, service '{seed.route}' has none")
+        await db.flush()
+        logger.info(f"Created catalog service '{seed.route}' (position {seed.display_order}) on {model_identifier}")
+        stats["catalog_created"] += 1
+    return stats
+
+
+async def seed_production(db: AsyncSession, only: Optional[str] = None, update_prompts: bool = False) -> dict:
     """Seed production data: prompts, presets, templates.
 
     Args:
@@ -557,7 +659,7 @@ async def seed_production(db: AsyncSession, only: Optional[str] = None) -> dict:
     # Prompts from seeds/prompts/
     if only is None or only == "prompts":
         prompts = loader.load_prompts()
-        stats["prompts_created"] = await seed_prompts(db, prompts)
+        stats["prompts_created"] = await seed_prompts(db, prompts, update_existing=update_prompts)
 
     # Presets from seeds/presets/
     if only is None or only == "presets":
@@ -610,7 +712,8 @@ async def seed_dev(db: AsyncSession) -> dict:
     return stats
 
 
-async def run_seed(dev: bool = False, only: Optional[str] = None) -> dict:
+async def run_seed(dev: bool = False, only: Optional[str] = None, catalog_model: Optional[str] = None,
+                   update_prompts: bool = False) -> dict:
     """Run the seed process.
 
     Args:
@@ -627,7 +730,9 @@ async def run_seed(dev: bool = False, only: Optional[str] = None) -> dict:
             if dev:
                 result = await seed_dev(db)
             else:
-                result = await seed_production(db, only=only)
+                result = await seed_production(db, only=only, update_prompts=update_prompts)
+            if catalog_model:
+                result.update(await seed_catalog(db, catalog_model))
 
             await db.commit()
             logger.info(f"Seed completed: {result}")
@@ -648,6 +753,17 @@ def parse_args() -> argparse.Namespace:
         help="Include dev data (providers, services from seeds/dev/)",
     )
     parser.add_argument(
+        "--catalog",
+        metavar="MODEL_IDENTIFIER",
+        help="Also create the service catalog (seeds/services/) on this existing model, e.g. "
+             "mistralai/mistral-small-3.2-24b-instruct. Existing routes are kept.",
+    )
+    parser.add_argument(
+        "--update-prompts",
+        action="store_true",
+        help="Overwrite library prompts whose content differs from the seed (default: keep them)",
+    )
+    parser.add_argument(
         "--only",
         choices=["prompts", "presets", "templates"],
         help="Seed only a specific category",
@@ -662,7 +778,8 @@ async def main():
     if args.dev and args.only:
         logger.warning("--only is ignored when --dev is specified")
 
-    result = await run_seed(dev=args.dev, only=args.only if not args.dev else None)
+    result = await run_seed(dev=args.dev, only=args.only if not args.dev else None,
+                            catalog_model=args.catalog, update_prompts=args.update_prompts)
     logger.info(f"Final stats: {result}")
 
 

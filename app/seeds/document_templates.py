@@ -34,6 +34,48 @@ GLOBAL_TEMPLATES: List[Dict[str, Any]] = [
         "description_fr": "Modele de notes de reunion avec participants, date, ordre du jour et actions a entreprendre. Ideal pour les services de resume.",
         "description_en": "Meeting notes template with participants, date, agenda, and action items. Ideal for summarization services.",
     },
+    # Templates of the LinTO service catalog (seeds/services/). Built by scripts/templates/, see
+    # docs/TEMPLATE_RENDERERS.md for the renderers they rely on. Descriptions are shown in the export menu.
+    {
+        "file_name": "linto-compte-rendu.docx",
+        "name_fr": "Compte rendu (carte)",
+        "name_en": "Minutes (card)",
+        "description_fr": "Carte infographiée : accroche, chiffres clés, décisions, points ouverts, tableau des actions avec porteur et échéance, carte des sujets, puis compte rendu détaillé.",
+        "description_en": "Infographic card: key figures, decisions, open points, action table, topic map, then detailed minutes.",
+        "icon": "file-text",
+    },
+    {
+        "file_name": "linto-tableau-de-suivi.docx",
+        "name_fr": "Tableau de suivi",
+        "name_en": "Action log",
+        "description_fr": "Cartouche projet, participants et destinataires par organisation, puis tableau des sujets numérotés typés Action, Décision ou Observation, avec porteur et échéance.",
+        "description_en": "Project box, attendees and recipients per organisation, then numbered topics typed Action, Decision or Observation with owner and due date.",
+        "icon": "table",
+    },
+    {
+        "file_name": "linto-brief-commercial.docx",
+        "name_fr": "Brief commercial",
+        "name_en": "Sales brief",
+        "description_fr": "Fiche compte : volumétrie, budget, échéance client, besoins, interlocuteurs, objections et réponses, engagements, références et points de vigilance, puis brief détaillé.",
+        "description_en": "Account sheet: volume, budget, client deadline, needs, contacts, objections and answers, commitments, references, watch points, then detailed brief.",
+        "icon": "briefcase",
+    },
+    {
+        "file_name": "linto-note-technique.docx",
+        "name_fr": "Note technique",
+        "name_en": "Technical note",
+        "description_fr": "Contexte et constats, options comparées avec leur statut, décisions, plan d'action, risques et parades, questions ouvertes, composants cités, puis note détaillée.",
+        "description_en": "Context and findings, compared options with status, decisions, action plan, risks and mitigations, open questions, components, then detailed note.",
+        "icon": "gear",
+    },
+    {
+        "file_name": "linto-points-cles.docx",
+        "name_fr": "Points clés",
+        "name_en": "Key points",
+        "description_fr": "Une page à lire en une minute : l'essentiel, les points clés numérotés, ce qui change, la suite, les chiffres clés et une carte des thèmes.",
+        "description_en": "One page, one minute: the gist, numbered key points, what changes, next steps, key figures and a topic map.",
+        "icon": "lightning",
+    },
     {
         "file_name": "linto-report.docx",
         "name_fr": "Rapport LinTO",
@@ -126,6 +168,7 @@ async def seed_global_templates(db: AsyncSession) -> Dict[str, int]:
             file_size=file_size,
             file_hash=file_hash,
             placeholders=placeholders,
+            icon=template_config.get("icon"),
             is_default=False,
         )
 

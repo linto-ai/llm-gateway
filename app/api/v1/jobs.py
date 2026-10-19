@@ -1064,6 +1064,8 @@ async def export_job_result(
     template_id: Optional[UUID] = Query(None, description="Template to use (falls back to default)"),
     version_number: Optional[int] = Query(None, description="Specific version to export (uses version content and per-version extraction cache)"),
     timezone: Optional[str] = Query(None, description="IANA timezone for date formatting (e.g., 'Europe/Paris')"),
+    pdf_lock: bool = Query(False, description="PDF only: forbid editing and copying, printing stays allowed"),
+    pdf_footer_note: Optional[str] = Query(None, max_length=200, description="PDF only: line added at the bottom of every page"),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -1073,6 +1075,8 @@ async def export_job_result(
     - **template_id**: Template UUID to use for export. Falls back to the service's default template, then the global default.
     - **version_number**: Specific version to export. Uses that version's content and per-version extraction cache.
     - **timezone**: IANA timezone identifier (e.g., `Europe/Paris`, `Asia/Tokyo`). Used to format date placeholders (`job_date`, `generated_at`) in the exported document. Falls back to the server's local timezone if not provided.
+    - **pdf_lock**: PDF only. Sets PDF permissions (no editing, no copying, printing allowed) with a random, discarded permission password. Honoured by most readers, ignored by converters.
+    - **pdf_footer_note**: PDF only. Small centered line added to every page footer.
 
     **Behavior:**
     1. Load template (specified or default)
@@ -1201,6 +1205,8 @@ async def export_job_result(
             llm_inference=llm_inference,
             version_number=version_number,
             timezone=timezone,
+            pdf_lock=pdf_lock,
+            pdf_footer_note=pdf_footer_note,
         )
         await db.commit()  # Commit any JIT extraction updates
     except ImportError as e:

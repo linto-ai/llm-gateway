@@ -1121,27 +1121,7 @@ class ModelService:
 
         return discovered
 
-    def _estimate_context_length(self, model_id: str) -> int:
-        """Estimate context length based on model ID."""
-        model_id_lower = model_id.lower()
-        
-        if "gpt-4-turbo" in model_id_lower or "gpt-4-1106" in model_id_lower:
-            return 128000
-        elif "gpt-4" in model_id_lower:
-            return 8192
-        elif "gpt-3.5-turbo-16k" in model_id_lower:
-            return 16385
-        elif "gpt-3.5-turbo" in model_id_lower:
-            return 4096
-        else:
-            return 4096  # Conservative default
     
-    def _estimate_max_generation(self, model_id: str) -> int:
-        """Estimate max generation length based on model ID."""
-        if "gpt-4" in model_id.lower():
-            return 4096
-        else:
-            return 2048
     
     def _get_tokenizer_info(self, model_id: str) -> tuple[str | None, str | None]:
         """Get tokenizer class and name for model based on model ID."""

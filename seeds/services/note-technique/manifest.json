@@ -1,0 +1,25 @@
+{
+  "name": "Note technique",
+  "route": "note-technique",
+  "service_type": "summary",
+  "description": {
+    "fr": "Note technique",
+    "en": "Technical note"
+  },
+  "scopes": [
+    "linto"
+  ],
+  "display_order": 40,
+  "flavor": {
+    "name": "Default",
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "presence_penalty": 0.0,
+    "processing_mode": "single_pass",
+    "output_type": "markdown",
+    "create_new_turn_after": 100,
+    "user_prompt_name": "linto-note-technique",
+    "extraction_prompt_name": "linto-extraction-champs"
+  },
+  "template_file": "linto-note-technique.docx"
+}

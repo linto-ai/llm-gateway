@@ -44,7 +44,12 @@ if [[ "$1" != "celery" && "$1" != *"celery"* ]]; then
     alembic upgrade head
 
     echo "Running database seeds..."
-    python -m app.seeds.base_seed
+    if [ -n "$SEED_CATALOG_MODEL" ]; then
+        # Also install the service catalog on this model; existing services are kept
+        python -m app.seeds.base_seed --catalog "$SEED_CATALOG_MODEL"
+    else
+        python -m app.seeds.base_seed
+    fi
 fi
 
 # Execute command passed as argument

@@ -328,6 +328,8 @@ class ServiceBase(BaseModel):
     # Usage scopes: client products listing this service ("linto" = LinTO Studio).
     scopes: List[str] = Field(default_factory=lambda: ["linto"], min_length=1)
     is_active: bool = True
+    # Position in service lists: ascending, then newest first. 0 = listed first.
+    display_order: int = Field(100, ge=0, le=100000)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     # Service category (allows custom types)
@@ -348,6 +350,8 @@ class ServiceCreate(BaseModel):
     # Usage scopes: client products listing this service. Defaults to LinTO Studio.
     scopes: List[str] = Field(default_factory=lambda: ["linto"], min_length=1)
     is_active: bool = True
+    # Position in service lists: ascending, then newest first. 0 = listed first.
+    display_order: int = Field(100, ge=0, le=100000)
     metadata: Dict[str, Any] = Field(default_factory=dict)
     service_category: Optional[str] = Field(None, max_length=50)
     flavors: List[ServiceFlavorCreate] = Field(default_factory=list)  # Optional, can be added later
@@ -367,6 +371,7 @@ class ServiceUpdate(BaseModel):
     # When provided, replaces the usage scopes (at least one).
     scopes: Optional[List[str]] = Field(None, min_length=1)
     is_active: Optional[bool] = None
+    display_order: Optional[int] = Field(None, ge=0, le=100000)
     flavors: Optional[List[ServiceFlavorCreate]] = None
     metadata: Optional[Dict[str, Any]] = None
     service_category: Optional[str] = Field(None, max_length=50)

@@ -6,7 +6,8 @@ from celery.exceptions import TaskRevokedError
 from typing import Optional, Dict, Any, List
 
 class BatchManager:
-    def __init__(self, task_data: dict, tokenizer, prompt: str, prompt_token_count: int, reduce_prompt:str , celery_task):
+    def __init__(self, task_data: dict, tokenizer, prompt: str, prompt_token_count: int, reduce_prompt:str , celery_task,
+                 system_prompt: Optional[str] = None):
         """
         Initializes the BatchManager with the task, tokenizer, and prompt-related parameters.
 
@@ -15,6 +16,7 @@ class BatchManager:
             tokenizer (Tokenizer): The tokenizer to be used for tokenizing the input turns.
             prompt (str): The prompt template used for the summarization task.
             prompt_token_count (int): The number of tokens in the prompt.
+            system_prompt (str): Optional system message sent with every generation call.
         """
         self.tokenizer = tokenizer
         self.totalContextLength = task_data["backendParams"]['totalContextLength']
@@ -24,6 +26,7 @@ class BatchManager:
         self.promptFields = task_data["fields"]
         self.summaryTurns = task_data["backendParams"]["summaryTurns"]
         self.prompt = prompt
+        self.system_prompt = system_prompt
         self.reduce_prompt = reduce_prompt
         self.task_id = task_data['task_id']
         self.job_id = task_data.get('job_id')
@@ -249,7 +252,7 @@ class BatchManager:
 
         # Make single LLM call with usage tracking
         try:
-            result = self.openai_adapter.publish(filled_prompt, return_usage=True)
+            result = self.openai_adapter.publish(filled_prompt, system_prompt=self.system_prompt, return_usage=True)
             if isinstance(result, tuple):
                 response, usage = result
             else:
@@ -322,7 +325,7 @@ class BatchManager:
 
         # Publish the prompt with usage tracking
         try:
-            result = self.openai_adapter.publish(filled_prompt, return_usage=True)
+            result = self.openai_adapter.publish(filled_prompt, system_prompt=self.system_prompt, return_usage=True)
             if isinstance(result, tuple):
                 response, usage = result
             else:
@@ -613,7 +616,7 @@ class BatchManager:
         start_time = datetime.utcnow()
 
         try:
-            result = self.openai_adapter.publish(filled_prompt, return_usage=True)
+            result = self.openai_adapter.publish(filled_prompt, system_prompt=self.system_prompt, return_usage=True)
             if isinstance(result, tuple):
                 response, usage = result
             else:

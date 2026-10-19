@@ -268,6 +268,8 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
             from app.models.service_flavor import ServiceFlavor
             from app.models.model import Model
             from app.core.security import get_encryption_service
+            from app.core.prompt_validation import count_placeholders
+            from app.services.task_params import build_backend_params
             from sqlalchemy.orm import joinedload
             from uuid import UUID
 
@@ -290,17 +292,12 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
             new_task_data = original_task_data.copy()
             new_task_data['flavor_id'] = str(flavor.id)
 
-            # Update backend params
-            new_task_data['backendParams'] = {
-                **original_task_data.get('backendParams', {}),
-                'modelName': flavor.model.model_name if flavor.model else original_task_data['backendParams'].get('modelName'),
-                'temperature': flavor.temperature,
-                'top_p': flavor.top_p,
-                'maxGenerationLength': flavor.model.max_output_tokens if flavor.model else original_task_data['backendParams'].get('maxGenerationLength'),
-                'totalContextLength': flavor.model.max_context_length if flavor.model else original_task_data['backendParams'].get('totalContextLength'),
-                'processing_mode': flavor.processing_mode,
-                'estimated_cost_per_1k_tokens': flavor.estimated_cost_per_1k_tokens,
-            }
+            # Update backend params from the failover flavor, as the dispatch path does
+            # Request-level temperature/top_p overrides still apply to the failover flavor
+            overrides = original_task_data.get('requestOverrides') or {}
+            new_task_data['backendParams'] = build_backend_params(
+                flavor, overrides.get('temperature'), overrides.get('top_p')
+            )
 
             # Update provider config from the failover flavor's model -> provider.
             # Provider stores the key ENCRYPTED (api_key_encrypted) and the URL in
@@ -315,13 +312,20 @@ def _get_failover_task_data(original_task_data: dict, failover_flavor_id: str) -
                 }
                 new_task_data['backend'] = failover_provider.provider_type
 
-            # Update prompts if the failover flavor has its own
-            if flavor.prompt_system_content:
-                new_task_data['prompt_system_content'] = flavor.prompt_system_content
-            if flavor.prompt_user_content:
-                new_task_data['prompt_user_content'] = flavor.prompt_user_content
-            if flavor.prompt_reduce_content:
-                new_task_data['prompt_reduce_content'] = flavor.prompt_reduce_content
+            # Prompts come from the failover flavor, as the dispatch path does, so they
+            # always match its processing_mode and reduce settings
+            new_task_data['prompt_system_content'] = flavor.prompt_system_content
+            new_task_data['prompt_user_content'] = flavor.prompt_user_content
+            new_task_data['prompt_reduce_content'] = flavor.prompt_reduce_content
+            new_task_data['fields'] = count_placeholders(flavor.prompt_user_content or "")
+            new_task_data['prompt_extraction_content'] = (
+                flavor.placeholder_extraction_prompt.content
+                if flavor.placeholder_extraction_prompt else None
+            )
+            new_task_data['prompt_categorization_content'] = (
+                flavor.categorization_prompt.content
+                if flavor.categorization_prompt else None
+            )
 
             # Update failover config for potential deeper failover
             new_task_data['failoverConfig'] = {
@@ -354,10 +358,6 @@ def update_sent_state(sender=None, headers=None, **kwargs):
     backend = task.backend if task else celery_app.backend
     backend.store_result(headers['id'], None, "QUEUED")
 
-def get_task_ids(cutoff_seconds=settings.task_cutoff_seconds):
-    now = int(time.time())
-    min_score = now - cutoff_seconds
-    return [task.decode('utf-8') for task in redis_client.zrangebyscore("task_ids", min_score, now)]
 
 def get_task_status(task_id):
     """Get task status from Celery/Redis (synchronous - use get_task_status_async for async contexts)."""
@@ -390,36 +390,6 @@ def clean_old_task_ids(older_than_seconds=settings.task_expiration):
     removed = redis_client.zremrangebyscore("task_ids", 0, cutoff)
     logger.info(f"Cleaned up {removed} old task_ids")
 
-
-def cleanup_expired_jobs_sync() -> dict:
-    """
-    Delete expired jobs from the database.
-
-    Jobs with expires_at < now() are deleted. Jobs with NULL expires_at
-    are never deleted by this function.
-
-    Returns:
-        dict with 'deleted_count' key
-    """
-    session = _get_sync_db_session()
-    try:
-        from app.models.job import Job
-
-        # Delete expired jobs (where expires_at is set and in the past)
-        result = session.query(Job).filter(
-            Job.expires_at.isnot(None),
-            Job.expires_at < datetime.utcnow()
-        ).delete(synchronize_session=False)
-
-        session.commit()
-        logger.info(f"Cleaned up {result} expired jobs")
-        return {'deleted_count': result}
-    except Exception as e:
-        session.rollback()
-        logger.exception(f"Error cleaning up expired jobs: {e}")
-        raise
-    finally:
-        session.close()
 
 
 # Database session helper for Celery signals (runs in worker process)

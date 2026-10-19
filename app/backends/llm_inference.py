@@ -3,6 +3,7 @@ import logging
 import re
 from .backend import LLMBackend
 from .batch_manager import BatchManager
+from app.core.output_cleanup import strip_wrapping_fence
 
 logger = logging.getLogger("llm_inference")
 
@@ -11,7 +12,8 @@ class LLMInferenceEngine(LLMBackend):
     def __init__(self, task_data: dict, celery_task):
         super().__init__(task_data)
         self.celery_task = celery_task
-        self.batch_manager = BatchManager(task_data,self.tokenizer, self.prompt, self.prompt_token_count, self.reduce_prompt, celery_task)
+        self.batch_manager = BatchManager(task_data,self.tokenizer, self.prompt, self.prompt_token_count, self.reduce_prompt, celery_task,
+                                          system_prompt=self.system_prompt)
 
         # Store extraction prompt if provided
         self.extraction_prompt_content = task_data.get("prompt_extraction_content")
@@ -66,6 +68,7 @@ class LLMInferenceEngine(LLMBackend):
             self.summary = self.chunker.consolidate_turns(self.summary)
 
         self.summary = self.batch_manager.format_summary(self.summary)
+        self.summary = strip_wrapping_fence(self.summary)
 
         # Run placeholder extraction if configured
         extracted_metadata = {}
@@ -132,8 +135,9 @@ class LLMInferenceEngine(LLMBackend):
 
             logger.info(f"Starting placeholder extraction for task {self.task_id}")
 
-            # Use extraction fields from templates (already validated non-empty)
-            fields_to_extract = self.extraction_fields
+            # Template fields, with renderer-owned placeholders (lists, mindmaps...) turned into their requests
+            from app.services.template_renderers import prepare_extraction_fields
+            fields_to_extract = prepare_extraction_fields(self.extraction_fields)
             logger.info(f"Extracting {len(fields_to_extract)} fields: {fields_to_extract}")
 
             # Build extraction prompt

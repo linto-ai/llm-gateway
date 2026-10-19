@@ -95,6 +95,19 @@ class ServiceSeed:
     flavors: List[FlavorSeed] = field(default_factory=list)
 
 
+@dataclass
+class CatalogServiceSeed:
+    """A service of the public catalog (seeds/services/): no credentials, the model is chosen at install."""
+    name: str
+    route: str
+    service_type: str
+    description: Dict[str, str]
+    scopes: List[str]
+    display_order: int
+    flavor: Dict[str, Any]
+    template_file: Optional[str] = None
+
+
 class SeedLoader:
     """Load seed data from directory structure."""
 
@@ -456,6 +469,35 @@ class SeedLoader:
             is_active=manifest.get("is_active", True),
             flavors=flavors,
         )
+
+    def load_catalog_services(self) -> List[CatalogServiceSeed]:
+        """Load the public service catalog from seeds/services/*/manifest.json, sorted by display_order."""
+        services_dir = self.seeds_dir / "services"
+        services: List[CatalogServiceSeed] = []
+        if not services_dir.exists():
+            return services
+        for manifest_path in sorted(services_dir.glob("*/manifest.json")):
+            try:
+                m = self._load_json(manifest_path)
+            except (json.JSONDecodeError, IOError) as e:
+                logger.error(f"Failed to load catalog manifest {manifest_path}: {e}")
+                continue
+            if not m.get("name") or not m.get("route") or not m.get("flavor"):
+                logger.warning(f"Catalog manifest {manifest_path} needs name, route and flavor")
+                continue
+            services.append(CatalogServiceSeed(
+                name=m["name"],
+                route=m["route"],
+                service_type=m.get("service_type", "summary"),
+                description=m.get("description", {}),
+                scopes=m.get("scopes", ["linto"]),
+                display_order=int(m.get("display_order", 100)),
+                flavor=m["flavor"],
+                template_file=m.get("template_file"),
+            ))
+        services.sort(key=lambda s: (s.display_order, s.route))
+        logger.info(f"Loaded {len(services)} catalog services from {services_dir}")
+        return services
 
     def _load_json(self, path: Path) -> Dict[str, Any]:
         """Load and parse a JSON file.

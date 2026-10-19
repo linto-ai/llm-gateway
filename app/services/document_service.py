@@ -2,6 +2,7 @@
 """Document generation service for DOCX/PDF export."""
 import json
 import logging
+import secrets
 import subprocess
 import tempfile
 from datetime import datetime
@@ -11,6 +12,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 from app.models.document_template import DocumentTemplate
+from app.services import template_renderers
 from app.models.job import Job
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,7 @@ class DocumentService:
         version_content: Optional[str] = None,
         version_metadata: Optional[Dict[str, Any]] = None,
         timezone: Optional[str] = None,
+        footer_note: Optional[str] = None,
     ) -> BytesIO:
         """
         Generate DOCX from template with placeholder substitution.
@@ -68,6 +71,7 @@ class DocumentService:
             custom_fields: Optional additional fields
             version_content: Optional content from a specific version (overrides job.result)
             version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
+            footer_note: Optional line added at the bottom of every page
 
         Returns:
             BytesIO containing the generated DOCX
@@ -90,6 +94,8 @@ class DocumentService:
 
         placeholders = self.get_placeholders(job, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
         self.substitute_placeholders(doc, placeholders)
+        if footer_note:
+            self._add_footer_note(doc, footer_note)
 
         output = BytesIO()
         doc.save(output)
@@ -104,6 +110,8 @@ class DocumentService:
         version_content: Optional[str] = None,
         version_metadata: Optional[Dict[str, Any]] = None,
         timezone: Optional[str] = None,
+        footer_note: Optional[str] = None,
+        lock: bool = False,
     ) -> BytesIO:
         """
         Generate PDF from job result.
@@ -117,15 +125,17 @@ class DocumentService:
             version_content: Optional content from a specific version (overrides job.result)
             version_metadata: Optional metadata from a specific version (overrides job.result.extracted_metadata)
             timezone: Optional IANA timezone for date formatting (e.g., 'Europe/Paris')
+            footer_note: Optional line added at the bottom of every page
+            lock: Forbid editing and copying in the PDF (printing stays allowed)
 
         Returns:
             BytesIO containing the generated PDF
         """
         # Generate DOCX first (handles default template)
-        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone)
+        docx_buffer = await self.generate_docx(job, template, custom_fields, version_content=version_content, version_metadata=version_metadata, timezone=timezone, footer_note=footer_note)
 
         # Convert via LibreOffice
-        return await self._convert_docx_to_pdf(docx_buffer, job)
+        return await self._convert_docx_to_pdf(docx_buffer, job, lock=lock)
 
     async def generate_html(
         self,
@@ -248,7 +258,46 @@ class DocumentService:
 
         return html
 
-    async def _convert_docx_to_pdf(self, docx_buffer: BytesIO, job: Job) -> BytesIO:
+    @staticmethod
+    def _add_footer_note(doc, text: str) -> None:
+        """Append a small centered line to every footer the document defines."""
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Pt, RGBColor
+
+        footers = []
+        for index, section in enumerate(doc.sections):
+            variants = [section.footer]
+            if section.different_first_page_header_footer:
+                variants.append(section.first_page_footer)
+            if doc.settings.odd_and_even_pages_header_footer:
+                variants.append(section.even_page_footer)
+            # A linked footer is the previous section's one, already handled
+            footers += [f for f in variants if index == 0 or not f.is_linked_to_previous]
+
+        for footer in footers:
+            para = footer.add_paragraph()
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = para.add_run(text)
+            run.font.size = Pt(8)
+            run.font.color.rgb = RGBColor(0x80, 0x80, 0x80)
+
+    @staticmethod
+    def _locked_pdf_filter() -> str:
+        """LibreOffice PDF filter with editing and copying forbidden.
+
+        The permission password is random and thrown away. Readers that honour
+        PDF permissions enforce them, converters ignore them.
+        """
+        options = {
+            "RestrictPermissions": {"type": "boolean", "value": True},
+            "PermissionPassword": {"type": "string", "value": secrets.token_urlsafe(24)},
+            "Changes": {"type": "long", "value": 0},
+            "EnableCopyingOfContent": {"type": "boolean", "value": False},
+            "Printing": {"type": "long", "value": 2},
+        }
+        return "pdf:writer_pdf_Export:" + json.dumps(options)
+
+    async def _convert_docx_to_pdf(self, docx_buffer: BytesIO, job: Job, lock: bool = False) -> BytesIO:
         """Convert DOCX buffer to PDF using LibreOffice."""
         with tempfile.TemporaryDirectory() as tmpdir:
             docx_path = Path(tmpdir) / "document.docx"
@@ -263,7 +312,7 @@ class DocumentService:
                     [
                         'libreoffice',
                         '--headless',
-                        '--convert-to', 'pdf',
+                        '--convert-to', self._locked_pdf_filter() if lock else 'pdf',
                         '--outdir', tmpdir,
                         str(docx_path)
                     ],
@@ -364,6 +413,12 @@ class DocumentService:
                 else:
                     placeholders[key] = str(value) if value is not None else ""
 
+        # Raw extracted lists, used by the repeated_rows renderer
+        placeholders[template_renderers.LISTS_KEY] = {
+            k: v for k, v in (extracted_metadata or {}).items()
+            if isinstance(v, list) and not k.startswith("_")
+        } if isinstance(extracted_metadata, dict) else {}
+
         # Add custom fields (override if same name)
         if custom_fields:
             placeholders.update(custom_fields)
@@ -443,6 +498,9 @@ class DocumentService:
             placeholders: Dict of placeholder values
         """
         output_content = placeholders.get("output", "")
+        template_renderers.before_substitution(
+            doc, placeholders, self._set_run_text, self._rescue_split_placeholders
+        )
 
         def replace_text_simple(text: str) -> str:
             """Replace placeholders except output (handled specially).
@@ -453,8 +511,8 @@ class DocumentService:
             """
             import re
             for key, value in placeholders.items():
-                if key == "output":
-                    continue  # Handle output separately
+                if key == "output" or key.startswith("__"):
+                    continue  # output is handled separately, __ keys are internal
                 # Replace exact match {{key}}
                 text = text.replace(f"{{{{{key}}}}}", str(value or ""))
                 # Replace {{key: anything}} pattern (placeholder with description)
@@ -462,16 +520,6 @@ class DocumentService:
                 text = re.sub(pattern, str(value or ""), text)
             return text
 
-        def process_paragraph_for_output(para):
-            """Check if paragraph contains {{output}} and replace with formatted content."""
-            full_text = "".join(run.text for run in para.runs)
-            if "{{output}}" in full_text:
-                # Clear the paragraph
-                for run in para.runs:
-                    self._set_run_text(run, "")
-                # Insert formatted markdown content after this paragraph
-                return True
-            return False
 
         # First pass: replace simple placeholders
         for para in doc.paragraphs:
@@ -556,6 +604,8 @@ class DocumentService:
         for para in self._iter_all_paragraphs(doc):
             self._rescue_split_placeholders(para, clean_unfilled)
 
+        template_renderers.after_substitution(doc, placeholders)
+
     def _insert_markdown_content(self, doc, after_para, markdown_content: str) -> None:
         """
         Convert markdown to DOCX formatting and insert after the given paragraph.
@@ -585,6 +635,8 @@ class DocumentService:
                 lines = lines[:-1]
             stripped = "\n".join(lines)
         markdown_content = stripped
+
+        markdown_content = template_renderers.prepare_output(doc, markdown_content)
 
         # Clean trailing backslashes before conversion
         cleaned_content = self._clean_trailing_backslashes(markdown_content)
@@ -625,6 +677,7 @@ class DocumentService:
         # Remap them to the target template's actual styleIds via the canonical
         # <w:name> (which is invariant across languages for built-in styles).
         self._remap_inserted_style_ids(doc, inserted_elements)
+        template_renderers.format_output(doc, inserted_elements)
 
     # Canonical <w:name> values used by Word for the built-in styles that
     # htmldocx may emit. Matching is case-insensitive and space-insensitive.
@@ -782,34 +835,6 @@ class DocumentService:
                 or json.dumps(job.result, indent=2, ensure_ascii=False)
             )
         return str(job.result)
-
-    def get_all_available_placeholders(
-        self,
-        template: Optional[DocumentTemplate] = None,
-        extracted_metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, list]:
-        """
-        Get all available placeholder categories.
-
-        Returns:
-            Dict with 'standard', 'template', and 'metadata' keys
-        """
-        result = {
-            "standard": self.STANDARD_PLACEHOLDERS.copy(),
-            "template": [],
-            "metadata": [],
-        }
-
-        if template and template.placeholders:
-            result["template"] = template.placeholders
-
-        if extracted_metadata:
-            result["metadata"] = [
-                k for k in extracted_metadata.keys()
-                if not k.startswith("_")
-            ]
-
-        return result
 
 
 # Singleton instance
